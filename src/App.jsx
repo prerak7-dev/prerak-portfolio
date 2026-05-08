@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+const baseUrl = import.meta.env.BASE_URL;
+
 const profile = {
   name: 'Prerak Pandey',
   title: 'Backend / Full-Stack Engineer',
@@ -8,8 +10,8 @@ const profile = {
   email: 'prerak.pandey7@gmail.com',
   github: 'https://github.com/prerak7-dev',
   linkedin: 'https://www.linkedin.com/in/prerak-pandey',
-  resume: '/Prerak_Pandey_Resume.pdf',
-  photo: '/profile-photo.png',
+  resume: `${baseUrl}Prerak_Pandey_Resume.pdf`,
+  photo: `${baseUrl}profile-photo.png`,
 };
 
 const sectors = [
