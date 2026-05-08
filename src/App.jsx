@@ -1113,8 +1113,8 @@ export default function App() {
         </div>
         <div className="exploration-note panel-card" data-tilt>
           <strong>Simple exploration layer</strong>
-          <p>Scroll or use the sector map. The rider travels with the portfolio as a lightweight exploration layer, helping visitors discover each section without making the content hard to read.</p>
-          <small>Keyboard: Alt + ↑ / ↓ jumps between sections. WASD or arrows add a subtle interaction layer.</small>
+          <p>Scroll or use the sector map. The rider travels with the portfolio.</p>
+          <small>Keyboard: Alt + ↑ / ↓ jumps between sections. WASD or arrows add a subtle interaction.</small>
         </div>
       </section>
 
