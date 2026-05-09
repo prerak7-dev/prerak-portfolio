@@ -1112,7 +1112,7 @@ export default function App() {
           <div className="metrics-row"><span><strong>Java</strong><small>Spring Boot services</small></span><span><strong>Kafka</strong><small>Async pipelines</small></span><span><strong>Redis</strong><small>Job state</small></span><span><strong>Unreal</strong><small>Tooling context</small></span></div>
         </div>
         <div className="exploration-note panel-card" data-tilt>
-          <strong>Simple exploration layer</strong>
+          <strong></strong>
           <p>Scroll or use the sector map. The rider travels with the portfolio.</p>
           <small>Keyboard: Alt + ↑ / ↓ jumps between sections. WASD or arrows add a subtle interaction.</small>
         </div>
