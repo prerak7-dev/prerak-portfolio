@@ -1125,7 +1125,7 @@ export default function App() {
       </section>
 
       <section id="projects" className="sector section-wrap">
-        <SectorHeader eyebrow="Featured portfolio systems" title="Game-tech engineering story, not a generic web portfolio.">The interaction layer makes the site memorable, while the cards keep the core evidence easy for a recruiter, engineer, or internal referrer to scan quickly: backend architecture, async systems thinking, game-tech context, and production-ready communication.</SectorHeader>
+        <SectorHeader eyebrow="Featured portfolio systems" title="">Backend architecture, async systems thinking, game-tech context, and production-ready communication.</SectorHeader>
         <div className="project-grid">{projects.map((project) => <ProjectCard key={project.title} project={project} />)}</div>
       </section>
 
