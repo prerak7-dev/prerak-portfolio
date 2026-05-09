@@ -26,7 +26,7 @@ const sectors = [
 const projects = [
   {
     number: '01',
-    title: 'Aegis AAA Animation Pipeline',
+    title: 'Aegis Animation Pipeline',
     eyebrow: 'Java / Spring Boot / Redis / Kafka',
     summary:
       'A backend animation-processing pipeline that ingests mocap, coordinates long-running work through asynchronous services, validates output, and publishes Unreal-importable JSON overlays.',
