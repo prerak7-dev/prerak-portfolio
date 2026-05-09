@@ -1107,7 +1107,7 @@ export default function App() {
           <p className="eyebrow">// Backend · Game Tech · Data Systems</p>
           <h1>{profile.name}</h1>
           <h2><span>{profile.title}</span> {profile.tagline}</h2>
-          <p className="hero-lede">I build reliable backend services, content pipelines, and developer-facing tools that connect cloud-native engineering with game-production workflows. For Guerrilla-facing work, I lead with scalable Java / Spring Boot service architecture, async job orchestration, and observability-minded design, while using Aegis to show how those systems connect to animation and content creation workflows.</p>
+          <p className="hero-lede">I build reliable backend services, content pipelines, and developer-facing tools that connect cloud-native engineering with game-production workflows.</p>
           <div className="hero-actions"><a className="primary-action" href="#projects">Start exploring →</a><a href={profile.resume} download>Download Resume</a><a href={profile.github} target="_blank" rel="noreferrer">GitHub</a></div>
           <div className="metrics-row"><span><strong>Java</strong><small>Spring Boot services</small></span><span><strong>Kafka</strong><small>Async pipelines</small></span><span><strong>Redis</strong><small>Job state</small></span><span><strong>Unreal</strong><small>Tooling context</small></span></div>
         </div>
