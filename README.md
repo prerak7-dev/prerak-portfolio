@@ -2,19 +2,6 @@
 
 Interactive single-page Vite/React portfolio for backend, full-stack, online-services, and game-technology applications.
 
-## Current build
-
-This version includes:
-
-- fixed full-page ambient world layer
-- front-layer snowboard/soccer motion tied to scroll progress
-- local-time ambience and optional live local weather
-- smaller always-visible explorer panel
-- polished Guerrilla-focused copy
-- profile photo in the nav/contact areas
-- document title set to `Prerak Pandey | Portfolio`
-- Vite production build included in `dist`
-
 ## Recommended environment
 
 Use Node.js 20 LTS.
