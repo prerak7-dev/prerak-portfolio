@@ -68,31 +68,3 @@ Then open:
 ```text
 http://127.0.0.1:5174
 ```
-
-## Vercel deployment settings
-
-Use these values if Vercel asks:
-
-```text
-Framework Preset: Vite
-Build Command: npm run build
-Output Directory: dist
-Install Command: npm install
-```
-
-## Change the browser tab title
-
-Edit `index.html`:
-
-```html
-<title>Prerak Pandey | Portfolio</title>
-```
-
-Then rebuild and redeploy:
-
-```powershell
-npm run build
-git add .
-git commit -m "Update site title"
-git push
-```
