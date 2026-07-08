@@ -1324,14 +1324,24 @@ const portraitStyles = `
 `;
 
 const typeStyles = `
+@import url("https://fonts.cdnfonts.com/css/soria");
 :root{
-  --display-font:"Arial Narrow","Roboto Condensed","Helvetica Neue Condensed","Arial",sans-serif;
-  --body-font:"Arial","Helvetica Neue",system-ui,sans-serif;
+  --display-font:"Soria","Georgia","Times New Roman",serif;
+  --body-font:"Soria","Georgia","Times New Roman",serif;
+  font-family:var(--body-font);
 }
 body,
 button,
-input{
+input,
+a,
+p,
+small,
+strong,
+em,
+span,
+li{
   font-family:var(--body-font);
+  font-weight:500;
 }
 .hero-copy h1,
 .hero-copy h2,
@@ -1339,26 +1349,26 @@ input{
 .project-card h3,
 .footer-shell h2{
   font-family:var(--display-font);
-  font-weight:750;
-  font-stretch:condensed;
+  font-weight:600;
+  font-stretch:normal;
   text-transform:uppercase;
-  letter-spacing:-.012em;
-  line-height:.98;
+  letter-spacing:.01em;
+  line-height:1.02;
 }
 .hero-copy h1{
-  font-size:clamp(3.6rem,7.4vw,7.2rem);
-  letter-spacing:-.018em;
+  font-size:clamp(3.45rem,7vw,6.85rem);
+  letter-spacing:.005em;
   max-width:980px;
 }
 .hero-copy h2{
-  font-size:clamp(1.45rem,2.4vw,2.35rem);
-  letter-spacing:-.006em;
-  line-height:1.05;
+  font-size:clamp(1.35rem,2.25vw,2.15rem);
+  letter-spacing:.01em;
+  line-height:1.12;
   max-width:760px;
 }
 .section-heading h2{
-  font-size:clamp(1.9rem,3.3vw,3.35rem);
-  line-height:1;
+  font-size:clamp(1.8rem,3.05vw,3.1rem);
+  line-height:1.08;
 }
 .eyebrow,
 .shortcut-card span,
@@ -1368,8 +1378,8 @@ input{
 .brand strong,
 .brand small{
   font-family:var(--display-font);
-  font-weight:750;
-  letter-spacing:.045em;
+  font-weight:600;
+  letter-spacing:.05em;
 }
 .hero-lede,
 .project-card p,
@@ -1377,6 +1387,8 @@ input{
 .section-heading p,
 .pipeline p{
   font-family:var(--body-font);
+  font-weight:500;
+  letter-spacing:.008em;
 }
 .site.fall-theme{
   --bg:#16090d;
@@ -1566,6 +1578,7 @@ const layoutRestoreStyles = `
   padding-bottom:5px!important;
   align-items:center!important;
   clip-path:none!important;
+  border:0!important;
 }
 .brand{
   position:relative!important;
