@@ -243,15 +243,15 @@ function useTiltCard() {
   }, []);
 }
 
-function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgress, timeProfile, fallTheme }) {
+function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgress, timeProfile, fallTheme, springTheme, winterTheme }) {
   const canvasRef = useRef(null);
   const pointerRef = useRef({ x: 0.55, y: 0.45, down: false });
   const keysRef = useRef(new Set());
-  const refs = useRef({ mode, weather, weatherPower, activeSector, scrollProgress, timeProfile, fallTheme });
+  const refs = useRef({ mode, weather, weatherPower, activeSector, scrollProgress, timeProfile, fallTheme, springTheme, winterTheme });
 
   useEffect(() => {
-    refs.current = { mode, weather, weatherPower, activeSector, scrollProgress, timeProfile, fallTheme };
-  }, [mode, weather, weatherPower, activeSector, scrollProgress, timeProfile, fallTheme]);
+    refs.current = { mode, weather, weatherPower, activeSector, scrollProgress, timeProfile, fallTheme, springTheme, winterTheme };
+  }, [mode, weather, weatherPower, activeSector, scrollProgress, timeProfile, fallTheme, springTheme, winterTheme]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -266,10 +266,10 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
     let particleSignature = '';
     const player = { x: width * 0.2, y: height * 0.68, vx: 0, vy: 0, spin: 0, trail: [] };
     const palette = {
-      dawn: ['#06111c', '#102839', '#f8ba72'],
-      day: ['#03111d', '#0b2e44', '#8eeeff'],
-      dusk: ['#060916', '#181b35', '#f59e0b'],
-      night: ['#02070d', '#071420', '#22d3ee'],
+      dawn: ['#020202', '#181818', '#f7f7f7'],
+      day: ['#050505', '#222222', '#ffffff'],
+      dusk: ['#010101', '#121212', '#eeeeee'],
+      night: ['#000000', '#0c0c0c', '#ffffff'],
     };
 
     function resize() {
@@ -330,21 +330,24 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
 
     function drawBackground(t) {
       const fall = refs.current.fallTheme;
-      const [top, mid, accent] = fall ? ['#f7d39d', '#f08a2e', '#ffe36f'] : (palette[refs.current.timeProfile.key] || palette.night);
+      const spring = refs.current.springTheme;
+      const winter = refs.current.winterTheme;
+      const [top, mid, accent] = winter ? ['#f8fdff', '#bdeeff', '#ffffff'] : spring ? ['#edfdf7', '#70c9e8', '#0b6b4f'] : fall ? ['#f7d39d', '#f08a2e', '#ffe36f'] : (palette[refs.current.timeProfile.key] || palette.night);
       const pointer = pointerRef.current;
       const bg = ctx.createLinearGradient(0, 0, 0, height);
       bg.addColorStop(0, top);
       bg.addColorStop(0.54, mid);
-      bg.addColorStop(1, fall ? '#421321' : '#02070d');
+      bg.addColorStop(1, winter ? '#e8f7ff' : spring ? '#0b3028' : fall ? '#421321' : '#000000');
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, width, height);
 
       const orbX = width * (0.68 + (pointer.x - 0.5) * 0.07);
       const orbY = height * (0.25 + (pointer.y - 0.5) * 0.05);
       const orb = ctx.createRadialGradient(orbX, orbY, 0, orbX, orbY, width * 0.48);
-      orb.addColorStop(0, `${accent}4b`);
-      orb.addColorStop(0.34, fall ? 'rgba(255,227,111,.22)' : 'rgba(34,211,238,.12)');
-      orb.addColorStop(1, fall ? 'rgba(255,227,111,0)' : 'rgba(34,211,238,0)');
+      orb.addColorStop(0, winter ? 'rgba(0,110,255,.82)' : spring || fall ? `${accent}4b` : 'rgba(255,255,255,.86)');
+      orb.addColorStop(0.18, winter ? 'rgba(0,110,255,.5)' : spring ? 'rgba(5,92,65,.28)' : fall ? 'rgba(73,19,35,.38)' : 'rgba(255,255,255,.64)');
+      orb.addColorStop(0.44, winter ? 'rgba(43,145,255,.28)' : spring ? 'rgba(5,92,65,.12)' : fall ? 'rgba(73,19,35,.2)' : 'rgba(255,255,255,.36)');
+      orb.addColorStop(1, winter ? 'rgba(43,145,255,0)' : spring ? 'rgba(5,92,65,0)' : fall ? 'rgba(73,19,35,0)' : 'rgba(255,255,255,0)');
       ctx.fillStyle = orb;
       ctx.fillRect(0, 0, width, height);
 
@@ -352,7 +355,7 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
       const alphaMod = refs.current.timeProfile.key === 'day' ? 0.23 : 1;
       stars.forEach((star) => {
         ctx.beginPath();
-        ctx.fillStyle = fall ? `rgba(255,242,178,${star.a * alphaMod})` : `rgba(220,251,255,${star.a * alphaMod})`;
+        ctx.fillStyle = winter ? `rgba(255,255,255,${star.a * 0.42})` : spring ? `rgba(246,255,255,${star.a * alphaMod})` : fall ? `rgba(255,242,178,${star.a * alphaMod})` : `rgba(255,255,255,${star.a * alphaMod})`;
         ctx.arc(star.x + (pointer.x - 0.5) * 22, star.y, star.r, 0, Math.PI * 2);
         ctx.fill();
       });
@@ -364,17 +367,17 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
 
     function drawHud(cx, cy, t) {
       const fall = refs.current.fallTheme;
+      const spring = refs.current.springTheme;
+      const winter = refs.current.winterTheme;
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(t * 0.00013);
-      if (fall) {
-        ctx.shadowColor = 'rgba(255,232,72,.72)';
-        ctx.shadowBlur = 16;
-      }
+      ctx.shadowColor = winter ? 'rgba(0,110,255,.98)' : spring ? 'rgba(3,92,60,.76)' : fall ? 'rgba(73,19,35,.82)' : 'rgba(255,255,255,1)';
+      ctx.shadowBlur = winter ? 42 : spring ? 18 : fall ? 16 : 104;
       for (let i = 0; i < 5; i += 1) {
         ctx.beginPath();
-        ctx.strokeStyle = fall ? `rgba(255,238,72,${0.54 - i * 0.062})` : `rgba(34,211,238,${0.22 - i * 0.032})`;
-        ctx.lineWidth = fall ? 1.55 : 1;
+        ctx.strokeStyle = winter ? `rgba(0,110,255,${0.9 - i * 0.065})` : spring ? `rgba(3,92,60,${0.56 - i * 0.06})` : fall ? `rgba(73,19,35,${0.62 - i * 0.064})` : `rgba(255,255,255,${1 - i * 0.032})`;
+        ctx.lineWidth = fall || spring || winter ? 1.65 : 3.9;
         ctx.arc(0, 0, 90 + i * 48, Math.PI * 0.08, Math.PI * (1.65 - i * 0.05));
         ctx.stroke();
       }
@@ -383,8 +386,8 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
         ctx.beginPath();
         ctx.moveTo(132, 0);
         ctx.lineTo(170, 0);
-        ctx.strokeStyle = fall ? 'rgba(255,238,72,.42)' : 'rgba(34,211,238,.14)';
-        ctx.lineWidth = fall ? 1.3 : 1;
+        ctx.strokeStyle = winter ? 'rgba(0,110,255,.86)' : spring ? 'rgba(2,71,49,.46)' : fall ? 'rgba(43,12,24,.5)' : 'rgba(255,255,255,1)';
+        ctx.lineWidth = fall || spring || winter ? 1.45 : 2.8;
         ctx.stroke();
       }
       ctx.restore();
@@ -392,17 +395,27 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
 
     function drawPortraitLayerMask() {
       const fall = refs.current.fallTheme;
+      const spring = refs.current.springTheme;
+      const winter = refs.current.winterTheme;
       const maskX = width * 0.82;
       const maskY = height * 0.22;
       const mask = ctx.createRadialGradient(maskX, maskY, 0, maskX, maskY, Math.max(width, height) * 0.46);
-      if (fall) {
+      if (winter) {
+        mask.addColorStop(0, 'rgba(248,253,255,.68)');
+        mask.addColorStop(0.42, 'rgba(189,238,255,.34)');
+        mask.addColorStop(0.78, 'rgba(255,255,255,.1)');
+      } else if (spring) {
+        mask.addColorStop(0, 'rgba(237,253,247,.64)');
+        mask.addColorStop(0.42, 'rgba(112,201,232,.34)');
+        mask.addColorStop(0.78, 'rgba(17,119,86,.1)');
+      } else if (fall) {
         mask.addColorStop(0, 'rgba(247,211,157,.72)');
         mask.addColorStop(0.42, 'rgba(247,211,157,.42)');
         mask.addColorStop(0.78, 'rgba(247,211,157,.12)');
       } else {
-        mask.addColorStop(0, 'rgba(2,7,13,.68)');
-        mask.addColorStop(0.42, 'rgba(2,7,13,.38)');
-        mask.addColorStop(0.78, 'rgba(2,7,13,.08)');
+        mask.addColorStop(0, 'rgba(0,0,0,.98)');
+        mask.addColorStop(0.5, 'rgba(0,0,0,.88)');
+        mask.addColorStop(0.8, 'rgba(10,10,10,.46)');
       }
       mask.addColorStop(1, 'rgba(2,7,13,0)');
       ctx.save();
@@ -437,14 +450,22 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
 
     function drawMountains(t) {
       const pointer = pointerRef.current;
-      const layers = refs.current.fallTheme ? [
+      const layers = refs.current.winterTheme ? [
+        [height * 0.48, 130, '#dff7ff', 0.48, 0.5],
+        [height * 0.58, 96, '#9ed8f2', 0.7, 1.1],
+        [height * 0.67, 72, '#5a96b8', 0.9, 1.7],
+      ] : refs.current.springTheme ? [
+        [height * 0.48, 130, '#70c9e8', 0.46, 0.5],
+        [height * 0.58, 96, '#2fb986', 0.68, 1.1],
+        [height * 0.67, 72, '#0b5948', 0.92, 1.7],
+      ] : refs.current.fallTheme ? [
         [height * 0.48, 130, '#f47c23', 0.58, 0.5],
         [height * 0.58, 96, '#a33a31', 0.76, 1.1],
         [height * 0.67, 72, '#491323', 0.96, 1.7],
       ] : [
-        [height * 0.48, 130, '#12354b', 0.5, 0.5],
-        [height * 0.58, 96, '#0b2639', 0.75, 1.1],
-        [height * 0.67, 72, '#061724', 0.94, 1.7],
+        [height * 0.48, 130, '#4a4a4a', 0.58, 0.5],
+        [height * 0.58, 96, '#2a2a2a', 0.78, 1.1],
+        [height * 0.67, 72, '#080808', 0.95, 1.7],
       ];
       layers.forEach(([base, amp, color, alpha, mult]) => {
         ctx.beginPath();
@@ -492,9 +513,12 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
       const x0 = width * 0.13;
       const x1 = width * 0.87;
       ctx.save();
-      ctx.globalAlpha = 0.55;
-      ctx.strokeStyle = 'rgba(34,211,238,.22)';
-      ctx.lineWidth = 2;
+      const fall = refs.current.fallTheme;
+      const spring = refs.current.springTheme;
+      const winter = refs.current.winterTheme;
+      ctx.globalAlpha = spring || fall || winter ? 0.55 : 1;
+      ctx.strokeStyle = winter ? 'rgba(0,110,255,.68)' : spring ? 'rgba(3,92,60,.42)' : fall ? 'rgba(73,19,35,.42)' : 'rgba(255,255,255,.94)';
+      ctx.lineWidth = spring || fall || winter ? 2.2 : 3.8;
       ctx.setLineDash([9, 18]);
       ctx.beginPath();
       ctx.moveTo(x0, y);
@@ -508,12 +532,21 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
         const yy = y + Math.sin(p * Math.PI * 3 + t * 0.0008) * 22;
         const active = index === refs.current.activeSector;
         ctx.beginPath();
-        ctx.fillStyle = active ? 'rgba(251,191,36,.88)' : 'rgba(34,211,238,.34)';
-        ctx.arc(x, yy, active ? 7 : 4, 0, Math.PI * 2);
+        ctx.fillStyle = active
+          ? winter ? 'rgba(0,110,255,1)' : spring ? 'rgba(3,92,60,.94)' : fall ? 'rgba(73,19,35,.94)' : 'rgba(255,255,255,1)'
+          : winter ? 'rgba(0,110,255,.68)' : spring ? 'rgba(3,92,60,.42)' : fall ? 'rgba(73,19,35,.38)' : 'rgba(255,255,255,.94)';
+        if (!spring && !fall && !winter) ctx.fillStyle = active ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,.94)';
+        ctx.arc(x, yy, !spring && !fall && !winter ? (active ? 10.5 : 7) : (active ? 8.5 : 5.5), 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.strokeStyle = active ? 'rgba(251,191,36,.42)' : 'rgba(34,211,238,.18)';
-        ctx.arc(x, yy, active ? 28 + Math.sin(t * 0.004) * 3 : 16, 0, Math.PI * 2);
+        ctx.strokeStyle = active
+          ? winter ? 'rgba(0,110,255,.84)' : spring ? 'rgba(3,92,60,.58)' : fall ? 'rgba(73,19,35,.56)' : 'rgba(255,255,255,.72)'
+          : winter ? 'rgba(0,110,255,.42)' : spring ? 'rgba(3,92,60,.25)' : fall ? 'rgba(73,19,35,.22)' : 'rgba(255,255,255,.56)';
+        if (!spring && !fall && !winter) {
+          ctx.strokeStyle = active ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,.76)';
+          ctx.lineWidth = active ? 3.2 : 2.2;
+        }
+        ctx.arc(x, yy, !spring && !fall && !winter ? (active ? 42 + Math.sin(t * 0.004) * 5 : 24) : (active ? 34 + Math.sin(t * 0.004) * 4 : 19), 0, Math.PI * 2);
         ctx.stroke();
       });
       ctx.restore();
@@ -527,14 +560,16 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
       const clear = kind === 'clear';
       const heavy = kind === 'heavy-rain' || kind === 'heavy-snow' || kind === 'storm';
       const fall = refs.current.fallTheme;
+      const spring = refs.current.springTheme;
+      const winter = refs.current.winterTheme;
       ctx.save();
       ctx.globalCompositeOperation = fog ? 'source-over' : 'lighter';
       if (kind === 'storm') {
         const flash = Math.max(0, Math.sin(performance.now() * 0.006) - 0.985) * 8;
         if (flash > 0) {
-          ctx.fillStyle = fall ? `rgba(255,230,132,${flash * 0.18})` : `rgba(190,235,255,${flash * 0.2})`;
+          ctx.fillStyle = winter ? `rgba(255,255,255,${flash * 0.24})` : spring ? `rgba(236,255,247,${flash * 0.2})` : fall ? `rgba(255,230,132,${flash * 0.18})` : `rgba(190,235,255,${flash * 0.2})`;
           ctx.fillRect(0, 0, width, height);
-          ctx.strokeStyle = fall ? `rgba(255,238,72,${flash * 0.5})` : `rgba(190,235,255,${flash * 0.55})`;
+          ctx.strokeStyle = winter ? `rgba(0,110,255,${flash * 0.62})` : spring ? `rgba(184,245,95,${flash * 0.52})` : fall ? `rgba(255,238,72,${flash * 0.5})` : `rgba(190,235,255,${flash * 0.55})`;
           ctx.lineWidth = 2;
           ctx.beginPath();
           const lx = width * (0.54 + Math.sin(performance.now() * 0.0017) * 0.2);
@@ -558,7 +593,7 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
         if (fog) {
           const cloudAlpha = p.a * (kind === 'cloud' ? 0.72 : 1);
           const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
-          grd.addColorStop(0, fall ? `rgba(255,228,180,${cloudAlpha})` : `rgba(210,230,238,${cloudAlpha})`);
+          grd.addColorStop(0, winter ? `rgba(255,255,255,${cloudAlpha})` : spring ? `rgba(236,255,247,${cloudAlpha})` : fall ? `rgba(255,228,180,${cloudAlpha})` : `rgba(210,230,238,${cloudAlpha})`);
           grd.addColorStop(1, 'rgba(210,230,238,0)');
           ctx.fillStyle = grd;
           ctx.beginPath();
@@ -567,16 +602,16 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
         } else if (clear) {
           const sparkle = p.a * (0.45 + Math.sin(p.life * 2 + p.pulse) * 0.25);
           ctx.beginPath();
-          ctx.fillStyle = fall ? `rgba(255,232,96,${sparkle})` : `rgba(103,232,249,${sparkle})`;
+          ctx.fillStyle = winter ? `rgba(0,110,255,${sparkle})` : spring ? `rgba(184,245,95,${sparkle})` : fall ? `rgba(255,232,96,${sparkle})` : `rgba(103,232,249,${sparkle})`;
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
         } else if (snow) {
           ctx.beginPath();
-          ctx.fillStyle = fall ? `rgba(232,211,168,${p.a})` : `rgba(226,251,255,${p.a})`;
+          ctx.fillStyle = winter ? `rgba(255,255,255,${p.a})` : spring ? `rgba(246,255,255,${p.a})` : fall ? `rgba(232,211,168,${p.a})` : `rgba(226,251,255,${p.a})`;
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          ctx.strokeStyle = fall ? `rgba(198,132,67,${p.a})` : `rgba(78,220,255,${p.a})`;
+          ctx.strokeStyle = winter ? `rgba(0,110,255,${p.a})` : spring ? `rgba(80,210,238,${p.a})` : fall ? `rgba(198,132,67,${p.a})` : `rgba(78,220,255,${p.a})`;
           ctx.lineWidth = kind === 'drizzle' ? Math.max(0.7, p.r * 0.7) : p.r;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
@@ -1068,7 +1103,7 @@ function WorldForeground({ mode, weather, weatherPower, scrollProgress }) {
 
   return <canvas ref={canvasRef} className="world-foreground" aria-hidden="true" />;
 }
-function FloatingHud({ weather, setWeather, weatherPower, setWeatherPower, activeSector, liveWeather, timeProfile, weatherStatus, weatherError, onUseLiveWeather, fallTheme, setFallTheme }) {
+function FloatingHud({ weather, setWeather, weatherPower, setWeatherPower, activeSector, liveWeather, timeProfile, weatherStatus, weatherError, onUseLiveWeather, fallTheme, setFallTheme, springTheme, setSpringTheme, winterTheme, setWinterTheme }) {
   const weatherLabel = liveWeather?.condition || `Manual ${weatherNames[weather] || weather}`;
   const nextManualWeather = () => {
     const index = manualWeatherCycle.indexOf(weather);
@@ -1078,13 +1113,17 @@ function FloatingHud({ weather, setWeather, weatherPower, setWeatherPower, activ
   return (
     <aside className="floating-hud" aria-label="Exploration controls">
       <div className="hud-status">
-        <span>Explorer layer</span>
+        <span>Explorer HUD</span>
         <strong>{sectors[activeSector]?.label || 'Signal'} sector</strong>
         <small>{timeProfile.label} · {weatherLabel}</small>
       </div>
       <div className="hud-row">
-        <button className={fallTheme ? 'active fall-weather-button' : 'fall-weather-button'} onClick={() => setFallTheme((value) => !value)}>Fall Weather</button>
-        <button className={weather === 'snow' ? 'active' : ''} onClick={nextManualWeather}>Weather: {weatherNames[weather] || weather}</button>
+        <button className={fallTheme ? 'active fall-weather-button' : 'fall-weather-button'} onClick={() => { setFallTheme((value) => !value); setSpringTheme(false); setWinterTheme(false); }}>Fall</button>
+        <button className={springTheme ? 'active spring-weather-button' : 'spring-weather-button'} onClick={() => { setSpringTheme((value) => !value); setFallTheme(false); setWinterTheme(false); }}>Spring</button>
+        <button className={winterTheme ? 'active winter-weather-button' : 'winter-weather-button'} onClick={() => { setWinterTheme((value) => !value); setFallTheme(false); setSpringTheme(false); }}>Winter</button>
+      </div>
+      <div className="hud-row">
+        <button className={weather === 'snow' ? 'active' : ''} onClick={nextManualWeather}>{weatherNames[weather] || weather}</button>
       </div>
       <div className="hud-row">
         <button onClick={onUseLiveWeather}>{weatherStatus === 'loading' ? 'Syncing…' : 'Live local weather'}</button>
@@ -1170,6 +1209,8 @@ export default function App() {
   const [weather, setWeather] = useState('snow');
   const [weatherPower, setWeatherPower] = useState(1);
   const [fallTheme, setFallTheme] = useState(false);
+  const [springTheme, setSpringTheme] = useState(false);
+  const [winterTheme, setWinterTheme] = useState(false);
   const [weatherStatus, setWeatherStatus] = useState('idle');
   const [weatherError, setWeatherError] = useState('');
   const [liveWeather, setLiveWeather] = useState(null);
@@ -1235,13 +1276,13 @@ export default function App() {
   }
 
   return (
-    <main className={`site ${mode} ${activeTimeProfile.key} ${fallTheme ? 'fall-theme' : ''}`}>
+    <main className={`site ${mode} ${activeTimeProfile.key} ${fallTheme ? 'fall-theme' : ''} ${springTheme ? 'spring-theme' : ''} ${winterTheme ? 'winter-theme' : ''}`}>
       <style>{styles}</style>
       <style>{portraitStyles}</style>
       <style>{typeStyles}</style>
       <style>{foldStyles}</style>
       <style>{layoutRestoreStyles}</style>
-      <WorldBackdrop mode={mode} weather={weather} weatherPower={weatherPower} activeSector={activeSector} scrollProgress={scrollProgress} timeProfile={activeTimeProfile} fallTheme={fallTheme} />
+      <WorldBackdrop mode={mode} weather={weather} weatherPower={weatherPower} activeSector={activeSector} scrollProgress={scrollProgress} timeProfile={activeTimeProfile} fallTheme={fallTheme} springTheme={springTheme} winterTheme={winterTheme} />
       <div className="portrait-background" aria-hidden="true">
         <img src={backgroundPortrait} alt="" />
       </div>
@@ -1254,7 +1295,7 @@ export default function App() {
       </header>
 
       <MissionMap activeSector={activeSector} />
-      <FloatingHud weather={weather} setWeather={setWeather} weatherPower={weatherPower} setWeatherPower={setWeatherPower} activeSector={activeSector} liveWeather={liveWeather} timeProfile={activeTimeProfile} weatherStatus={weatherStatus} weatherError={weatherError} onUseLiveWeather={useLiveWeather} fallTheme={fallTheme} setFallTheme={setFallTheme} />
+      <FloatingHud weather={weather} setWeather={setWeather} weatherPower={weatherPower} setWeatherPower={setWeatherPower} activeSector={activeSector} liveWeather={liveWeather} timeProfile={activeTimeProfile} weatherStatus={weatherStatus} weatherError={weatherError} onUseLiveWeather={useLiveWeather} fallTheme={fallTheme} setFallTheme={setFallTheme} springTheme={springTheme} setSpringTheme={setSpringTheme} winterTheme={winterTheme} setWinterTheme={setWinterTheme} />
 
       <section id="hero" className="sector hero-sector">
         <div className="hero-copy">
@@ -1428,6 +1469,145 @@ li{
   font-weight:500;
   letter-spacing:.008em;
 }
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme){
+  --bg:#000;
+  --panel:rgba(14,14,14,.88);
+  --line:rgba(255,255,255,.18);
+  --cyan:#f5f5f5;
+  --cyan2:#fff;
+  --gold:#d9d9d9;
+  --text:#f4f4f4;
+  --muted:#a6a6a6;
+  background:
+    radial-gradient(circle at 76% 16%,rgba(255,255,255,.18),transparent 30rem),
+    radial-gradient(circle at 18% 82%,rgba(96,96,96,.22),transparent 32rem),
+    radial-gradient(circle at 50% 22%,rgba(255,255,255,.06),transparent 38rem),
+    #000;
+  color:var(--text);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme):after{
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.97) 0%,rgba(18,18,18,.7) 42%,rgba(42,42,42,.22) 100%),
+    linear-gradient(to bottom,rgba(255,255,255,.08),rgba(8,8,8,.06) 40%,rgba(0,0,0,.96));
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .ambient-grid{
+  opacity:.72;
+  background:
+    linear-gradient(rgba(255,255,255,.034) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.026) 1px,transparent 1px),
+    radial-gradient(circle at 80% 20%,rgba(255,255,255,.18),transparent 29rem);
+  background-size:72px 72px,72px 72px,auto;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .portrait-background{
+  opacity:.8;
+  filter:contrast(1.12) brightness(1.02) grayscale(.1);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .panel-card,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .floating-hud,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .mission-map,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .nav-shell{
+  border-color:rgba(255,255,255,.16);
+  background:linear-gradient(145deg,rgba(24,24,24,.88),rgba(2,2,2,.86));
+  box-shadow:0 28px 90px rgba(0,0,0,.66),0 0 34px rgba(255,255,255,.08);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .panel-card:before{
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,10%),rgba(255,255,255,.12),transparent 44%);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .world-foreground{
+  filter:drop-shadow(0 0 24px rgba(255,255,255,.24));
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hero-copy h1,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hero-copy h2,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .section-heading h2,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .project-card h3,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .footer-shell h2{
+  color:#f2fbf8;
+  background:none;
+  -webkit-text-fill-color:currentColor;
+  text-shadow:0 2px 10px rgba(0,0,0,.7),0 0 24px rgba(255,255,255,.14);
+  filter:none;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hero-copy h2 span,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .eyebrow,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .shortcut-card span,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .project-topline em,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hud-status span,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .mission-map strong,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .shortcut-card em,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .brand strong,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .brand small{
+  color:#d9d9d9;
+  text-shadow:0 0 16px rgba(255,255,255,.16);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .project-topline span,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .pipeline span,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .experience-card>p:first-child,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .experience-card h4,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .flow-node em,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .project-card li:before,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .pipeline article:after{
+  color:#f2fbf8;
+  border-color:rgba(255,255,255,.28);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hero-lede,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .section-heading p,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .project-card p,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .experience-card p,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .pipeline p,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .project-card li,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hud-note,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hud-status small{
+  color:#d2d2d2;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .nav-cta,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hero-actions a,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hud-row button,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .chip,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .contact-links a,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .metrics-row span,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .mission-map a{
+  border-color:rgba(255,255,255,.18);
+  background:rgba(18,18,18,.78);
+  color:#f2fbf8;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .project-visual,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .pipeline article,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .flow-node span{
+  border-color:rgba(255,255,255,.2);
+  background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.12),transparent 55%),rgba(0,0,0,.26);
+  color:#f2fbf8;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .chip,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .contact-links a{
+  border-color:rgba(255,255,255,.2);
+  background:rgba(18,18,18,.78);
+  color:#f2fbf8;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .card-glow{
+  background:radial-gradient(circle,rgba(255,255,255,.14),transparent 62%);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hero-actions .primary-action,
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .hud-row button.active{
+  border-color:rgba(255,255,255,.76);
+  background:linear-gradient(135deg,#fff,#d8d8d8 54%,#4f4f4f);
+  color:#050505;
+  box-shadow:0 0 30px rgba(255,255,255,.28),0 0 18px rgba(255,255,255,.12);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .mission-map a span{
+  border-color:rgba(255,255,255,.92);
+  color:#fff;
+  background:rgba(255,255,255,.24);
+  box-shadow:0 0 44px rgba(255,255,255,.68), inset 0 0 22px rgba(255,255,255,.28);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .mission-map a.active span{
+  color:#050505;
+  background:#fff;
+  border-color:rgba(255,255,255,1);
+  box-shadow:0 0 68px rgba(255,255,255,1),0 0 0 4px rgba(255,255,255,.34);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .mission-map a.active em{
+  color:#fff;
+}
 .site.fall-theme{
   --bg:#16090d;
   --panel:rgba(55,24,25,.78);
@@ -1496,20 +1676,20 @@ li{
   color:#e8d3a8;
 }
 .site.fall-theme .mission-map a span{
-  border-color:rgba(255,238,72,.52);
-  color:#ffe84f;
-  background:rgba(255,232,72,.12);
-  box-shadow:0 0 18px rgba(255,232,72,.3), inset 0 0 14px rgba(255,232,72,.14);
+  border-color:rgba(73,19,35,.72);
+  color:#e8d3a8;
+  background:rgba(73,19,35,.2);
+  box-shadow:0 0 18px rgba(73,19,35,.42), inset 0 0 14px rgba(73,19,35,.18);
 }
 .site.fall-theme .mission-map a.active span{
-  border-color:rgba(255,238,72,.95);
-  color:#2b1218;
-  background:#ffe84f;
-  box-shadow:0 0 28px rgba(255,232,72,.7), 0 0 0 2px rgba(255,232,72,.18);
+  border-color:rgba(73,19,35,.98);
+  color:#fff1d2;
+  background:#491323;
+  box-shadow:0 0 30px rgba(73,19,35,.8), 0 0 0 2px rgba(73,19,35,.24);
 }
 .site.fall-theme .mission-map a.active{
-  border-color:rgba(255,238,72,.48);
-  background:rgba(255,232,72,.14);
+  border-color:rgba(73,19,35,.58);
+  background:rgba(73,19,35,.18);
 }
 .site.fall-theme .section-heading p,
 .site.fall-theme .hero-lede,
@@ -1517,6 +1697,221 @@ li{
 .site.fall-theme .experience-card p:last-child,
 .site.fall-theme .pipeline p{
   color:#eadfc8;
+}
+.site.spring-theme{
+  --bg:#071d1b;
+  --panel:rgba(10,45,39,.78);
+  --line:rgba(190,255,236,.24);
+  --cyan:#50d2ee;
+  --cyan2:#ecfff7;
+  --gold:#b8f55f;
+  --text:#f6fffd;
+  --muted:#bfe7dc;
+  background:#071d1b;
+  color:var(--text);
+}
+.site.spring-theme:after{
+  background:
+    linear-gradient(90deg,rgba(5,30,36,.76) 0%,rgba(17,119,86,.28) 44%,rgba(112,201,232,.1) 100%),
+    linear-gradient(to bottom,rgba(237,253,247,.08),rgba(47,185,134,.08) 42%,rgba(7,29,27,.88));
+}
+.site.spring-theme .ambient-grid{
+  opacity:.62;
+  background:
+    linear-gradient(rgba(184,245,95,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(80,210,238,.035) 1px,transparent 1px),
+    radial-gradient(circle at 78% 18%,rgba(184,245,95,.22),transparent 30rem);
+  background-size:72px 72px,72px 72px,auto;
+}
+.site.spring-theme .foreground-fade{
+  background:linear-gradient(to bottom,rgba(7,29,27,0) 0%,rgba(7,29,27,.1) 42%,rgba(10,69,57,.38) 74%,rgba(7,29,27,.94) 100%);
+}
+.site.spring-theme .portrait-background{
+  opacity:0;
+  visibility:hidden;
+}
+.site.spring-theme .panel-card,
+.site.spring-theme .floating-hud,
+.site.spring-theme .mission-map,
+.site.spring-theme .nav-shell{
+  border-color:rgba(190,255,236,.24);
+  background:linear-gradient(145deg,rgba(12,74,63,.78),rgba(5,28,34,.74));
+  box-shadow:0 28px 90px rgba(3,24,25,.42);
+}
+.site.spring-theme .nav-cta,
+.site.spring-theme .hero-actions a,
+.site.spring-theme .hud-row button,
+.site.spring-theme .chip,
+.site.spring-theme .contact-links a,
+.site.spring-theme .metrics-row span,
+.site.spring-theme .mission-map a{
+  border-color:rgba(190,255,236,.24);
+  background:rgba(8,67,61,.56);
+  color:#ecfff7;
+}
+.site.spring-theme .hud-row button.active,
+.site.spring-theme .spring-weather-button.active,
+.site.spring-theme .hero-actions .primary-action{
+  border-color:rgba(184,245,95,.76);
+  background:linear-gradient(135deg,#ecfff7,#b8f55f 48%,#50d2ee);
+  color:#06251f;
+  box-shadow:0 0 30px rgba(184,245,95,.32);
+}
+.site.spring-theme .eyebrow,
+.site.spring-theme .shortcut-card span,
+.site.spring-theme .project-topline em,
+.site.spring-theme .hud-status span,
+.site.spring-theme .mission-map a.active em,
+.site.spring-theme .mission-map a.active span{
+  color:#b8f55f;
+}
+.site.spring-theme .mission-map a span{
+  border-color:rgba(3,92,60,.64);
+  color:#0b6b4f;
+  background:rgba(3,92,60,.12);
+  box-shadow:0 0 18px rgba(3,92,60,.32), inset 0 0 14px rgba(3,92,60,.14);
+}
+.site.spring-theme .mission-map a.active span{
+  border-color:rgba(236,255,247,.95);
+  color:#ecfff7;
+  background:#035c3c;
+  box-shadow:0 0 28px rgba(3,92,60,.72), 0 0 0 2px rgba(236,255,247,.2);
+}
+.site.spring-theme .mission-map a.active{
+  border-color:rgba(3,92,60,.52);
+  background:rgba(3,92,60,.14);
+}
+.site.spring-theme .section-heading p,
+.site.spring-theme .hero-lede,
+.site.spring-theme .project-card p,
+.site.spring-theme .experience-card p:last-child,
+.site.spring-theme .pipeline p{
+  color:#d9f5ec;
+}
+.site.winter-theme{
+  --bg:#e8f7ff;
+  --panel:rgba(232,247,255,.78);
+  --line:rgba(91,161,199,.28);
+  --cyan:#006eff;
+  --cyan2:#0052c7;
+  --gold:#006eff;
+  --text:#050505;
+  --muted:#050505;
+  background:#e8f7ff;
+  color:var(--text);
+}
+.site.winter-theme:after{
+  background:
+    linear-gradient(90deg,rgba(248,253,255,.62) 0%,rgba(189,238,255,.22) 48%,rgba(111,190,230,.12) 100%),
+    linear-gradient(to bottom,rgba(255,255,255,.22),rgba(189,238,255,.1) 44%,rgba(181,226,247,.72));
+}
+.site.winter-theme .ambient-grid{
+  opacity:.56;
+  background:
+    linear-gradient(rgba(91,161,199,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px),
+    radial-gradient(circle at 78% 18%,rgba(255,255,255,.54),transparent 30rem);
+  background-size:72px 72px,72px 72px,auto;
+}
+.site.winter-theme .foreground-fade{
+  background:linear-gradient(to bottom,rgba(232,247,255,0) 0%,rgba(232,247,255,.14) 42%,rgba(181,226,247,.42) 74%,rgba(210,239,252,.94) 100%);
+}
+.site.winter-theme .portrait-background{
+  opacity:0;
+  visibility:hidden;
+}
+.site.winter-theme .panel-card,
+.site.winter-theme .floating-hud,
+.site.winter-theme .mission-map,
+.site.winter-theme .nav-shell{
+  border-color:rgba(91,161,199,.28);
+  background:linear-gradient(145deg,rgba(248,253,255,.82),rgba(177,225,247,.72));
+  box-shadow:0 28px 90px rgba(91,161,199,.22),0 0 34px rgba(255,255,255,.32);
+}
+.site.winter-theme .nav-cta,
+.site.winter-theme .hero-actions a,
+.site.winter-theme .hud-row button,
+.site.winter-theme .chip,
+.site.winter-theme .contact-links a,
+.site.winter-theme .metrics-row span,
+.site.winter-theme .mission-map a{
+  border-color:rgba(91,161,199,.28);
+  background:rgba(248,253,255,.64);
+  color:#050505;
+}
+.site.winter-theme .hud-row button.active,
+.site.winter-theme .winter-weather-button.active,
+.site.winter-theme .hero-actions .primary-action{
+  border-color:rgba(0,110,255,.9);
+  background:linear-gradient(135deg,#fff,#dff7ff 42%,#006eff);
+  color:#050505;
+  box-shadow:0 0 34px rgba(0,110,255,.58);
+}
+.site.winter-theme .eyebrow,
+.site.winter-theme .shortcut-card span,
+.site.winter-theme .project-topline em,
+.site.winter-theme .hud-status span,
+.site.winter-theme .mission-map strong,
+.site.winter-theme .mission-map a.active em,
+.site.winter-theme .mission-map a.active span{
+  color:#050505;
+}
+.site.winter-theme .hero-copy h1,
+.site.winter-theme .hero-copy h2,
+.site.winter-theme .hero-copy h2 span,
+.site.winter-theme .section-heading h2,
+.site.winter-theme .project-card h3,
+.site.winter-theme .footer-shell h2,
+.site.winter-theme .nav-shell nav,
+.site.winter-theme .nav-shell nav a,
+.site.winter-theme .brand strong,
+.site.winter-theme .brand small,
+.site.winter-theme .metrics-row small,
+.site.winter-theme .stack-grid h3,
+.site.winter-theme .experience-card h4,
+.site.winter-theme .pipeline span,
+.site.winter-theme .project-topline span,
+.site.winter-theme .shortcut-card strong,
+.site.winter-theme .shortcut-card em,
+.site.winter-theme .project-card li,
+.site.winter-theme .project-card ul,
+.site.winter-theme .chip,
+.site.winter-theme .flow-node span,
+.site.winter-theme .flow-node em,
+.site.winter-theme .project-visual,
+.site.winter-theme .experience-card>p:first-child,
+.site.winter-theme .footer-shell p,
+.site.winter-theme .contact-links a{
+  color:#050505;
+}
+.site.winter-theme .mission-map a span{
+  border-color:rgba(0,110,255,.88);
+  color:#050505;
+  background:rgba(255,255,255,.52);
+  box-shadow:0 0 22px rgba(0,110,255,.58), inset 0 0 14px rgba(255,255,255,.48);
+}
+.site.winter-theme .mission-map a.active span{
+  border-color:rgba(0,110,255,1);
+  color:#fff;
+  background:#006eff;
+  box-shadow:0 0 38px rgba(0,110,255,.92),0 0 0 2px rgba(255,255,255,.72);
+}
+.site.winter-theme .mission-map a.active{
+  border-color:rgba(0,110,255,.78);
+  background:rgba(255,255,255,.7);
+}
+.site.winter-theme .section-heading p,
+.site.winter-theme .hero-lede,
+.site.winter-theme .project-card p,
+.site.winter-theme .experience-card p:last-child,
+.site.winter-theme .pipeline p,
+.site.winter-theme .hud-status small,
+.site.winter-theme .hud-note,
+.site.winter-theme .brand small,
+.site.winter-theme .mission-map a em,
+.site.winter-theme .metrics-row small,
+.site.winter-theme .project-card li{
+  color:#050505;
 }
 @media (max-width:760px){
   :root{
@@ -1543,6 +1938,11 @@ const foldStyles = `
   box-shadow:-6px 6px 18px rgba(0,0,0,.24);
   pointer-events:none;
   z-index:4;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) :is(.panel-card,.nav-shell,.floating-hud,.mission-map,.project-card,.project-visual,.architecture-panel,.experience-card,.stack-grid article,.footer-shell)::after{
+  background:linear-gradient(135deg,rgba(255,255,255,.32),rgba(118,118,118,.24) 42%,rgba(2,2,2,.6) 100%);
+  border-left:1px solid rgba(255,255,255,.26);
+  border-bottom:1px solid rgba(255,255,255,.2);
 }
 :is(.nav-cta,.hero-actions a,.metrics-row span,.hud-row button,.mission-map a,.mission-map a span,.shortcut-card,.project-topline span,.flow-node span,.chip,.contact-links a){
   clip-path:none!important;
@@ -1574,12 +1974,15 @@ const layoutRestoreStyles = `
   bottom:18px!important;
   left:auto!important;
   top:auto!important;
-  width:min(280px,calc(100% - 36px))!important;
+  width:min(340px,calc(100% - 36px))!important;
   height:auto!important;
   margin:0!important;
   z-index:45!important;
   transform:scale(var(--hud-fit-scale,1))!important;
   transform-origin:right bottom!important;
+}
+.floating-hud .hud-note{
+  white-space:nowrap!important;
 }
 .mission-map{
   position:fixed!important;
@@ -1611,6 +2014,10 @@ const layoutRestoreStyles = `
   overflow:hidden!important;
   border:1px solid rgba(133,239,255,.55)!important;
   box-shadow:0 0 0 2px rgba(4,12,20,.8),0 0 18px rgba(34,211,238,.18)!important;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .profile-avatar{
+  border-color:rgba(255,255,255,.62)!important;
+  box-shadow:0 0 0 2px rgba(0,0,0,.82),0 0 20px rgba(255,255,255,.22)!important;
 }
 .nav-shell,
 .brand{
@@ -1689,3 +2096,4 @@ const layoutRestoreStyles = `
   }
 }
 `;
+
