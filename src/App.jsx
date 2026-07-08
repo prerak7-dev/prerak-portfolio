@@ -92,12 +92,28 @@ const weatherNames = {
   drizzle: 'Drizzle',
   rain: 'Rain',
   'heavy-rain': 'Heavy rain',
-  storm: 'Storm',
+  storm: 'Lightning',
   snow: 'Snow',
   'heavy-snow': 'Heavy snow',
 };
 
-const manualWeatherCycle = ['snow', 'rain', 'cloud', 'clear'];
+const manualWeatherCycle = ['snow', 'rain', 'storm', 'cloud', 'clear'];
+
+async function resolveWeatherLocation(latitude, longitude, fallbackTimezone) {
+  const coordinateLabel = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+  try {
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Location lookup failed');
+    const data = await response.json();
+    const locality = data.locality || data.city || data.principalSubdivision;
+    const region = data.principalSubdivisionCode || data.principalSubdivision;
+    const country = data.countryCode || data.countryName;
+    return [locality, region, country].filter(Boolean).filter((value, index, values) => values.indexOf(value) === index).join(', ') || coordinateLabel;
+  } catch (error) {
+    return fallbackTimezone && fallbackTimezone !== 'auto' ? coordinateLabel : coordinateLabel;
+  }
+}
 
 function getTimeProfile(date = new Date()) {
   const hour = date.getHours() + date.getMinutes() / 60;
@@ -565,19 +581,58 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
       ctx.save();
       ctx.globalCompositeOperation = fog ? 'source-over' : 'lighter';
       if (kind === 'storm') {
-        const flash = Math.max(0, Math.sin(performance.now() * 0.006) - 0.985) * 8;
+        const now = performance.now();
+        const flash = Math.max(0, Math.sin(now * 0.006) - 0.91) * 6.8 + Math.max(0, Math.sin(now * 0.017 + 1.8) - 0.965) * 8;
         if (flash > 0) {
-          ctx.fillStyle = winter ? `rgba(255,255,255,${flash * 0.24})` : spring ? `rgba(236,255,247,${flash * 0.2})` : fall ? `rgba(255,230,132,${flash * 0.18})` : `rgba(190,235,255,${flash * 0.2})`;
+          const boltColor = winter ? '0,110,255' : spring ? '184,245,95' : fall ? '255,238,72' : '255,255,255';
+          ctx.fillStyle = winter ? `rgba(255,255,255,${flash * 0.16})` : spring ? `rgba(236,255,247,${flash * 0.14})` : fall ? `rgba(255,230,132,${flash * 0.14})` : `rgba(255,255,255,${flash * 0.18})`;
           ctx.fillRect(0, 0, width, height);
-          ctx.strokeStyle = winter ? `rgba(0,110,255,${flash * 0.62})` : spring ? `rgba(184,245,95,${flash * 0.52})` : fall ? `rgba(255,238,72,${flash * 0.5})` : `rgba(190,235,255,${flash * 0.55})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          const lx = width * (0.54 + Math.sin(performance.now() * 0.0017) * 0.2);
-          ctx.moveTo(lx, 0);
-          ctx.lineTo(lx - 34, height * 0.18);
-          ctx.lineTo(lx + 18, height * 0.33);
-          ctx.lineTo(lx - 28, height * 0.5);
-          ctx.stroke();
+          const boltSeed = Math.floor(now / 720);
+          const baseX = width * (0.28 + ((boltSeed * 37) % 46) / 100);
+          const sway = Math.sin(boltSeed * 12.9898) * 34;
+          const points = [{ x: baseX + sway, y: -20 }];
+          const segments = 8;
+          for (let i = 1; i <= segments; i += 1) {
+            const drift = Math.sin(boltSeed * 4.7 + i * 1.94) * 48 + Math.cos(now * 0.001 + i) * 12;
+            points.push({
+              x: baseX + sway * 0.4 + drift,
+              y: (height * 0.62 * i) / segments,
+            });
+          }
+          const drawBolt = (alpha, lineWidth, blur) => {
+            ctx.save();
+            ctx.shadowColor = `rgba(${boltColor},${alpha})`;
+            ctx.shadowBlur = blur;
+            ctx.strokeStyle = `rgba(${boltColor},${alpha})`;
+            ctx.lineWidth = lineWidth;
+            ctx.lineJoin = 'miter';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            points.forEach((point, index) => {
+              if (index === 0) ctx.moveTo(point.x, point.y);
+              else ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+            ctx.restore();
+          };
+          drawBolt(Math.min(1, flash * 0.56), 9, 34);
+          drawBolt(Math.min(1, flash * 0.86), 4.2, 18);
+          drawBolt(1, 1.35, 4);
+          for (let i = 2; i < points.length - 1; i += 2) {
+            const branchEndX = points[i].x + (i % 4 === 0 ? -1 : 1) * (46 + i * 8);
+            const branchEndY = points[i].y + 42 + Math.sin(boltSeed + i) * 18;
+            ctx.save();
+            ctx.shadowColor = `rgba(${boltColor},${Math.min(1, flash * 0.7)})`;
+            ctx.shadowBlur = 14;
+            ctx.strokeStyle = `rgba(${boltColor},${Math.min(1, flash * 0.72)})`;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(points[i].x, points[i].y);
+            ctx.lineTo((points[i].x + branchEndX) * 0.5 + Math.sin(i) * 16, (points[i].y + branchEndY) * 0.5);
+            ctx.lineTo(branchEndX, branchEndY);
+            ctx.stroke();
+            ctx.restore();
+          }
         }
       }
       particles.forEach((p) => {
@@ -611,7 +666,7 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          ctx.strokeStyle = winter ? `rgba(0,110,255,${p.a})` : spring ? `rgba(80,210,238,${p.a})` : fall ? `rgba(198,132,67,${p.a})` : `rgba(78,220,255,${p.a})`;
+          ctx.strokeStyle = winter ? `rgba(0,110,255,${p.a})` : spring ? `rgba(80,210,238,${p.a})` : fall ? `rgba(198,132,67,${p.a})` : `rgba(255,255,255,${p.a})`;
           ctx.lineWidth = kind === 'drizzle' ? Math.max(0.7, p.r * 0.7) : p.r;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
@@ -1252,12 +1307,13 @@ export default function App() {
         const data = await response.json();
         const current = data.current || {};
         const [condition, kind] = weatherCodes[current.weather_code] || ['Current weather', 'clear'];
+        const locationLabel = await resolveWeatherLocation(latitude, longitude, data.timezone);
         const next = {
           condition,
           kind,
           temp: current.temperature_2m ?? 0,
           wind: current.wind_speed_10m ?? 0,
-          location: data.timezone || 'local timezone',
+          location: locationLabel,
           code: current.weather_code,
         };
         const weatherTime = current.time ? getTimeProfile(new Date(current.time)) : null;
