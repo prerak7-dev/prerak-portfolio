@@ -156,6 +156,40 @@ function usePageProgress() {
   return progress;
 }
 
+function useBrowserZoomLock() {
+  useEffect(() => {
+    const update = () => {
+      const viewport = window.visualViewport || window;
+      const viewportWidth = viewport.width || window.innerWidth;
+      const viewportHeight = viewport.height || window.innerHeight;
+      const margin = 18;
+      const hud = document.querySelector('.floating-hud');
+      const map = document.querySelector('.mission-map');
+      const hudScale = hud
+        ? Math.min(1, (viewportWidth - margin * 2) / hud.offsetWidth, (viewportHeight - margin * 2) / hud.offsetHeight)
+        : 1;
+      const mapScale = map
+        ? Math.min(0.9, (viewportWidth - margin * 2) / map.offsetWidth, (viewportHeight - margin * 2) / map.offsetHeight)
+        : 0.9;
+      document.documentElement.style.setProperty('--hud-fit-scale', String(clamp(hudScale, 0.42, 1)));
+      document.documentElement.style.setProperty('--map-fit-scale', String(clamp(mapScale, 0.42, 0.9)));
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    window.visualViewport?.addEventListener('resize', update);
+    window.visualViewport?.addEventListener('scroll', update);
+    const timer = window.setInterval(update, 400);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+      window.visualViewport?.removeEventListener('resize', update);
+      window.visualViewport?.removeEventListener('scroll', update);
+      window.clearInterval(timer);
+    };
+  }, []);
+}
+
 function useActiveSector() {
   const [active, setActive] = useState(0);
   useEffect(() => {
@@ -1140,6 +1174,7 @@ export default function App() {
   const [weatherError, setWeatherError] = useState('');
   const [liveWeather, setLiveWeather] = useState(null);
   useTiltCard();
+  useBrowserZoomLock();
 
   useEffect(() => {
     const onKey = (event) => {
@@ -1328,6 +1363,9 @@ const typeStyles = `
 :root{
   --display-font:"Soria","Georgia","Times New Roman",serif;
   --body-font:"Soria","Georgia","Times New Roman",serif;
+  --hud-fit-scale:1;
+  --map-fit-scale:.9;
+  font-size:88.2%;
   font-family:var(--body-font);
 }
 body,
@@ -1480,6 +1518,11 @@ li{
 .site.fall-theme .pipeline p{
   color:#eadfc8;
 }
+@media (max-width:760px){
+  :root{
+    font-size:93.71%;
+  }
+}
 `;
 
 const foldStyles = `
@@ -1535,6 +1578,8 @@ const layoutRestoreStyles = `
   height:auto!important;
   margin:0!important;
   z-index:45!important;
+  transform:scale(var(--hud-fit-scale,1))!important;
+  transform-origin:right bottom!important;
 }
 .mission-map{
   position:fixed!important;
@@ -1543,7 +1588,7 @@ const layoutRestoreStyles = `
   right:auto!important;
   bottom:auto!important;
   width:auto!important;
-  transform:translateY(-50%) scale(.9)!important;
+  transform:translateY(-50%) scale(var(--map-fit-scale,.9))!important;
   transform-origin:left center!important;
   display:grid!important;
   gap:8px!important;
@@ -1628,7 +1673,6 @@ const layoutRestoreStyles = `
   clip-path:none!important;
 }
 @media (max-width:1180px){
-  .mission-map{display:none!important}
   .shortcut-rail{
     width:min(100% - 44px,1040px)!important;
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
