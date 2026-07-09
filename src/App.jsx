@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import backgroundPortrait from '../content/background-portrait.jpg';
+import loreGuidePersona from '../content/lore-guide-persona.png';
 
 const baseUrl = import.meta.env.BASE_URL;
 
@@ -16,11 +18,8 @@ const profile = {
 };
 
 const sectors = [
-  { id: 'hero', label: 'Signal', title: 'Backend + Game Tech', note: 'positioning' },
-  { id: 'projects', label: 'Projects', title: 'Aegis Systems', note: 'pipeline + plugin' },
-  { id: 'architecture', label: 'Architecture', title: 'Mocap → JSON → Unreal', note: 'service flow' },
-  { id: 'experience', label: 'Experience', title: 'Production Engineering', note: 'professional history' },
-  { id: 'stack', label: 'Stack', title: 'Technical Depth', note: 'tools and platforms' },
+  { id: 'hero', label: 'Intro', title: 'Backend + Game Tech', note: 'positioning' },
+  { id: 'tab-content', label: 'Content', title: 'Tabbed Portfolio', note: 'selected view' },
   { id: 'contact', label: 'Contact', title: 'Next Step', note: 'links' },
 ];
 
@@ -70,6 +69,186 @@ const stackGroups = [
   ['Cloud & Delivery', ['AWS', 'S3', 'Cognito', 'IAM', 'Lambda', 'Docker', 'Git', 'CI/CD']],
   ['Game Tech', ['Unreal Engine C++', 'Anim Blueprints', 'Mocap', 'Data Assets', 'Editor Tools']],
   ['Data & DevOps', ['Kafka', 'Redis', 'SQL/PostgreSQL', 'MySQL', 'Logging', 'Monitoring']],
+];
+
+const professionalTimeline = [
+  {
+    meta: 'Jul 2021 - Apr 2024 / Des Plaines, IL',
+    title: 'Web Application Developer',
+    subtitle: 'Americaneagle.com',
+    body:
+      'Built and maintained enterprise Sitecore and headless web applications for insurance, nonprofit, medical/scientific, and data-sector clients across CMS integrations, cloud services, CI/CD deployments, reporting tools, and client delivery.',
+    bullets: [
+      'Worked across backend services, frontend integration, QA cycles, deployments, and stakeholder-facing delivery.',
+      'Translated ambiguous client requirements into maintainable implementation plans and production releases.',
+    ],
+  },
+  {
+    meta: 'Dec 2017 - May 2021 / Mahwah, NJ',
+    title: 'Student Data Analyst',
+    subtitle: 'Ramapo College of New Jersey',
+    body:
+      'Analyzed academic and non-academic data to support advising allocation, reporting, and student-success planning while automating recurring reporting workflows.',
+    bullets: [
+      'Built a practical foundation in data cleaning, analysis, reporting, and operational communication.',
+      'Turned institutional data into recommendations that could be used by advising and planning teams.',
+    ],
+  },
+];
+
+const educationTimeline = [
+  {
+    meta: '2017 - 2021 / Mahwah, NJ',
+    title: 'Ramapo College of New Jersey',
+    subtitle: 'Applied computing, analytics, and systems foundation',
+    body:
+      'Developed the academic base for software engineering, data analysis, reporting workflows, and technical communication while working in a student data role.',
+    bullets: [
+      'Combined coursework with hands-on institutional data analysis and recurring reporting responsibilities.',
+      'Built the habits that now show up in backend design: clarity, traceability, and practical delivery.',
+    ],
+  },
+  {
+    meta: 'Ongoing',
+    title: 'Independent Technical Study',
+    subtitle: 'Backend systems, game technology, and production tooling',
+    body:
+      'Continues building portfolio systems around async services, cloud delivery, Unreal tooling, procedural animation, and content pipeline architecture.',
+    bullets: [
+      'Uses portfolio projects to connect service architecture with game-production workflows.',
+      'Focuses on production-adjacent systems that are visible, explainable, and extensible.',
+    ],
+  },
+];
+
+const personalProjects = [
+  {
+    meta: 'Photography',
+    title: 'Visual Field Notes',
+    subtitle: 'Composition, light, cities, landscapes',
+    body:
+      'A personal practice for noticing detail, framing atmosphere, and building a sharper eye for environments and visual storytelling.',
+    bullets: ['Street, travel, portrait, and landscape-oriented collections.', 'Useful creative muscle for game worlds, mood, and presentation.'],
+    media: [
+      {
+        type: 'photo',
+        src: '',
+        alt: 'City light and architectural framing study',
+        meta: 'Photo / Urban study',
+        caption: 'A placeholder slot for a city, street, or architecture frame with notes about light, texture, and composition.',
+      },
+      {
+        type: 'photo',
+        src: '',
+        alt: 'Landscape atmosphere and depth study',
+        meta: 'Photo / Landscape',
+        caption: 'A place to collect outdoor compositions, weather, mountain silhouettes, skyline layers, or wide environmental shots.',
+      },
+      {
+        type: 'video',
+        src: '',
+        poster: '',
+        alt: 'Short motion study from a photo walk',
+        meta: 'Video / Motion note',
+        caption: 'A short clip slot for movement, ambient detail, camera tests, or environmental reference gathered during a walk.',
+      },
+    ],
+  },
+  {
+    meta: 'Writing',
+    title: 'Essays, Notes, and Narrative Sketches',
+    subtitle: 'Reflection, technical storytelling, creative work',
+    body:
+      'Writing as a way to clarify ideas, document experiences, and shape technical or personal material into something readable and memorable.',
+    bullets: ['Short-form reflective writing and project narratives.', 'A bridge between engineering detail and human context.'],
+    media: [
+      {
+        type: 'photo',
+        src: '',
+        alt: 'Writing desk, draft, or notebook image',
+        meta: 'Photo / Draft context',
+        caption: 'A visual cover slot for an essay, notebook scan, workspace image, or thematic reference connected to a piece of writing.',
+      },
+      {
+        type: 'photo',
+        src: '',
+        alt: 'Narrative sketch or essay cover image',
+        meta: 'Photo / Essay cover',
+        caption: 'A caption space for the idea behind a personal essay, technical reflection, project narrative, or creative sketch.',
+      },
+      {
+        type: 'video',
+        src: '',
+        poster: '',
+        alt: 'Reading, voice note, or process clip',
+        meta: 'Video / Process',
+        caption: 'A video slot for a reading excerpt, process note, recorded thought, or short context clip around a written piece.',
+      },
+    ],
+  },
+  {
+    meta: 'Travel / Adventure',
+    title: 'Experience-Led Exploration',
+    subtitle: 'Places, movement, and perspective',
+    body:
+      'Travel and adventure experiences feed the portfolio world-building sensibility: routes, weather, terrain, culture, and the feeling of moving through a place.',
+    bullets: ['Designed to expand into location-specific stories, galleries, or field logs.', 'Pairs naturally with photography and writing sections.'],
+    media: [
+      {
+        type: 'photo',
+        src: '',
+        alt: 'Route, trail, or destination field image',
+        meta: 'Photo / Field log',
+        caption: 'A slot for travel memories, trail references, city routes, or the first image in a location-specific adventure note.',
+      },
+      {
+        type: 'video',
+        src: '',
+        poster: '',
+        alt: 'Adventure movement or travel atmosphere clip',
+        meta: 'Video / Movement',
+        caption: 'A clip slot for road movement, weather, terrain, arrival moments, or ambient details from a trip.',
+      },
+      {
+        type: 'photo',
+        src: '',
+        alt: 'Culture, food, people, or place detail',
+        meta: 'Photo / Place detail',
+        caption: 'A caption area for the small details that make a place memorable: textures, signs, rituals, meals, or quiet moments.',
+      },
+    ],
+  },
+];
+
+const heroTabs = [
+  {
+    id: 'portfolio',
+    label: 'Portfolio Projects',
+    kicker: '01 / Systems',
+    summary: 'Selected technical portfolio work with backend architecture, async processing, and Unreal-facing game-technology context.',
+    blocks: [{ type: 'projects' }, { type: 'architecture' }, { type: 'stack' }],
+  },
+  {
+    id: 'professional',
+    label: 'Professional Timeline',
+    kicker: '02 / Work',
+    summary: 'A detailed professional track from data analysis into production web engineering and client-facing delivery.',
+    blocks: [{ type: 'timeline', eyebrow: 'Professional timeline', title: 'Production web engineering plus data-analysis roots.', items: professionalTimeline }],
+  },
+  {
+    id: 'education',
+    label: 'Education Timeline',
+    kicker: '03 / Learning',
+    summary: 'Academic foundation and ongoing technical study behind the engineering, data, and game-technology work.',
+    blocks: [{ type: 'timeline', eyebrow: 'Education timeline', title: 'Academic foundation, self-directed study, and technical growth.', items: educationTimeline }],
+  },
+  {
+    id: 'personal',
+    label: 'Personal Projects',
+    kicker: '04 / Outside Work',
+    summary: 'Creative and exploratory projects that shape the visual, narrative, and experiential side of the portfolio.',
+    blocks: [{ type: 'personal', eyebrow: 'Personal projects', title: 'Photography, writing, travel, and adventure experiences.' }],
+  },
 ];
 
 const weatherCodes = {
@@ -134,6 +313,15 @@ function Mark() {
       <i />
       <i />
     </div>
+  );
+}
+
+function SketchArrow({ direction = 'right' }) {
+  return (
+    <svg className={`sketch-pointer ${direction}`} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path className="sketch-pointer-shadow" d="M7.2 4.8c4.4 2 7.7 4.2 10.1 7.4-3.2 2.7-6.1 4.8-10.5 6.8.8-4.8.8-9.2.4-14.2Z" />
+      <path d="M6.3 4.2c4.9 2.2 8.4 4.5 11.2 7.9-3.6 3-6.6 5.2-11.6 7.4.9-5.1.9-10 .4-15.3Z" />
+    </svg>
   );
 }
 
@@ -360,10 +548,10 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
       const orbX = width * (0.68 + (pointer.x - 0.5) * 0.07);
       const orbY = height * (0.25 + (pointer.y - 0.5) * 0.05);
       const orb = ctx.createRadialGradient(orbX, orbY, 0, orbX, orbY, width * 0.48);
-      orb.addColorStop(0, winter ? 'rgba(0,110,255,.82)' : spring || fall ? `${accent}4b` : 'rgba(255,255,255,.86)');
-      orb.addColorStop(0.18, winter ? 'rgba(0,110,255,.5)' : spring ? 'rgba(5,92,65,.28)' : fall ? 'rgba(73,19,35,.38)' : 'rgba(255,255,255,.64)');
-      orb.addColorStop(0.44, winter ? 'rgba(43,145,255,.28)' : spring ? 'rgba(5,92,65,.12)' : fall ? 'rgba(73,19,35,.2)' : 'rgba(255,255,255,.36)');
-      orb.addColorStop(1, winter ? 'rgba(43,145,255,0)' : spring ? 'rgba(5,92,65,0)' : fall ? 'rgba(73,19,35,0)' : 'rgba(255,255,255,0)');
+      orb.addColorStop(0, winter ? 'rgba(90,150,184,.82)' : spring || fall ? `${accent}4b` : 'rgba(255,255,255,.86)');
+      orb.addColorStop(0.18, winter ? 'rgba(90,150,184,.5)' : spring ? 'rgba(5,92,65,.28)' : fall ? 'rgba(73,19,35,.38)' : 'rgba(255,255,255,.64)');
+      orb.addColorStop(0.44, winter ? 'rgba(90,150,184,.28)' : spring ? 'rgba(5,92,65,.12)' : fall ? 'rgba(73,19,35,.2)' : 'rgba(255,255,255,.36)');
+      orb.addColorStop(1, winter ? 'rgba(90,150,184,0)' : spring ? 'rgba(5,92,65,0)' : fall ? 'rgba(73,19,35,0)' : 'rgba(255,255,255,0)');
       ctx.fillStyle = orb;
       ctx.fillRect(0, 0, width, height);
 
@@ -388,11 +576,11 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(t * 0.00013);
-      ctx.shadowColor = winter ? 'rgba(0,110,255,.98)' : spring ? 'rgba(3,92,60,.76)' : fall ? 'rgba(73,19,35,.82)' : 'rgba(255,255,255,1)';
+      ctx.shadowColor = winter ? 'rgba(90,150,184,.98)' : spring ? 'rgba(3,92,60,.76)' : fall ? 'rgba(73,19,35,.82)' : 'rgba(255,255,255,1)';
       ctx.shadowBlur = winter ? 42 : spring ? 18 : fall ? 16 : 104;
       for (let i = 0; i < 5; i += 1) {
         ctx.beginPath();
-        ctx.strokeStyle = winter ? `rgba(0,110,255,${0.9 - i * 0.065})` : spring ? `rgba(3,92,60,${0.56 - i * 0.06})` : fall ? `rgba(73,19,35,${0.62 - i * 0.064})` : `rgba(255,255,255,${1 - i * 0.032})`;
+        ctx.strokeStyle = winter ? `rgba(90,150,184,${0.9 - i * 0.065})` : spring ? `rgba(3,92,60,${0.56 - i * 0.06})` : fall ? `rgba(73,19,35,${0.62 - i * 0.064})` : `rgba(255,255,255,${1 - i * 0.032})`;
         ctx.lineWidth = fall || spring || winter ? 1.65 : 3.9;
         ctx.arc(0, 0, 90 + i * 48, Math.PI * 0.08, Math.PI * (1.65 - i * 0.05));
         ctx.stroke();
@@ -402,7 +590,7 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
         ctx.beginPath();
         ctx.moveTo(132, 0);
         ctx.lineTo(170, 0);
-        ctx.strokeStyle = winter ? 'rgba(0,110,255,.86)' : spring ? 'rgba(2,71,49,.46)' : fall ? 'rgba(43,12,24,.5)' : 'rgba(255,255,255,1)';
+        ctx.strokeStyle = winter ? 'rgba(90,150,184,.86)' : spring ? 'rgba(2,71,49,.46)' : fall ? 'rgba(43,12,24,.5)' : 'rgba(255,255,255,1)';
         ctx.lineWidth = fall || spring || winter ? 1.45 : 2.8;
         ctx.stroke();
       }
@@ -533,7 +721,7 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
       const spring = refs.current.springTheme;
       const winter = refs.current.winterTheme;
       ctx.globalAlpha = spring || fall || winter ? 0.55 : 1;
-      ctx.strokeStyle = winter ? 'rgba(0,110,255,.68)' : spring ? 'rgba(3,92,60,.42)' : fall ? 'rgba(73,19,35,.42)' : 'rgba(255,255,255,.94)';
+      ctx.strokeStyle = winter ? 'rgba(90,150,184,.68)' : spring ? 'rgba(3,92,60,.42)' : fall ? 'rgba(73,19,35,.42)' : 'rgba(255,255,255,.94)';
       ctx.lineWidth = spring || fall || winter ? 2.2 : 3.8;
       ctx.setLineDash([9, 18]);
       ctx.beginPath();
@@ -549,15 +737,15 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
         const active = index === refs.current.activeSector;
         ctx.beginPath();
         ctx.fillStyle = active
-          ? winter ? 'rgba(0,110,255,1)' : spring ? 'rgba(3,92,60,.94)' : fall ? 'rgba(73,19,35,.94)' : 'rgba(255,255,255,1)'
-          : winter ? 'rgba(0,110,255,.68)' : spring ? 'rgba(3,92,60,.42)' : fall ? 'rgba(73,19,35,.38)' : 'rgba(255,255,255,.94)';
+          ? winter ? 'rgba(90,150,184,1)' : spring ? 'rgba(3,92,60,.94)' : fall ? 'rgba(73,19,35,.94)' : 'rgba(255,255,255,1)'
+          : winter ? 'rgba(90,150,184,.68)' : spring ? 'rgba(3,92,60,.42)' : fall ? 'rgba(73,19,35,.38)' : 'rgba(255,255,255,.94)';
         if (!spring && !fall && !winter) ctx.fillStyle = active ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,.94)';
         ctx.arc(x, yy, !spring && !fall && !winter ? (active ? 10.5 : 7) : (active ? 8.5 : 5.5), 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.strokeStyle = active
-          ? winter ? 'rgba(0,110,255,.84)' : spring ? 'rgba(3,92,60,.58)' : fall ? 'rgba(73,19,35,.56)' : 'rgba(255,255,255,.72)'
-          : winter ? 'rgba(0,110,255,.42)' : spring ? 'rgba(3,92,60,.25)' : fall ? 'rgba(73,19,35,.22)' : 'rgba(255,255,255,.56)';
+          ? winter ? 'rgba(90,150,184,.84)' : spring ? 'rgba(3,92,60,.58)' : fall ? 'rgba(73,19,35,.56)' : 'rgba(255,255,255,.72)'
+          : winter ? 'rgba(90,150,184,.42)' : spring ? 'rgba(3,92,60,.25)' : fall ? 'rgba(73,19,35,.22)' : 'rgba(255,255,255,.56)';
         if (!spring && !fall && !winter) {
           ctx.strokeStyle = active ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,.76)';
           ctx.lineWidth = active ? 3.2 : 2.2;
@@ -584,7 +772,7 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
         const now = performance.now();
         const flash = Math.max(0, Math.sin(now * 0.006) - 0.91) * 6.8 + Math.max(0, Math.sin(now * 0.017 + 1.8) - 0.965) * 8;
         if (flash > 0) {
-          const boltColor = winter ? '0,110,255' : spring ? '184,245,95' : fall ? '255,238,72' : '255,255,255';
+          const boltColor = winter ? '90,150,184' : spring ? '184,245,95' : fall ? '255,238,72' : '255,255,255';
           ctx.fillStyle = winter ? `rgba(255,255,255,${flash * 0.16})` : spring ? `rgba(236,255,247,${flash * 0.14})` : fall ? `rgba(255,230,132,${flash * 0.14})` : `rgba(255,255,255,${flash * 0.18})`;
           ctx.fillRect(0, 0, width, height);
           const boltSeed = Math.floor(now / 720);
@@ -657,7 +845,7 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
         } else if (clear) {
           const sparkle = p.a * (0.45 + Math.sin(p.life * 2 + p.pulse) * 0.25);
           ctx.beginPath();
-          ctx.fillStyle = winter ? `rgba(0,110,255,${sparkle})` : spring ? `rgba(184,245,95,${sparkle})` : fall ? `rgba(255,232,96,${sparkle})` : `rgba(103,232,249,${sparkle})`;
+          ctx.fillStyle = winter ? `rgba(90,150,184,${sparkle})` : spring ? `rgba(184,245,95,${sparkle})` : fall ? `rgba(255,232,96,${sparkle})` : `rgba(103,232,249,${sparkle})`;
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
         } else if (snow) {
@@ -666,7 +854,7 @@ function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrollProgre
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          ctx.strokeStyle = winter ? `rgba(0,110,255,${p.a})` : spring ? `rgba(80,210,238,${p.a})` : fall ? `rgba(198,132,67,${p.a})` : `rgba(255,255,255,${p.a})`;
+          ctx.strokeStyle = winter ? `rgba(90,150,184,${p.a})` : spring ? `rgba(80,210,238,${p.a})` : fall ? `rgba(198,132,67,${p.a})` : `rgba(255,255,255,${p.a})`;
           ctx.lineWidth = kind === 'drizzle' ? Math.max(0.7, p.r * 0.7) : p.r;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
@@ -1158,47 +1346,228 @@ function WorldForeground({ mode, weather, weatherPower, scrollProgress }) {
 
   return <canvas ref={canvasRef} className="world-foreground" aria-hidden="true" />;
 }
-function FloatingHud({ weather, setWeather, weatherPower, setWeatherPower, activeSector, liveWeather, timeProfile, weatherStatus, weatherError, onUseLiveWeather, fallTheme, setFallTheme, springTheme, setSpringTheme, winterTheme, setWinterTheme }) {
+function FloatingHud({ weather, setWeather, weatherPower, setWeatherPower, activeSector, liveWeather, timeProfile, weatherStatus, weatherError, onUseLiveWeather, onInteract, fallTheme, setFallTheme, springTheme, setSpringTheme, winterTheme, setWinterTheme }) {
+  const [collapsed, setCollapsed] = useState(false);
   const weatherLabel = liveWeather?.condition || `Manual ${weatherNames[weather] || weather}`;
   const nextManualWeather = () => {
+    onInteract?.();
     const index = manualWeatherCycle.indexOf(weather);
-    setWeather(manualWeatherCycle[(index + 1) % manualWeatherCycle.length]);
+    const safeIndex = index === -1 ? 0 : index;
+    setWeather(manualWeatherCycle[(safeIndex + 1) % manualWeatherCycle.length]);
+  };
+  const previousManualWeather = () => {
+    onInteract?.();
+    const index = manualWeatherCycle.indexOf(weather);
+    const safeIndex = index === -1 ? 0 : index;
+    setWeather(manualWeatherCycle[(safeIndex - 1 + manualWeatherCycle.length) % manualWeatherCycle.length]);
   };
   const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
-    <aside className="floating-hud" aria-label="Exploration controls">
+    <aside className={`floating-hud ${collapsed ? 'collapsed' : ''}`} aria-label="Exploration controls">
+      <button
+        type="button"
+        className="overlay-collapse-button hud-collapse-button"
+        aria-label={collapsed ? 'Expand explorer HUD' : 'Collapse explorer HUD'}
+        aria-expanded={!collapsed}
+        onClick={() => setCollapsed((value) => !value)}
+      >
+        <SketchArrow direction={collapsed ? 'up' : 'down'} />
+      </button>
+      <div className="hud-content" aria-hidden={collapsed}>
       <div className="hud-status">
         <span>Explorer HUD</span>
-        <strong>{sectors[activeSector]?.label || 'Signal'} sector</strong>
+        <strong>{sectors[activeSector]?.label || 'Intro'} sector</strong>
         <small>{timeProfile.label} · {weatherLabel}</small>
       </div>
       <div className="hud-row">
-        <button className={fallTheme ? 'active fall-weather-button' : 'fall-weather-button'} onClick={() => { setFallTheme((value) => !value); setSpringTheme(false); setWinterTheme(false); }}>Fall</button>
-        <button className={springTheme ? 'active spring-weather-button' : 'spring-weather-button'} onClick={() => { setSpringTheme((value) => !value); setFallTheme(false); setWinterTheme(false); }}>Spring</button>
-        <button className={winterTheme ? 'active winter-weather-button' : 'winter-weather-button'} onClick={() => { setWinterTheme((value) => !value); setFallTheme(false); setSpringTheme(false); }}>Winter</button>
+        <button className={fallTheme ? 'active fall-weather-button' : 'fall-weather-button'} onClick={() => { onInteract?.(); setFallTheme((value) => !value); setSpringTheme(false); setWinterTheme(false); }}>Fall</button>
+        <button className={springTheme ? 'active spring-weather-button' : 'spring-weather-button'} onClick={() => { onInteract?.(); setSpringTheme((value) => !value); setFallTheme(false); setWinterTheme(false); }}>Spring</button>
+        <button className={winterTheme ? 'active winter-weather-button' : 'winter-weather-button'} onClick={() => { onInteract?.(); setWinterTheme((value) => !value); setFallTheme(false); setSpringTheme(false); }}>Winter</button>
+      </div>
+      <div className="hud-row particle-cycle-row" aria-label="Weather particle selector">
+        <button type="button" className="particle-arrow" aria-label="Previous weather particle" onClick={previousManualWeather}>&lt;</button>
+        <button type="button" className="particle-label" aria-label="Current weather particle" onClick={nextManualWeather}>{weatherNames[weather] || weather}</button>
+        <button type="button" className="particle-arrow" aria-label="Next weather particle" onClick={nextManualWeather}>&gt;</button>
       </div>
       <div className="hud-row">
-        <button className={weather === 'snow' ? 'active' : ''} onClick={nextManualWeather}>{weatherNames[weather] || weather}</button>
+        <button onClick={() => { onInteract?.(); onUseLiveWeather(); }}>{weatherStatus === 'loading' ? 'Syncing…' : 'Live local weather'}</button>
       </div>
-      <div className="hud-row">
-        <button onClick={onUseLiveWeather}>{weatherStatus === 'loading' ? 'Syncing…' : 'Live local weather'}</button>
-      </div>
-      <label className="intensity-control"><span>Atmosphere</span><input type="range" min="0.35" max="1.7" step="0.05" value={weatherPower} onChange={(e) => setWeatherPower(Number(e.target.value))} /></label>
+      <label className="intensity-control"><span>Atmosphere</span><input type="range" min="0.35" max="1.7" step="0.05" value={weatherPower} onChange={(e) => { onInteract?.(); setWeatherPower(Number(e.target.value)); }} /></label>
       <small className="hud-note">{liveWeather ? `${Math.round(liveWeather.temp)}° · wind ${Math.round(liveWeather.wind)} km/h · ${liveWeather.location}` : weatherError || `${timeLabel} local browser time · weather optional`}</small>
+      </div>
     </aside>
   );
 }
 
-function MissionMap({ activeSector }) {
+function LoreGuide({ activeSector, activeContentTab, hudInteracted }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const activeSectorId = sectors[activeSector]?.id || 'hero';
+  const tabId = activeContentTab?.id || 'portfolio';
+  const targetDialog = useMemo(() => {
+    if (!hudInteracted) {
+      return {
+        label: '',
+        title: '',
+        lines: [
+          'I see you have stumbled upon my lore! I am not an AI here to assist you, but just a mere persona of myself to give you some tips on navigating my lore.',
+          'Start with the Explorer HUD on the bottom right. Try a season button, cycle the particle arrows, or move the Atmosphere slider.',
+        ],
+      };
+    }
+
+    if (activeSectorId === 'hero') {
+      return {
+        label: 'Intro',
+        title: 'The opening marker.',
+        lines: ['Use Start exploring to jump into the tabbed lore, or use the left Explore panel to move between Intro, Content, and Contact.'],
+      };
+    }
+    if (activeSectorId === 'contact') {
+      return {
+        label: 'Contact',
+        title: 'Exit routes unlocked.',
+        lines: ['You are in the contact zone now. Use the links here when you want the practical exits: resume, GitHub, LinkedIn, or email.'],
+      };
+    }
+    if (tabId === 'portfolio') {
+      return {
+        label: 'Portfolio',
+        title: 'Systems layer.',
+        lines: ['Scan the project cards first, then move through Architecture and Technical Stack to see how the systems connect.'],
+      };
+    }
+    if (tabId === 'professional') {
+      return {
+        label: 'Professional',
+        title: 'Timeline controls.',
+        lines: ['Click a timeline card to zoom it forward. Click outside the timeline to settle it back into place.'],
+      };
+    }
+    if (tabId === 'education') {
+      return {
+        label: 'Education',
+        title: 'Academic trail.',
+        lines: ['Use the same card-click behavior to inspect each academic milestone without leaving the timeline.'],
+      };
+    }
+    if (tabId === 'personal') {
+      return {
+        label: 'Personal',
+        title: 'Media swap trick.',
+        lines: ['Switch between Photography, Writing, and Travel. Pick a side media card to swap it into the main display.'],
+      };
+    }
+
+    return {
+      label: 'Lore Guide',
+      title: 'Keep exploring.',
+      lines: ['Use the tabs, timeline cards, media swaps, and side navigation to move through the lore at your own pace.'],
+    };
+  }, [activeSectorId, hudInteracted, tabId]);
+  const [displayDialog, setDisplayDialog] = useState(targetDialog);
+  const [dialogPhase, setDialogPhase] = useState('entering');
+  const [typedCharCount, setTypedCharCount] = useState(0);
+  const targetKey = `${targetDialog.label}-${targetDialog.title}-${targetDialog.lines.join('|')}`;
+  const displayKey = `${displayDialog.label}-${displayDialog.title}-${displayDialog.lines.join('|')}`;
+  const displayText = displayDialog.lines.join('\n');
+  const typedLines = useMemo(() => {
+    let remaining = typedCharCount;
+    return displayDialog.lines.map((line) => {
+      const visibleCount = Math.max(0, Math.min(line.length, remaining));
+      remaining -= line.length + 1;
+      return line.slice(0, visibleCount);
+    });
+  }, [displayDialog.lines, typedCharCount]);
+  const activeTypedLine = useMemo(() => {
+    let consumed = 0;
+    for (let index = 0; index < displayDialog.lines.length; index += 1) {
+      const lineEnd = consumed + displayDialog.lines[index].length;
+      if (typedCharCount <= lineEnd) return index;
+      consumed = lineEnd + 1;
+    }
+    return Math.max(0, displayDialog.lines.length - 1);
+  }, [displayDialog.lines, typedCharCount]);
+
+  useEffect(() => {
+    if (targetKey === displayKey) return undefined;
+    setDialogPhase('exiting');
+    const swapTimer = window.setTimeout(() => {
+      setDisplayDialog(targetDialog);
+      setDialogPhase('entering');
+    }, 210);
+    return () => window.clearTimeout(swapTimer);
+  }, [displayKey, targetDialog, targetKey]);
+
+  useEffect(() => {
+    setTypedCharCount(0);
+    const totalChars = displayText.length;
+    const typeTimer = window.setInterval(() => {
+      setTypedCharCount((value) => {
+        if (value >= totalChars) {
+          window.clearInterval(typeTimer);
+          return value;
+        }
+        return value + 1;
+      });
+    }, 18);
+    return () => window.clearInterval(typeTimer);
+  }, [displayKey, displayText]);
+
   return (
-    <aside className="mission-map" aria-label="Portfolio sector map">
-      <strong>Explore</strong>
-      {sectors.map((sector, index) => (
-        <a key={sector.id} href={`#${sector.id}`} className={activeSector === index ? 'active' : ''}>
-          <span>{String(index + 1).padStart(2, '0')}</span>
-          <em>{sector.label}</em>
-        </a>
-      ))}
+    <aside className={`lore-guide ${collapsed ? 'collapsed' : ''}`} aria-label="Lore navigation guide">
+      <button
+        type="button"
+        className="lore-guide-toggle"
+        aria-label={collapsed ? 'Expand lore guide' : 'Collapse lore guide'}
+        aria-expanded={!collapsed}
+        onClick={() => setCollapsed((value) => !value)}
+      >
+        <SketchArrow direction={collapsed ? 'up' : 'down'} />
+      </button>
+      <div className="lore-guide-face" aria-hidden="true">
+        <img src={loreGuidePersona} alt="" />
+      </div>
+      <div className={`lore-guide-copy ${dialogPhase}`} key={displayKey}>
+        {displayDialog.label && <span>{displayDialog.label}</span>}
+        {displayDialog.title && <strong>{displayDialog.title}</strong>}
+        {typedLines.map((line, index) => (
+          <p key={`${displayDialog.lines[index]}-${index}`}>
+            {line}
+            {index === activeTypedLine && <span className="lore-type-caret" aria-hidden="true" />}
+          </p>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function MissionMap({ activeSector, activeContentTab }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const mapSectors = sectors.map((sector) => (
+    sector.id === 'tab-content'
+      ? { ...sector, label: activeContentTab.label, title: activeContentTab.label, note: activeContentTab.kicker }
+      : sector
+  ));
+  return (
+    <aside className={`mission-map ${collapsed ? 'collapsed' : ''}`} aria-label="Portfolio sector map">
+      <button
+        type="button"
+        className="overlay-collapse-button map-collapse-button"
+        aria-label={collapsed ? 'Expand side navigation' : 'Collapse side navigation'}
+        aria-expanded={!collapsed}
+        onClick={() => setCollapsed((value) => !value)}
+      >
+        <SketchArrow direction={collapsed ? 'right' : 'left'} />
+      </button>
+      <div className="mission-map-content" aria-hidden={collapsed}>
+        <strong>Explore</strong>
+        {mapSectors.map((sector, index) => (
+          <a key={sector.id} href={`#${sector.id}`} className={activeSector === index ? 'active' : ''}>
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <em>{sector.label}</em>
+          </a>
+        ))}
+      </div>
     </aside>
   );
 }
@@ -1230,6 +1599,490 @@ function ProjectCard({ project }) {
       <div className="chip-row">{project.tags.map((tag) => <Chip key={tag}>{tag}</Chip>)}</div>
       <ul>{project.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul>
     </article>
+  );
+}
+
+function ProfileTabs({ tabs, activeTabId, onTabChange }) {
+  const activeTab = tabs.find((tab) => tab.id === activeTabId) || tabs[0];
+
+  return (
+    <section className="profile-tabs" aria-label="Portfolio content tabs">
+      <div className="profile-tab-list" role="tablist" aria-label="Portfolio content categories">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            id={`profile-tab-${tab.id}`}
+            role="tab"
+            aria-selected={activeTab.id === tab.id}
+            aria-controls="tab-content"
+            className={activeTab.id === tab.id ? 'active' : ''}
+            onClick={() => onTabChange(tab.id)}
+          >
+            <span>{tab.kicker}</span>
+            <strong>{tab.label}</strong>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TimelineGrid({ items }) {
+  const timelineItems = useMemo(() => normalizeTimelineItems(items), [items]);
+  const [activeIndex, setActiveIndex] = useState(null);
+  const timelineRef = useRef(null);
+  const bounds = useMemo(() => getTimelineBounds(timelineItems), [timelineItems]);
+
+  useEffect(() => {
+    setActiveIndex((index) => (index == null ? null : Math.min(index, Math.max(0, timelineItems.length - 1))));
+  }, [timelineItems.length]);
+
+  useEffect(() => {
+    if (activeIndex == null) return undefined;
+    const clearOnOutsidePointer = (event) => {
+      if (!timelineRef.current?.contains(event.target)) setActiveIndex(null);
+    };
+    document.addEventListener('pointerdown', clearOnOutsidePointer);
+    return () => document.removeEventListener('pointerdown', clearOnOutsidePointer);
+  }, [activeIndex]);
+
+  if (!timelineItems.length) return null;
+
+  return (
+    <div ref={timelineRef} className="date-timeline-system">
+      <div className="date-timeline-rail" aria-label="Interactive date timeline infographic">
+        <div className="date-timeline-trunk" aria-hidden="true" />
+        <span className="date-timeline-boundary start">{bounds.startLabel}</span>
+        <span className="date-timeline-boundary end">{bounds.endLabel}</span>
+        {timelineItems.map((item, index) => {
+          const start = positionOnTimeline(item.startDate, bounds);
+          const end = positionOnTimeline(item.endDate, bounds);
+          const point = Math.min(86, Math.max(14, (start + end) / 2));
+          const side = index % 2 === 0 ? 'left' : 'right';
+          return (
+            <button
+              key={`${item.meta}-${item.title}`}
+              type="button"
+              className={`date-timeline-node ${side} ${index === activeIndex ? 'active' : ''}`}
+              style={{ '--timeline-y': `${point}%`, '--node-color': item.color }}
+              aria-label={`Zoom details for ${item.title}, ${item.rangeLabel}`}
+              aria-pressed={index === activeIndex}
+              onClick={() => setActiveIndex(index)}
+            >
+              <span className="date-timeline-branch" aria-hidden="true" />
+              <span className="date-timeline-orb">
+                <em>{item.shortStart}</em>
+                <strong>{item.title}</strong>
+                <small>{item.subtitle}</small>
+              </span>
+              <span className="date-timeline-icon">
+                <TimelineMaterialIcon name={item.icon} />
+              </span>
+              <span className="date-timeline-detail-copy">
+                <span className="date-timeline-detail-meta">{item.rangeLabel}</span>
+                <span className="date-timeline-detail-body">{item.body}</span>
+                {item.bullets?.length > 0 && (
+                  <span className="date-timeline-detail-list">
+                    {item.bullets.map((bullet) => (
+                      <span key={bullet}>{bullet}</span>
+                    ))}
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TimelineMaterialIcon({ name }) {
+  const paths = {
+    work: 'M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2Zm-6 0h-4V4h4v2Z',
+    analytics: 'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2ZM8 17H6v-7h2v7Zm5 0h-2V7h2v10Zm5 0h-2v-4h2v4Z',
+    code: 'M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4Zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6-1.4-1.4Z',
+    school: 'M12 3 1 9l11 6 9-4.91V17h2V9L12 3Zm0 13.5L5 12.69V16c0 1.1 3.13 3 7 3s7-1.9 7-3v-3.31l-7 3.81Z',
+    menu_book: 'M21 4.5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5C10.55 4.4 8.45 4 6.5 4S2.45 4.4 1 5.5v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 19.95 5.05 19.5 6.5 19.5c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V5.5c-.6-.45-1.25-.75-2-1Z',
+    extension: 'M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11Z',
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d={paths[name] || paths.work} />
+    </svg>
+  );
+}
+
+const monthNumbers = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
+
+function parseTimelinePoint(value, isEnd = false) {
+  const clean = String(value || '').trim();
+  if (!clean || /ongoing|present|current/i.test(clean)) return null;
+  const monthMatch = clean.match(/^([A-Za-z]{3,})\s+(\d{4})$/);
+  if (monthMatch) {
+    const month = monthNumbers[monthMatch[1].slice(0, 3).toLowerCase()] ?? 0;
+    return new Date(Number(monthMatch[2]), month + (isEnd ? 1 : 0), isEnd ? 0 : 1);
+  }
+  const yearMatch = clean.match(/^(\d{4})$/);
+  if (yearMatch) return new Date(Number(yearMatch[1]), isEnd ? 11 : 0, isEnd ? 31 : 1);
+  return null;
+}
+
+function addMonths(date, months) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+function formatTimelineDate(date) {
+  return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+}
+
+function normalizeTimelineItems(items) {
+  let previousEnd = null;
+  const timelineColors = ['#ef4444', '#0891b2', '#f97316', '#a3e635', '#f8c84e', '#9ca3af'];
+  return items.map((item, index) => {
+    const dateText = String(item.meta || '').split('/')[0].trim();
+    const ongoing = /ongoing|present|current/i.test(dateText);
+    const [startText, endText] = dateText.includes(' - ') ? dateText.split(' - ') : [dateText, dateText];
+    const inferredStart = previousEnd ? addMonths(previousEnd, 1) : new Date(new Date().getFullYear(), 0, 1);
+    const startDate = parseTimelinePoint(startText) || inferredStart;
+    const endDate = ongoing ? new Date() : (parseTimelinePoint(endText, true) || startDate);
+    previousEnd = endDate;
+    return {
+      ...item,
+      sourceIndex: index,
+      startDate,
+      endDate,
+      rangeLabel: ongoing ? `${formatTimelineDate(startDate)} - Present` : dateText,
+      shortStart: startDate.getFullYear(),
+      icon: getTimelineIconName(item),
+      color: timelineColors[index % timelineColors.length],
+    };
+  }).sort((a, b) => a.startDate - b.startDate);
+}
+
+function getTimelineIconName(item) {
+  const text = `${item.title} ${item.subtitle}`.toLowerCase();
+  if (text.includes('data') || text.includes('analyst') || text.includes('analytics')) return 'analytics';
+  if (text.includes('college') || text.includes('education') || text.includes('academic')) return 'school';
+  if (text.includes('study') || text.includes('learning')) return 'menu_book';
+  if (text.includes('developer') || text.includes('application') || text.includes('software')) return 'code';
+  if (text.includes('tool') || text.includes('backend') || text.includes('system')) return 'extension';
+  return 'work';
+}
+
+function getTimelineBounds(items) {
+  const start = new Date(Math.min(...items.map((item) => item.startDate.getTime())));
+  const end = new Date(Math.max(...items.map((item) => item.endDate.getTime())));
+  start.setMonth(0, 1);
+  end.setMonth(11, 31);
+  return {
+    start,
+    end,
+    startLabel: String(start.getFullYear()),
+    endLabel: end.getFullYear() === new Date().getFullYear() ? 'Present' : String(end.getFullYear()),
+  };
+}
+
+function positionOnTimeline(date, bounds) {
+  const total = bounds.end.getTime() - bounds.start.getTime();
+  if (total <= 0) return 0;
+  return Math.max(0, Math.min(100, ((date.getTime() - bounds.start.getTime()) / total) * 100));
+}
+
+function PersonalProjectTabs() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const activeProject = personalProjects[activeIndex] || personalProjects[0];
+  const mediaItems = activeProject.media || [];
+  const activeMedia = mediaItems[activeMediaIndex] || mediaItems[0];
+
+  useEffect(() => {
+    setActiveMediaIndex(0);
+  }, [activeIndex]);
+
+  return (
+    <div className="personal-subtabs">
+      <div className="personal-subtab-list" role="tablist" aria-label="Personal project categories">
+        {personalProjects.map((item, index) => (
+          <button
+            key={item.meta}
+            type="button"
+            role="tab"
+            aria-selected={index === activeIndex}
+            className={index === activeIndex ? 'active' : ''}
+            onClick={() => setActiveIndex(index)}
+          >
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <strong>{item.meta}</strong>
+          </button>
+        ))}
+      </div>
+      <article className="personal-subtab-panel panel-card" data-tilt>
+        <div className="personal-subtab-heading">
+          <p>{activeProject.meta}</p>
+          <h3>{activeProject.title}</h3>
+          <span>{activeProject.subtitle}</span>
+        </div>
+        <p className="personal-subtab-body">{activeProject.body}</p>
+        <PersonalMediaExperience
+          project={activeProject}
+          mediaItems={mediaItems}
+          activeMedia={activeMedia}
+          activeMediaIndex={activeMediaIndex}
+          onSelect={setActiveMediaIndex}
+        />
+      </article>
+    </div>
+  );
+}
+
+function PersonalMediaExperience({ project, mediaItems, activeMedia, activeMediaIndex, onSelect }) {
+  const projectKey = project.meta.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const featuredRef = useRef(null);
+  const sideCardRefs = useRef(new Map());
+  const unselectedMedia = mediaItems
+    .map((item, index) => ({ item, index }))
+    .filter(({ index }) => index !== activeMediaIndex);
+
+  const handleSelect = (index) => {
+    if (index === activeMediaIndex) return;
+    const reduceMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      onSelect(index);
+      return;
+    }
+    if (typeof document !== 'undefined' && document.startViewTransition && !reduceMotion) {
+      document.startViewTransition(() => {
+        flushSync(() => onSelect(index));
+      });
+      return;
+    }
+    animateMediaSwap(index);
+  };
+
+  const animateMediaSwap = (index) => {
+    const previousIndex = activeMediaIndex;
+    const featuredNode = featuredRef.current;
+    const selectedNode = sideCardRefs.current.get(index);
+
+    if (!featuredNode || !selectedNode || typeof document === 'undefined') {
+      onSelect(index);
+      return;
+    }
+
+    const featuredRect = featuredNode.getBoundingClientRect();
+    const selectedRect = selectedNode.getBoundingClientRect();
+    const featuredClone = createSwapClone(featuredNode, featuredRect);
+    const selectedClone = createSwapClone(selectedNode, selectedRect);
+
+    flushSync(() => onSelect(index));
+
+    requestAnimationFrame(() => {
+      const featuredTarget = featuredRef.current?.getBoundingClientRect();
+      const sideTarget = sideCardRefs.current.get(previousIndex)?.getBoundingClientRect();
+      animateSwapClone(selectedClone, selectedRect, featuredTarget);
+      animateSwapClone(featuredClone, featuredRect, sideTarget || selectedRect);
+    });
+  };
+
+  if (!activeMedia) return null;
+
+  return (
+    <div className="personal-media-experience" aria-label={`${project.meta} media and captions`}>
+      <figure
+        ref={featuredRef}
+        className="personal-featured-media"
+        style={{ viewTransitionName: `personal-media-${projectKey}-${activeMediaIndex}` }}
+      >
+        <PersonalMediaAsset item={activeMedia} index={activeMediaIndex} featured />
+        <figcaption>
+          <span>{activeMedia.meta}</span>
+          <strong>{activeMedia.alt}</strong>
+          <p>{activeMedia.caption}</p>
+        </figcaption>
+      </figure>
+      <div className="personal-media-feed" role="list" aria-label={`${project.meta} selectable media`}>
+        {unselectedMedia.map(({ item, index }) => (
+          <button
+            key={`${project.meta}-${item.meta}-${index}`}
+            ref={(node) => {
+              if (node) sideCardRefs.current.set(index, node);
+              else sideCardRefs.current.delete(index);
+            }}
+            style={{ viewTransitionName: `personal-media-${projectKey}-${index}` }}
+            type="button"
+            role="listitem"
+            className="personal-media-card"
+            aria-pressed="false"
+            onClick={() => handleSelect(index)}
+          >
+            <span className="personal-media-index">{String(index + 1).padStart(2, '0')}</span>
+            <span className="personal-media-thumb" aria-hidden="true">
+              <PersonalMediaAsset item={item} index={index} compact />
+            </span>
+            <span className="personal-media-copy">
+              <em>{item.meta}</em>
+              <strong>{item.alt}</strong>
+              <span>{item.caption}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function createSwapClone(node, rect) {
+  const clone = node.cloneNode(true);
+  clone.classList.add('personal-swap-clone');
+  Object.assign(clone.style, {
+    position: 'fixed',
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    margin: '0',
+    pointerEvents: 'none',
+    transformOrigin: 'top left',
+    viewTransitionName: 'none',
+  });
+  document.body.appendChild(clone);
+  return clone;
+}
+
+function animateSwapClone(clone, fromRect, targetRect) {
+  if (!clone || !targetRect) {
+    clone?.remove();
+    return;
+  }
+
+  const duration = 640;
+  const deltaX = targetRect.left - fromRect.left;
+  const deltaY = targetRect.top - fromRect.top;
+  const scaleX = targetRect.width / Math.max(fromRect.width, 1);
+  const scaleY = targetRect.height / Math.max(fromRect.height, 1);
+  clone.animate(
+    [
+      { opacity: 1, transform: 'translate(0, 0) scale(1, 1)' },
+      { opacity: .98, transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})` },
+    ],
+    { duration, easing: 'cubic-bezier(.2,.78,.16,1)', fill: 'forwards' },
+  );
+
+  window.setTimeout(() => {
+    clone.remove();
+  }, duration + 80);
+}
+
+function PersonalMediaAsset({ item, index, compact = false, featured = false }) {
+  const isVideo = item.type === 'video';
+
+  if (item.src) {
+    return isVideo ? (
+      <video
+        src={item.src}
+        poster={item.poster || undefined}
+        controls={featured}
+        muted={compact}
+        preload="metadata"
+        aria-label={item.alt}
+      />
+    ) : (
+      <img src={item.src} alt={compact ? '' : item.alt} loading="lazy" />
+    );
+  }
+
+  return (
+    <span className={`personal-media-placeholder ${compact ? 'compact' : ''}`} aria-label={compact ? undefined : item.alt}>
+      <span>{isVideo ? 'Video' : 'Photo'} {String(index + 1).padStart(2, '0')}</span>
+      <strong>{compact ? item.type : item.alt}</strong>
+    </span>
+  );
+}
+
+function ArchitectureSection() {
+  return (
+    <section className="tabbed-subsection architecture-panel panel-card" data-tilt>
+      <SectorHeader eyebrow="Architecture narrative" title="From motion data to Unreal-ready procedural animation JSON." />
+      <div className="pipeline">{pipelineSteps.map(([title, text], index) => <article key={title}><span>{String(index + 1).padStart(2, '0')}</span><h3>{title}</h3><p>{text}</p></article>)}</div>
+    </section>
+  );
+}
+
+function StackSection() {
+  return (
+    <section className="tabbed-subsection stack-section">
+      <SectorHeader eyebrow="Technical stack" title="Backend reliability, cloud delivery, game tooling, and data workflows.">Positioned for online-services expectations - scalable services, cloud delivery, caching, messaging, and clean interfaces - while keeping the Aegis portfolio clearly relevant to game production and content pipelines.</SectorHeader>
+      <div className="stack-grid">{stackGroups.map(([title, items]) => <article key={title} className="panel-card" data-tilt><h3>{title}</h3><div>{items.map((item) => <Chip key={item}>{item}</Chip>)}</div></article>)}</div>
+    </section>
+  );
+}
+
+function TabContentBlock({ block, tab }) {
+  if (block.type === 'projects') {
+    return (
+      <section className="tabbed-subsection">
+        <SectorHeader eyebrow="Featured portfolio systems" title="">Backend architecture, async systems thinking, game-tech context, and production-ready communication.</SectorHeader>
+        <div className="project-grid">{projects.map((project) => <ProjectCard key={project.title} project={project} />)}</div>
+      </section>
+    );
+  }
+
+  if (block.type === 'architecture') return <ArchitectureSection />;
+  if (block.type === 'stack') return <StackSection />;
+
+  if (block.type === 'timeline') {
+    return (
+      <section className="tabbed-subsection">
+        <SectorHeader eyebrow={block.eyebrow} title={block.title}>{tab.summary}</SectorHeader>
+        <TimelineGrid items={block.items} />
+      </section>
+    );
+  }
+
+  if (block.type === 'personal') {
+    return (
+      <section className="tabbed-subsection">
+        <SectorHeader eyebrow={block.eyebrow} title={block.title}>{tab.summary}</SectorHeader>
+        <PersonalProjectTabs />
+      </section>
+    );
+  }
+
+  return null;
+}
+
+function TabbedContent({ tab }) {
+  return (
+    <div className="tab-pane" data-active-tab={tab.id}>
+      <div className="tab-pane-header">
+        <div>
+          <p>{tab.kicker}</p>
+          <h2>{tab.label}</h2>
+        </div>
+        <span>{tab.summary}</span>
+      </div>
+      <div className="tab-pane-body">
+        {tab.blocks.map((block, index) => (
+          <TabContentBlock key={`${tab.id}-${block.type}-${index}`} block={block} tab={tab} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1266,9 +2119,12 @@ export default function App() {
   const [fallTheme, setFallTheme] = useState(false);
   const [springTheme, setSpringTheme] = useState(false);
   const [winterTheme, setWinterTheme] = useState(false);
+  const [hudInteracted, setHudInteracted] = useState(false);
   const [weatherStatus, setWeatherStatus] = useState('idle');
   const [weatherError, setWeatherError] = useState('');
   const [liveWeather, setLiveWeather] = useState(null);
+  const [activeTabId, setActiveTabId] = useState(heroTabs[0].id);
+  const activeContentTab = heroTabs.find((tab) => tab.id === activeTabId) || heroTabs[0];
   useTiltCard();
   useBrowserZoomLock();
 
@@ -1338,20 +2194,20 @@ export default function App() {
       <style>{typeStyles}</style>
       <style>{foldStyles}</style>
       <style>{layoutRestoreStyles}</style>
+      <style>{tabStyles}</style>
       <WorldBackdrop mode={mode} weather={weather} weatherPower={weatherPower} activeSector={activeSector} scrollProgress={scrollProgress} timeProfile={activeTimeProfile} fallTheme={fallTheme} springTheme={springTheme} winterTheme={winterTheme} />
       <div className="portrait-background" aria-hidden="true">
         <img src={backgroundPortrait} alt="" />
       </div>
-      <div className="foreground-fade" aria-hidden="true" />
       <div className="ambient-grid" aria-hidden="true" />
       <header className="nav-shell">
         <a className="brand" href="#hero"><ProfileAvatar /><span><strong>{profile.name}</strong><small>Engineer · Builder · Problem Solver</small></span></a>
-        <nav>{sectors.slice(1).map((sector) => <a key={sector.id} href={`#${sector.id}`}>{sector.label}</a>)}</nav>
         <a className="nav-cta" href={profile.resume} download>Download CV</a>
       </header>
 
-      <MissionMap activeSector={activeSector} />
-      <FloatingHud weather={weather} setWeather={setWeather} weatherPower={weatherPower} setWeatherPower={setWeatherPower} activeSector={activeSector} liveWeather={liveWeather} timeProfile={activeTimeProfile} weatherStatus={weatherStatus} weatherError={weatherError} onUseLiveWeather={useLiveWeather} fallTheme={fallTheme} setFallTheme={setFallTheme} springTheme={springTheme} setSpringTheme={setSpringTheme} winterTheme={winterTheme} setWinterTheme={setWinterTheme} />
+      <MissionMap activeSector={activeSector} activeContentTab={activeContentTab} />
+      <FloatingHud weather={weather} setWeather={setWeather} weatherPower={weatherPower} setWeatherPower={setWeatherPower} activeSector={activeSector} liveWeather={liveWeather} timeProfile={activeTimeProfile} weatherStatus={weatherStatus} weatherError={weatherError} onUseLiveWeather={useLiveWeather} onInteract={() => setHudInteracted(true)} fallTheme={fallTheme} setFallTheme={setFallTheme} springTheme={springTheme} setSpringTheme={setSpringTheme} winterTheme={winterTheme} setWinterTheme={setWinterTheme} />
+      <LoreGuide activeSector={activeSector} activeContentTab={activeContentTab} hudInteracted={hudInteracted} />
 
       <section id="hero" className="sector hero-sector">
         <div className="hero-copy">
@@ -1359,11 +2215,17 @@ export default function App() {
           <h1>{profile.name}</h1>
           <h2><span>{profile.title}</span> {profile.tagline}</h2>
           <p className="hero-lede">I build reliable backend services, content pipelines, and developer-facing tools that connect cloud-native engineering with game-production workflows.</p>
-          <div className="hero-actions"><a className="primary-action" href="#projects">Start exploring →</a><a href={profile.resume} download>Download Resume</a><a href={profile.github} target="_blank" rel="noreferrer">GitHub</a></div>
-          <div className="metrics-row"><span><strong>Java</strong><small>Spring Boot services</small></span><span><strong>Kafka</strong><small>Async pipelines</small></span><span><strong>Redis</strong><small>Job state</small></span><span><strong>Unreal</strong><small>Tooling context</small></span></div>
+          <div className="hero-actions"><a className="primary-action" href="#tab-content">Start exploring →</a><a href={profile.resume} download>Download Resume</a><a href={profile.github} target="_blank" rel="noreferrer">GitHub</a></div>
         </div>
       </section>
 
+      <section id="tab-content" className="sector section-wrap tab-content" role="tabpanel" aria-labelledby={`profile-tab-${activeContentTab.id}`}>
+        <ProfileTabs tabs={heroTabs} activeTabId={activeTabId} onTabChange={setActiveTabId} />
+        <TabbedContent tab={activeContentTab} />
+      </section>
+
+      {false && (
+        <>
       <section className="shortcut-rail" aria-label="Discoverable portfolio shortcuts">
         {sectors.slice(1).map((sector, index) => (
           <a key={sector.id} href={`#${sector.id}`} className="shortcut-card panel-card" data-tilt><span>{String(index + 1).padStart(2, '0')} · {sector.label}</span><strong>{sector.title}</strong><em>{sector.note} →</em></a>
@@ -1392,6 +2254,9 @@ export default function App() {
         <SectorHeader eyebrow="Technical stack" title="Backend reliability, cloud delivery, game tooling, and data workflows.">Positioned for online-services expectations — scalable services, cloud delivery, caching, messaging, and clean interfaces — while keeping the Aegis portfolio clearly relevant to game production and content pipelines.</SectorHeader>
         <div className="stack-grid">{stackGroups.map(([title, items]) => <article key={title} className="panel-card" data-tilt><h3>{title}</h3><div>{items.map((item) => <Chip key={item}>{item}</Chip>)}</div></article>)}</div>
       </section>
+
+        </>
+      )}
 
       <footer id="contact" className="sector footer-shell panel-card" data-tilt>
         <div><ProfileAvatar /><h2>Let’s build online systems and game technology that scale.</h2><p>{profile.location}</p></div>
@@ -1462,6 +2327,15 @@ const typeStyles = `
   --body-font:"Soria","Georgia","Times New Roman",serif;
   --hud-fit-scale:1;
   --map-fit-scale:.9;
+  --lore-frame:#2a1710;
+  --lore-ring:#8f5b2e;
+  --lore-paper:#e5d2ae;
+  --lore-paper-hi:rgba(255,255,255,.34);
+  --lore-paper-line:rgba(79,47,25,.045);
+  --lore-ink:#372016;
+  --lore-heading:#24130d;
+  --lore-accent:#6c2d1e;
+  --lore-face-bg:#120806;
   font-size:88.2%;
   font-family:var(--body-font);
 }
@@ -1534,6 +2408,15 @@ li{
   --gold:#d9d9d9;
   --text:#f4f4f4;
   --muted:#a6a6a6;
+  --lore-frame:#181818;
+  --lore-ring:#d7d7d7;
+  --lore-paper:#e0e0dc;
+  --lore-paper-hi:rgba(255,255,255,.46);
+  --lore-paper-line:rgba(0,0,0,.055);
+  --lore-ink:#1f1f1f;
+  --lore-heading:#080808;
+  --lore-accent:#5a5a5a;
+  --lore-face-bg:#050505;
   background:
     radial-gradient(circle at 76% 16%,rgba(255,255,255,.18),transparent 30rem),
     radial-gradient(circle at 18% 82%,rgba(96,96,96,.22),transparent 32rem),
@@ -1673,6 +2556,15 @@ li{
   --gold:#d89a45;
   --text:#fff5df;
   --muted:#d9c7a5;
+  --lore-frame:#491323;
+  --lore-ring:#d89a45;
+  --lore-paper:#f0d6a4;
+  --lore-paper-hi:rgba(255,245,218,.38);
+  --lore-paper-line:rgba(96,39,24,.055);
+  --lore-ink:#3a1714;
+  --lore-heading:#2b1218;
+  --lore-accent:#8b3f24;
+  --lore-face-bg:#16090d;
   background:#16090d;
   color:var(--text);
 }
@@ -1763,6 +2655,15 @@ li{
   --gold:#b8f55f;
   --text:#f6fffd;
   --muted:#bfe7dc;
+  --lore-frame:#0a4a3f;
+  --lore-ring:#b8f55f;
+  --lore-paper:#d9f6dd;
+  --lore-paper-hi:rgba(255,255,255,.42);
+  --lore-paper-line:rgba(10,74,63,.052);
+  --lore-ink:#10342f;
+  --lore-heading:#06221f;
+  --lore-accent:#1f8d7a;
+  --lore-face-bg:#071d1b;
   background:#071d1b;
   color:var(--text);
 }
@@ -1848,11 +2749,20 @@ li{
   --bg:#e8f7ff;
   --panel:rgba(232,247,255,.78);
   --line:rgba(91,161,199,.28);
-  --cyan:#006eff;
-  --cyan2:#0052c7;
-  --gold:#006eff;
+  --cyan:#5a96b8;
+  --cyan2:#5a96b8;
+  --gold:#5a96b8;
   --text:#050505;
   --muted:#050505;
+  --lore-frame:#4d7f9c;
+  --lore-ring:#5a96b8;
+  --lore-paper:#f0fbff;
+  --lore-paper-hi:rgba(255,255,255,.72);
+  --lore-paper-line:rgba(77,127,156,.065);
+  --lore-ink:#050505;
+  --lore-heading:#050505;
+  --lore-accent:#315e76;
+  --lore-face-bg:#d7edf8;
   background:#e8f7ff;
   color:var(--text);
 }
@@ -1898,10 +2808,10 @@ li{
 .site.winter-theme .hud-row button.active,
 .site.winter-theme .winter-weather-button.active,
 .site.winter-theme .hero-actions .primary-action{
-  border-color:rgba(0,110,255,.9);
-  background:linear-gradient(135deg,#fff,#dff7ff 42%,#006eff);
+  border-color:rgba(90,150,184,.9);
+  background:linear-gradient(135deg,#fff,#dff7ff 42%,#5a96b8);
   color:#050505;
-  box-shadow:0 0 34px rgba(0,110,255,.58);
+  box-shadow:0 0 34px rgba(90,150,184,.58);
 }
 .site.winter-theme .eyebrow,
 .site.winter-theme .shortcut-card span,
@@ -1941,19 +2851,19 @@ li{
   color:#050505;
 }
 .site.winter-theme .mission-map a span{
-  border-color:rgba(0,110,255,.88);
+  border-color:rgba(90,150,184,.88);
   color:#050505;
   background:rgba(255,255,255,.52);
-  box-shadow:0 0 22px rgba(0,110,255,.58), inset 0 0 14px rgba(255,255,255,.48);
+  box-shadow:0 0 22px rgba(90,150,184,.58), inset 0 0 14px rgba(255,255,255,.48);
 }
 .site.winter-theme .mission-map a.active span{
-  border-color:rgba(0,110,255,1);
+  border-color:rgba(90,150,184,1);
   color:#fff;
-  background:#006eff;
-  box-shadow:0 0 38px rgba(0,110,255,.92),0 0 0 2px rgba(255,255,255,.72);
+  background:#5a96b8;
+  box-shadow:0 0 38px rgba(90,150,184,.92),0 0 0 2px rgba(255,255,255,.72);
 }
 .site.winter-theme .mission-map a.active{
-  border-color:rgba(0,110,255,.78);
+  border-color:rgba(90,150,184,.78);
   background:rgba(255,255,255,.7);
 }
 .site.winter-theme .section-heading p,
@@ -2015,8 +2925,8 @@ const layoutRestoreStyles = `
   padding-bottom:28px!important;
 }
 .section-wrap{
-  padding-top:42px!important;
-  padding-bottom:42px!important;
+  padding-top:64px!important;
+  padding-bottom:64px!important;
 }
 .scroll-finish-spacer{
   height:0!important;
@@ -2040,6 +2950,165 @@ const layoutRestoreStyles = `
 .floating-hud .hud-note{
   white-space:nowrap!important;
 }
+.lore-guide{
+  position:fixed!important;
+  left:20px!important;
+  bottom:22px!important;
+  z-index:46!important;
+  display:block!important;
+  width:min(520px,calc(100% - 40px))!important;
+  min-height:104px!important;
+  padding:0 42px 0 78px!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  clip-path:none!important;
+  transition:opacity .2s ease,transform .2s ease!important;
+}
+.lore-guide-toggle{
+  position:absolute!important;
+  top:15px!important;
+  right:10px!important;
+  display:grid!important;
+  place-items:center!important;
+  width:28px!important;
+  height:28px!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--lore-accent)!important;
+  padding:0!important;
+  z-index:4!important;
+}
+.lore-guide-face{
+  position:absolute;
+  left:0;
+  top:50%;
+  width:104px;
+  height:104px;
+  overflow:hidden;
+  border:3px solid var(--lore-frame);
+  background:var(--lore-face-bg);
+  border-radius:50%;
+  transform:translateY(-50%);
+  box-shadow:0 0 0 3px var(--lore-ring),0 9px 0 rgba(0,0,0,.22),0 18px 36px rgba(0,0,0,.46);
+  z-index:3;
+}
+.lore-guide-face:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 28% 22%,color-mix(in srgb,var(--lore-ring) 26%,transparent),transparent 34%),
+    linear-gradient(135deg,rgba(255,255,255,.18),transparent 32%),
+    repeating-linear-gradient(-10deg,color-mix(in srgb,var(--lore-ring) 14%,transparent) 0 1px,transparent 1px 9px);
+  mix-blend-mode:screen;
+  opacity:.5;
+  pointer-events:none;
+}
+.lore-guide-face img{
+  width:116%;
+  height:116%;
+  object-fit:cover;
+  object-position:50% 34%;
+  transform:translate(-6%,-5%) scale(1.06);
+  filter:contrast(1.08) saturate(1.08) brightness(.9);
+}
+.lore-guide-copy{
+  display:grid;
+  gap:5px;
+  min-width:0;
+  min-height:92px;
+  padding:14px 22px 14px 42px;
+  border:3px solid var(--lore-frame);
+  background:
+    linear-gradient(180deg,var(--lore-paper-hi),transparent 38%),
+    repeating-linear-gradient(0deg,var(--lore-paper-line) 0 1px,transparent 1px 5px),
+    var(--lore-paper);
+  box-shadow:0 0 0 2px var(--lore-ring),0 10px 0 rgba(0,0,0,.22),0 20px 42px rgba(0,0,0,.36);
+  color:var(--lore-ink);
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);
+  transform-origin:18px 50%;
+  animation:loreDialogPop .34s cubic-bezier(.19,1,.22,1) both;
+}
+.lore-guide-copy > span{
+  color:var(--lore-accent);
+  font-size:.58rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.lore-guide-copy strong{
+  display:block;
+  color:var(--lore-heading);
+  font-size:.8rem;
+  letter-spacing:.02em;
+  line-height:1.1;
+}
+.lore-guide-copy p{
+  margin:0;
+  min-height:1.05em;
+  color:var(--lore-ink);
+  font-size:.76rem;
+  line-height:1.38;
+  opacity:1;
+  transform:none;
+}
+.lore-guide-copy.exiting{
+  animation:loreDialogOut .2s ease both;
+}
+.lore-guide-copy.exiting p{
+  animation:loreTextOut .18s ease both;
+}
+.lore-type-caret{
+  display:inline-block;
+  width:7px;
+  height:1em;
+  margin-left:2px;
+  vertical-align:-.13em;
+  background:var(--lore-accent);
+  animation:loreCaretBlink .78s steps(1,end) infinite;
+}
+.lore-guide.collapsed{
+  width:48px!important;
+  height:48px!important;
+  min-height:48px!important;
+  grid-template-columns:1fr!important;
+  padding:6px!important;
+  border-color:transparent!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  clip-path:none!important;
+  overflow:visible!important;
+}
+.lore-guide.collapsed .lore-guide-face,
+.lore-guide.collapsed .lore-guide-copy{
+  display:none!important;
+}
+.lore-guide.collapsed .lore-guide-toggle{
+  inset:6px!important;
+  width:36px!important;
+  height:36px!important;
+  color:var(--text)!important;
+}
+@keyframes loreDialogPop{
+  0%{opacity:0;transform:translateX(-12px) scale(.84) rotate(-1.8deg)}
+  68%{opacity:1;transform:translateX(2px) scale(1.025) rotate(.5deg)}
+  100%{opacity:1;transform:translateX(0) scale(1) rotate(0)}
+}
+@keyframes loreDialogOut{
+  0%{opacity:1;transform:translateX(0) scale(1)}
+  100%{opacity:0;transform:translateX(-10px) scale(.92)}
+}
+@keyframes loreTextOut{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-4px) scale(.98)}
+}
+@keyframes loreCaretBlink{
+  0%,48%{opacity:1}
+  49%,100%{opacity:0}
+}
 .mission-map{
   position:fixed!important;
   left:12px!important;
@@ -2058,12 +3127,13 @@ const layoutRestoreStyles = `
 .mission-map a::after,
 .mission-map a span::after,
 .shortcut-card::after,
-.profile-avatar::after{
+.profile-avatar::after,
+.lore-guide::after{
   content:none!important;
 }
 .profile-avatar{
-  width:58px!important;
-  height:58px!important;
+  width:72.5px!important;
+  height:72.5px!important;
   border-radius:50%!important;
   clip-path:circle(50% at 50% 50%)!important;
   aspect-ratio:1/1!important;
@@ -2080,18 +3150,18 @@ const layoutRestoreStyles = `
   overflow:visible!important;
 }
 .nav-shell{
-  height:48px!important;
-  min-height:48px!important;
-  padding-top:5px!important;
-  padding-bottom:5px!important;
+  height:60px!important;
+  min-height:60px!important;
+  padding-top:7px!important;
+  padding-bottom:7px!important;
   align-items:center!important;
   clip-path:none!important;
   border:0!important;
 }
 .brand{
   position:relative!important;
-  min-height:36px!important;
-  padding-left:72px!important;
+  min-height:45px!important;
+  padding-left:90px!important;
 }
 .brand .profile-avatar{
   position:absolute!important;
@@ -2104,9 +3174,29 @@ const layoutRestoreStyles = `
   content:none!important;
 }
 .nav-cta{
-  padding-top:7px!important;
-  padding-bottom:7px!important;
+  padding-top:9px!important;
+  padding-bottom:9px!important;
   line-height:1!important;
+}
+@media (max-width:760px){
+  .lore-guide{
+    left:11px!important;
+    bottom:11px!important;
+    width:min(390px,calc(100% - 22px))!important;
+    min-height:86px!important;
+    padding:0 38px 0 58px!important;
+  }
+  .lore-guide-face{
+    width:78px;
+    height:78px;
+  }
+  .lore-guide-copy p{
+    font-size:.68rem;
+  }
+  .lore-guide-copy{
+    min-height:78px;
+    padding:11px 16px 11px 32px;
+  }
 }
 .mission-map a{
   min-width:128px!important;
@@ -2149,6 +3239,1342 @@ const layoutRestoreStyles = `
   .shortcut-rail{
     width:min(100% - 22px,1240px)!important;
     grid-template-columns:1fr!important;
+  }
+}
+`;
+
+const tabStyles = `
+.overlay-collapse-button{
+  position:absolute;
+  z-index:12;
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  border:2px solid color-mix(in srgb,var(--cyan) 58%,rgba(255,255,255,.36));
+  border-radius:48% 52% 44% 56%/55% 43% 57% 45%;
+  background:
+    radial-gradient(circle at 36% 30%,rgba(255,255,255,.28),transparent 36%),
+    color-mix(in srgb,var(--panel) 68%,rgba(255,255,255,.12));
+  color:var(--cyan2);
+  font-weight:1000;
+  line-height:1;
+  box-shadow:3px 4px 0 rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.12);
+  clip-path:none!important;
+}
+.overlay-collapse-button::after{
+  content:none!important;
+}
+.overlay-collapse-button:hover{
+  border-color:color-mix(in srgb,var(--cyan2) 82%,white);
+  background:
+    radial-gradient(circle at 36% 30%,rgba(255,255,255,.34),transparent 36%),
+    color-mix(in srgb,var(--cyan) 18%,var(--panel));
+}
+.sketch-pointer{
+  width:20px;
+  height:20px;
+  overflow:visible;
+  fill:color-mix(in srgb,currentColor 42%,transparent);
+  stroke:currentColor;
+  stroke-width:2.1;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  transform-origin:50% 50%;
+  filter:drop-shadow(1px 1px 0 rgba(0,0,0,.24));
+}
+.sketch-pointer path{
+  vector-effect:non-scaling-stroke;
+}
+.sketch-pointer-shadow{
+  fill:rgba(0,0,0,.18);
+  stroke:rgba(0,0,0,.22);
+  transform:translate(1px,1.2px) rotate(2deg);
+}
+.sketch-pointer.left{
+  transform:rotate(180deg);
+}
+.sketch-pointer.down{
+  transform:rotate(90deg);
+}
+.sketch-pointer.up{
+  transform:rotate(-90deg);
+}
+.hud-collapse-button{
+  top:10px;
+  right:10px;
+}
+.map-collapse-button{
+  top:8px;
+  right:-17px;
+}
+.hud-content{
+  padding-right:36px;
+}
+.particle-cycle-row{
+  display:grid!important;
+  grid-template-columns:40px minmax(0,1fr) 40px;
+  gap:6px!important;
+}
+.particle-cycle-row button{
+  min-width:0;
+  box-shadow:none!important;
+}
+.particle-cycle-row .particle-arrow{
+  flex:0 0 40px;
+  padding:9px 0!important;
+  border-color:rgba(133,239,255,.18)!important;
+  background:rgba(0,0,0,.28)!important;
+  color:#dffbff!important;
+}
+.particle-cycle-row .particle-label{
+  text-align:center;
+  border-color:rgba(133,239,255,.18)!important;
+  background:rgba(6,15,24,.58)!important;
+  color:#e0f7ff!important;
+}
+.particle-cycle-row .particle-arrow:hover,
+.particle-cycle-row .particle-label:hover{
+  border-color:rgba(255,255,255,.34)!important;
+  background:rgba(255,255,255,.1)!important;
+}
+.mission-map-content{
+  display:grid;
+  gap:8px;
+}
+.floating-hud,
+.mission-map{
+  transition:width .2s ease,padding .2s ease,transform .2s ease,opacity .2s ease;
+}
+.floating-hud.collapsed{
+  width:48px!important;
+  height:48px!important;
+  min-height:48px!important;
+  padding:6px!important;
+  border-color:transparent!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  clip-path:none!important;
+  overflow:visible!important;
+}
+.floating-hud.collapsed::after{
+  display:none!important;
+}
+.floating-hud.collapsed .hud-content{
+  display:none!important;
+}
+.floating-hud.collapsed .hud-collapse-button{
+  inset:6px!important;
+  width:36px!important;
+  height:36px!important;
+}
+.mission-map.collapsed{
+  width:48px!important;
+  min-width:48px!important;
+  height:48px!important;
+  min-height:48px!important;
+  padding:6px!important;
+  gap:0!important;
+  border-color:transparent!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  clip-path:none!important;
+  overflow:visible!important;
+}
+.mission-map.collapsed::after{
+  display:none!important;
+}
+.mission-map.collapsed .mission-map-content{
+  display:none!important;
+}
+.mission-map.collapsed .map-collapse-button{
+  inset:6px!important;
+  width:36px!important;
+  height:36px!important;
+}
+.floating-hud.collapsed .hud-collapse-button,
+.mission-map.collapsed .map-collapse-button,
+.floating-hud.collapsed .hud-collapse-button:hover,
+.mission-map.collapsed .map-collapse-button:hover{
+  border-color:transparent!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.floating-hud.collapsed .sketch-pointer,
+.mission-map.collapsed .sketch-pointer{
+  width:24px;
+  height:24px;
+  filter:drop-shadow(0 0 8px color-mix(in srgb,var(--cyan) 36%,transparent)) drop-shadow(1px 1px 0 rgba(0,0,0,.28));
+}
+.tab-content{
+  display:grid;
+  gap:0;
+  padding-top:28px!important;
+}
+.tab-pane{
+  position:relative;
+  display:grid;
+  gap:38px;
+  margin:0;
+  padding:36px 34px 34px;
+  border:1px solid rgba(255,255,255,.18);
+  border-top-color:rgba(255,255,255,.13);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018)),
+    rgba(0,0,0,.28);
+  box-shadow:0 24px 88px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.06);
+  clip-path:none;
+  overflow:hidden;
+}
+.tab-pane:before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:3px;
+  background:linear-gradient(90deg,var(--gold),rgba(255,255,255,.44),transparent);
+  opacity:.82;
+}
+.tab-pane-header{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:minmax(230px,.4fr) minmax(0,1fr);
+  gap:34px;
+  align-items:end;
+  padding:0 0 26px;
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+.tab-pane-header p{
+  margin:0 0 8px;
+  color:var(--gold);
+  font-size:.74rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.tab-pane-header h2{
+  margin:0;
+  color:#f2fbf8;
+  font-size:clamp(1.7rem,2.9vw,3rem);
+  line-height:1.02;
+  text-transform:uppercase;
+}
+.tab-pane-header span{
+  color:#d2d2d2;
+  line-height:1.64;
+}
+.tab-pane-body{
+  position:relative;
+  z-index:2;
+  display:grid;
+  gap:52px;
+}
+.tabbed-subsection{
+  display:grid;
+  gap:30px;
+}
+.tabbed-subsection .section-heading{
+  margin-bottom:0;
+}
+.tab-content .project-grid,
+.tab-content .experience-grid,
+.tab-content .stack-grid{
+  gap:30px;
+}
+.tab-content .project-card,
+.tab-content .experience-card,
+.tab-content .stack-grid article{
+  padding:32px;
+}
+.tab-content .project-visual{
+  margin:26px 0;
+}
+.tab-content .chip-row{
+  gap:10px;
+  margin:24px 0;
+}
+.tab-content .project-card ul{
+  gap:14px;
+  margin-top:24px;
+}
+.tab-content .architecture-panel{
+  padding:44px;
+}
+.tab-content .architecture-panel{
+  margin-top:0;
+}
+.tab-content .experience-card p:not(:first-child){
+  color:#cbd5e1;
+  line-height:1.72;
+}
+.tab-content .experience-card ul{
+  display:grid;
+  gap:12px;
+  margin:20px 0 0;
+  padding:0;
+  list-style:none;
+  color:#cbd5e1;
+}
+.tab-content .experience-card li:before{
+  content:"/";
+  color:var(--cyan);
+  margin-right:8px;
+}
+.date-timeline-system{
+  --sketch-accent:var(--cyan);
+  --sketch-ink:#6f7374;
+  --sketch-paper:rgba(248,249,244,.22);
+  display:grid;
+  gap:24px;
+}
+.date-timeline-controls{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) 42px;
+  gap:14px;
+  align-items:stretch;
+}
+.date-timeline-controls button{
+  border:2px solid color-mix(in srgb,var(--sketch-ink) 72%,transparent);
+  border-radius:48% 52% 45% 55%/54% 46% 56% 44%;
+  background:color-mix(in srgb,var(--sketch-paper) 58%,transparent);
+  color:#101414;
+  font-weight:1000;
+  box-shadow:3px 4px 0 rgba(0,0,0,.14);
+  clip-path:none!important;
+}
+.date-timeline-controls button:hover{
+  border-color:var(--sketch-accent);
+  background:color-mix(in srgb,var(--sketch-accent) 10%,rgba(255,255,255,.28));
+}
+.date-timeline-controls div{
+  min-width:0;
+  border:2px solid color-mix(in srgb,var(--sketch-ink) 68%,transparent);
+  border-radius:10px 7px 12px 8px/8px 12px 7px 10px;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 17px,rgba(111,115,116,.055) 18px 19px),
+    color-mix(in srgb,var(--sketch-paper) 54%,transparent);
+  padding:15px 18px;
+  box-shadow:5px 6px 0 rgba(0,0,0,.12);
+}
+.date-timeline-controls span{
+  display:block;
+  color:var(--sketch-accent);
+  font-size:.72rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.date-timeline-controls strong{
+  display:block;
+  margin-top:5px;
+  color:#101414;
+  font-size:clamp(1.1rem,1.8vw,1.55rem);
+  line-height:1.04;
+  text-transform:uppercase;
+}
+.date-timeline-rail{
+  position:relative;
+  min-height:650px;
+  border:3px solid color-mix(in srgb,var(--sketch-ink) 76%,transparent);
+  border-radius:12px 7px 14px 8px/8px 13px 7px 12px;
+  background:
+    linear-gradient(90deg,rgba(111,115,116,.025) 0 2px,transparent 2px 78px),
+    repeating-linear-gradient(0deg,transparent 0 54px,rgba(111,115,116,.035) 55px 57px,transparent 58px 116px),
+    radial-gradient(circle at 48% 8%,color-mix(in srgb,var(--sketch-accent) 6%,transparent),transparent 26%),
+    var(--sketch-paper);
+  box-shadow:8px 10px 0 rgba(0,0,0,.08);
+  overflow:visible;
+}
+.date-timeline-rail:before{
+  content:"";
+  position:absolute;
+  inset:30px 28px;
+  opacity:.62;
+  background:
+    repeating-linear-gradient(180deg,color-mix(in srgb,var(--sketch-ink) 70%,transparent) 0 12px,transparent 13px 30px);
+  background-position:left center;
+  background-repeat:no-repeat;
+  background-size:3px 100%;
+  pointer-events:none;
+}
+.date-timeline-rail:after{
+  content:"";
+  position:absolute;
+  left:12%;
+  right:12%;
+  bottom:28px;
+  height:4px;
+  border-top:4px solid color-mix(in srgb,var(--sketch-ink) 72%,transparent);
+  border-radius:50%;
+  transform:rotate(-.8deg);
+  pointer-events:none;
+}
+.date-timeline-trunk{
+  position:absolute;
+  left:50%;
+  top:52px;
+  bottom:58px;
+  width:28px;
+  border-left:6px solid color-mix(in srgb,var(--sketch-ink) 82%,transparent);
+  border-right:3px dashed color-mix(in srgb,var(--sketch-ink) 44%,transparent);
+  border-radius:48% 52% 50% 50%;
+  background:transparent;
+  box-shadow:3px 0 0 color-mix(in srgb,var(--sketch-accent) 18%,transparent);
+  transform:translateX(-50%) rotate(-1.3deg);
+}
+.date-timeline-trunk:before,
+.date-timeline-trunk:after{
+  content:"";
+  position:absolute;
+  left:50%;
+  width:112px;
+  height:0;
+  border-top:3px dashed color-mix(in srgb,var(--sketch-ink) 46%,transparent);
+  background:transparent;
+  transform-origin:left center;
+}
+.date-timeline-trunk:before{
+  top:31%;
+  transform:rotate(-24deg);
+}
+.date-timeline-trunk:after{
+  top:67%;
+  transform:rotate(24deg);
+}
+.date-timeline-boundary{
+  position:absolute;
+  color:color-mix(in srgb,var(--sketch-ink) 84%,#111);
+  font-size:.72rem;
+  font-weight:1000;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.date-timeline-boundary.start{
+  top:18px;
+  left:50%;
+  transform:translateX(calc(-100% - 22px));
+}
+.date-timeline-boundary.end{
+  right:50%;
+  bottom:18px;
+  transform:translateX(calc(100% + 22px));
+}
+.date-timeline-node{
+  position:absolute;
+  top:var(--timeline-y);
+  width:min(240px,32%);
+  border:0;
+  background:transparent;
+  color:#cbd5e1;
+  padding:0;
+  clip-path:none!important;
+  overflow:visible;
+  transform:translateY(-50%);
+  cursor:pointer;
+}
+.date-timeline-node.active{
+  z-index:4;
+}
+.date-timeline-node.left{
+  left:calc(50% - min(280px,38%));
+  text-align:right;
+}
+.date-timeline-node.right{
+  right:calc(50% - min(280px,38%));
+  text-align:left;
+}
+.date-timeline-branch{
+  position:absolute;
+  top:50%;
+  width:clamp(44px,8vw,94px);
+  height:0;
+  border-top:4px solid color-mix(in srgb,var(--node-color) 58%,var(--sketch-ink));
+  border-radius:50%;
+  background:transparent;
+  transform:translateY(-50%);
+}
+.date-timeline-node.left .date-timeline-branch{
+  left:100%;
+  transform:translateY(-50%) rotate(3.5deg);
+}
+.date-timeline-node.right .date-timeline-branch{
+  right:100%;
+  transform:translateY(-50%) rotate(-3.5deg);
+}
+.date-timeline-orb{
+  position:relative;
+  display:grid;
+  align-content:center;
+  justify-items:center;
+  width:100%;
+  aspect-ratio:1/1;
+  max-width:230px;
+  margin-inline:auto;
+  border:4px solid color-mix(in srgb,var(--node-color) 56%,var(--sketch-ink));
+  border-radius:49% 51% 46% 54%/52% 47% 53% 48%;
+  background:
+    radial-gradient(circle at 36% 28%,rgba(255,255,255,.18),transparent 24%),
+    color-mix(in srgb,var(--node-color) 42%,rgba(255,255,255,.18));
+  color:#101414;
+  padding:28px;
+  box-shadow:7px 8px 0 rgba(0,0,0,.12),inset 0 0 0 2px rgba(255,255,255,.3);
+  transition:transform .2s ease,box-shadow .2s ease,filter .2s ease;
+}
+.date-timeline-orb:before,
+.date-timeline-orb:after{
+  content:"";
+  position:absolute;
+  inset:8px;
+  border:2px solid color-mix(in srgb,var(--sketch-ink) 52%,transparent);
+  border-radius:52% 48% 50% 50%/47% 53% 49% 51%;
+  transform:rotate(-4deg);
+  pointer-events:none;
+}
+.date-timeline-orb:after{
+  inset:15px;
+  border-style:dashed;
+  opacity:.36;
+  transform:rotate(5deg);
+}
+.date-timeline-node.left .date-timeline-orb{
+  transform:rotate(-1.4deg);
+}
+.date-timeline-node.right .date-timeline-orb{
+  transform:rotate(1.2deg);
+}
+.date-timeline-orb em{
+  position:relative;
+  z-index:1;
+  display:block;
+  color:inherit;
+  font-style:normal;
+  font-size:clamp(1.45rem,3vw,2.35rem);
+  font-weight:1000;
+  letter-spacing:.02em;
+}
+.date-timeline-orb em:after{
+  content:"";
+  display:block;
+  width:70%;
+  max-width:120px;
+  margin:10px auto 9px;
+  border-top:3px dotted color-mix(in srgb,var(--sketch-ink) 52%,transparent);
+}
+.date-timeline-orb strong{
+  position:relative;
+  z-index:1;
+  display:block;
+  color:inherit;
+  font-size:clamp(.78rem,1.4vw,1.05rem);
+  line-height:1.14;
+  text-transform:uppercase;
+}
+.date-timeline-orb small{
+  position:relative;
+  z-index:1;
+  display:block;
+  max-width:170px;
+  margin-top:8px;
+  color:rgba(16,20,20,.72);
+  font-size:.72rem;
+  line-height:1.32;
+}
+.date-timeline-icon{
+  position:absolute;
+  display:grid;
+  place-items:center;
+  right:-8px;
+  bottom:8%;
+  width:62px;
+  height:62px;
+  border:3px solid color-mix(in srgb,var(--sketch-ink) 58%,transparent);
+  border-radius:46% 54% 51% 49%/52% 46% 54% 48%;
+  background:color-mix(in srgb,var(--node-color) 24%,rgba(255,255,255,.5));
+  box-shadow:4px 5px 0 rgba(0,0,0,.14);
+  transform:rotate(4deg);
+}
+.date-timeline-node.left .date-timeline-icon{
+  right:auto;
+  left:-8px;
+  transform:rotate(-5deg);
+}
+.date-timeline-icon svg{
+  width:32px;
+  height:32px;
+  fill:color-mix(in srgb,var(--node-color) 72%,#000);
+}
+.date-timeline-node:hover .date-timeline-orb,
+.date-timeline-node:focus-visible .date-timeline-orb{
+  filter:saturate(1.08);
+  box-shadow:8px 10px 0 rgba(0,0,0,.16),0 0 0 6px color-mix(in srgb,var(--node-color) 22%,transparent),inset 0 0 0 2px rgba(255,255,255,.38);
+}
+.date-timeline-node.left:hover .date-timeline-orb,
+.date-timeline-node.left:focus-visible .date-timeline-orb{
+  transform:rotate(-1.4deg) scale(1.04);
+}
+.date-timeline-node.right:hover .date-timeline-orb,
+.date-timeline-node.right:focus-visible .date-timeline-orb{
+  transform:rotate(1.2deg) scale(1.04);
+}
+.date-timeline-detail-copy{
+  position:absolute;
+  top:50%;
+  display:block;
+  width:min(300px,34vw);
+  border:2px solid color-mix(in srgb,var(--sketch-ink) 70%,transparent);
+  border-radius:8px 13px 7px 11px/12px 7px 13px 8px;
+  background:
+    linear-gradient(180deg,color-mix(in srgb,var(--node-color) 14%,rgba(255,255,255,.22)),rgba(255,255,255,.16)),
+    var(--sketch-paper);
+  box-shadow:6px 7px 0 rgba(0,0,0,.08);
+  color:#252a2b;
+  padding:12px 14px;
+  text-align:left;
+  transform:translateY(-50%);
+  pointer-events:auto;
+  cursor:pointer;
+  transform-origin:center;
+  transition:transform .22s ease,box-shadow .22s ease,background .22s ease,border-color .22s ease;
+}
+.date-timeline-detail-copy:before{
+  content:"";
+  position:absolute;
+  top:50%;
+  width:48px;
+  border-top:4px solid color-mix(in srgb,var(--node-color) 58%,var(--sketch-accent));
+  border-radius:50%;
+  opacity:.72;
+}
+.date-timeline-node.left .date-timeline-detail-copy{
+  left:calc(100% + clamp(58px,8vw,118px));
+  transform:translateY(-50%) rotate(1.1deg);
+}
+.date-timeline-node.left.active .date-timeline-detail-copy{
+  z-index:5;
+  border-color:color-mix(in srgb,var(--node-color) 76%,var(--sketch-ink));
+  background:
+    linear-gradient(180deg,color-mix(in srgb,var(--node-color) 22%,rgba(255,255,255,.34)),rgba(255,255,255,.24)),
+    var(--sketch-paper);
+  box-shadow:16px 18px 0 rgba(0,0,0,.16),0 0 0 8px color-mix(in srgb,var(--node-color) 18%,transparent),0 24px 54px rgba(0,0,0,.18);
+  transform:translateY(-50%) rotate(1.1deg) scale(1.5);
+}
+.date-timeline-node.left .date-timeline-detail-copy:before{
+  left:-52px;
+  transform:rotate(-7deg);
+}
+.date-timeline-node.right .date-timeline-detail-copy{
+  right:calc(100% + clamp(58px,8vw,118px));
+  text-align:right;
+  transform:translateY(-50%) rotate(-1.1deg);
+}
+.date-timeline-node.right.active .date-timeline-detail-copy{
+  z-index:5;
+  border-color:color-mix(in srgb,var(--node-color) 76%,var(--sketch-ink));
+  background:
+    linear-gradient(180deg,color-mix(in srgb,var(--node-color) 22%,rgba(255,255,255,.34)),rgba(255,255,255,.24)),
+    var(--sketch-paper);
+  box-shadow:16px 18px 0 rgba(0,0,0,.16),0 0 0 8px color-mix(in srgb,var(--node-color) 18%,transparent),0 24px 54px rgba(0,0,0,.18);
+  transform:translateY(-50%) rotate(-1.1deg) scale(1.5);
+}
+.date-timeline-node.right .date-timeline-detail-copy:before{
+  right:-52px;
+  transform:rotate(7deg);
+}
+.date-timeline-detail-meta{
+  display:block;
+  color:color-mix(in srgb,var(--node-color) 70%,#111);
+  font-size:.72rem;
+  font-weight:1000;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+.date-timeline-detail-body{
+  display:block;
+  margin-top:8px;
+  color:inherit;
+  font-size:.84rem;
+  font-weight:800;
+  line-height:1.45;
+}
+.date-timeline-detail-list{
+  display:grid;
+  gap:5px;
+  margin-top:9px;
+}
+.date-timeline-detail-list span{
+  display:block;
+  color:inherit;
+  font-size:.76rem;
+  font-weight:800;
+  line-height:1.35;
+  opacity:.82;
+}
+.date-timeline-detail-list span:before{
+  content:"~";
+  margin-right:6px;
+  color:color-mix(in srgb,var(--node-color) 70%,#111);
+  font-weight:1000;
+}
+.site.winter-theme .tab-content .project-card p,
+.site.winter-theme .tab-content .project-card ul,
+.site.winter-theme .tab-content .project-card li,
+.site.winter-theme .tab-content .experience-card p,
+.site.winter-theme .tab-content .experience-card ul,
+.site.winter-theme .tab-content .experience-card li,
+.site.winter-theme .tab-content .section-heading p:not(.eyebrow),
+.site.winter-theme .tab-content .stack-grid article,
+.site.winter-theme .tab-content .stack-grid h3,
+.site.winter-theme .tab-pane-header span,
+.site.winter-theme .date-timeline-controls button,
+.site.winter-theme .date-timeline-controls strong,
+.site.winter-theme .date-timeline-boundary{
+  color:#050505;
+}
+.site.winter-theme .date-timeline-controls div,
+.site.winter-theme .date-timeline-rail{
+  border-color:rgba(90,150,184,.28);
+}
+.site.winter-theme .date-timeline-controls button{
+  border-color:rgba(90,150,184,.28);
+  background:rgba(255,255,255,.58);
+}
+.site.fall-theme .date-timeline-system{
+  --sketch-accent:#d89a45;
+}
+.site.spring-theme .date-timeline-system{
+  --sketch-accent:#2fb986;
+}
+.site.winter-theme .date-timeline-system{
+  --sketch-accent:#5a96b8;
+  --sketch-paper:rgba(244,250,252,.2);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .date-timeline-node{
+  --node-color:#f2fbf8!important;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .date-timeline-orb{
+  color:#050505;
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .date-timeline-orb small{
+  color:rgba(5,5,5,.72);
+}
+.site:not(.fall-theme):not(.spring-theme):not(.winter-theme) .date-timeline-icon svg{
+  fill:#2b2b2b;
+}
+.site.fall-theme .date-timeline-node{
+  --node-color:#d89a45!important;
+}
+.site.spring-theme .date-timeline-node{
+  --node-color:#2fb986!important;
+}
+.site.winter-theme .date-timeline-node{
+  --node-color:#5a96b8!important;
+}
+.site.winter-theme .date-timeline-trunk,
+.site.winter-theme .date-timeline-branch{
+  background:rgba(90,150,184,.34);
+}
+.site.winter-theme .date-timeline-orb{
+  color:#050505;
+}
+.site.winter-theme .date-timeline-orb small{
+  color:rgba(5,5,5,.72);
+}
+.site.winter-theme .date-timeline-detail-copy,
+.site.winter-theme .date-timeline-detail-meta,
+.site.winter-theme .date-timeline-detail-list span:before{
+  color:#050505;
+}
+.site.winter-theme .tab-pane{
+  border-color:rgba(90,150,184,.28);
+  background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(232,247,255,.48));
+}
+.site.winter-theme .profile-tab-list{
+  border-color:rgba(90,150,184,.28);
+  background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(232,247,255,.58));
+}
+.site.winter-theme .profile-tab-list button.active{
+  background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(232,247,255,.72));
+  box-shadow:inset 0 3px 0 #5a96b8;
+}
+.site.winter-theme .profile-tab-list button.active:after{
+  background:rgba(238,248,255,.96);
+}
+.site.winter-theme .tab-pane-header h2,
+.site.winter-theme .tab-pane-header span{
+  color:#050505;
+}
+@media (max-width:760px){
+  .tab-pane{
+    padding:22px;
+    gap:28px;
+  }
+  .tab-pane-header{
+    grid-template-columns:1fr;
+    gap:18px;
+    padding-bottom:20px;
+  }
+  .tab-pane-body{
+    gap:36px;
+  }
+  .tabbed-subsection{
+    gap:24px;
+  }
+  .tab-content .project-grid,
+  .tab-content .experience-grid,
+  .tab-content .stack-grid{
+    gap:22px;
+  }
+  .tab-content .project-card,
+  .tab-content .experience-card,
+  .tab-content .stack-grid article{
+    padding:24px;
+  }
+  .date-timeline-rail{
+    min-height:620px;
+  }
+  .date-timeline-node{
+    width:38%;
+  }
+  .date-timeline-detail-copy{
+    width:36vw;
+    padding:10px;
+    font-size:.72rem;
+  }
+  .date-timeline-node.left .date-timeline-detail-copy{
+    left:calc(100% + 18px);
+  }
+  .date-timeline-node.right .date-timeline-detail-copy{
+    right:calc(100% + 18px);
+  }
+  .date-timeline-detail-body{
+    font-size:.72rem;
+    line-height:1.3;
+  }
+  .date-timeline-detail-list{
+    display:none;
+  }
+  .date-timeline-orb{
+    padding:20px;
+  }
+  .date-timeline-orb em{
+    font-size:1.45rem;
+  }
+  .date-timeline-orb strong{
+    font-size:.68rem;
+  }
+  .date-timeline-icon{
+    width:48px;
+    height:48px;
+  }
+  .date-timeline-icon svg{
+    width:25px;
+    height:25px;
+  }
+}
+.personal-subtabs{
+  display:grid;
+  grid-template-columns:minmax(180px,.28fr) minmax(0,1fr);
+  gap:28px;
+  align-items:stretch;
+}
+.personal-subtab-list{
+  display:grid;
+  align-content:start;
+  gap:12px;
+}
+.personal-subtab-list button{
+  position:relative;
+  display:grid;
+  gap:7px;
+  border:1px solid rgba(255,255,255,.16);
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.015)),
+    rgba(0,0,0,.2);
+  color:var(--text);
+  padding:16px 16px 15px;
+  text-align:left;
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%);
+  transition:background .2s ease,border-color .2s ease,transform .2s ease;
+}
+.personal-subtab-list button:hover{
+  border-color:rgba(255,255,255,.32);
+  background:rgba(255,255,255,.09);
+  transform:translateX(4px);
+}
+.personal-subtab-list button.active{
+  border-color:color-mix(in srgb,var(--gold) 62%,rgba(255,255,255,.2));
+  background:
+    linear-gradient(135deg,color-mix(in srgb,var(--gold) 18%,transparent),rgba(255,255,255,.035)),
+    rgba(0,0,0,.26);
+  box-shadow:inset 4px 0 0 var(--gold),0 12px 34px rgba(0,0,0,.18);
+}
+.personal-subtab-list button span{
+  color:var(--gold);
+  font-size:.68rem;
+  letter-spacing:.1em;
+}
+.personal-subtab-list button strong{
+  font-size:1rem;
+  line-height:1.1;
+}
+.personal-subtab-panel{
+  display:grid;
+  gap:24px;
+  min-height:320px;
+  padding:34px;
+  clip-path:none!important;
+}
+.personal-subtab-heading{
+  display:grid;
+  gap:10px;
+  max-width:760px;
+}
+.personal-subtab-heading p{
+  margin:0;
+  color:var(--gold);
+  font-size:.74rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.personal-subtab-heading h3{
+  margin:0;
+  color:#f2fbf8;
+  font-size:clamp(1.85rem,3.2vw,3.3rem);
+  line-height:.96;
+  text-transform:uppercase;
+}
+.personal-subtab-heading span,
+.personal-subtab-body{
+  color:#d2d2d2;
+  line-height:1.72;
+}
+.personal-subtab-body{
+  max-width:820px;
+  margin:0;
+  font-size:1.02rem;
+}
+.personal-media-experience{
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(260px,.62fr);
+  gap:22px;
+  align-items:start;
+}
+.personal-featured-media{
+  position:sticky;
+  top:106px;
+  display:grid;
+  margin:0;
+  border:1px solid rgba(255,255,255,.14);
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),
+    rgba(0,0,0,.18);
+  overflow:hidden;
+  clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,0 100%);
+  box-shadow:0 26px 70px rgba(0,0,0,.18);
+}
+.personal-featured-media:before{
+  content:"";
+  position:absolute;
+  inset:14px;
+  border:1px solid rgba(255,255,255,.12);
+  pointer-events:none;
+  z-index:2;
+}
+.personal-featured-media > img,
+.personal-featured-media > video,
+.personal-featured-media > .personal-media-placeholder{
+  width:100%;
+  height:clamp(320px,44vw,540px);
+}
+.personal-featured-media img,
+.personal-featured-media video,
+.personal-media-thumb img,
+.personal-media-thumb video{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.personal-featured-media figcaption{
+  display:grid;
+  gap:9px;
+  padding:22px 24px 24px;
+  color:#d8e4f5;
+  line-height:1.55;
+}
+.personal-featured-media figcaption span,
+.personal-media-copy em,
+.personal-media-placeholder span{
+  color:var(--gold);
+  font-size:.72rem;
+  font-style:normal;
+  font-weight:1000;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.personal-featured-media figcaption strong{
+  color:#f8fafc;
+  font-size:clamp(1.35rem,2.4vw,2.25rem);
+  line-height:1.04;
+  text-transform:uppercase;
+}
+.personal-featured-media figcaption p{
+  margin:0;
+}
+.personal-media-feed{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+::view-transition-group(*){
+  animation-duration:.58s;
+  animation-timing-function:cubic-bezier(.2,.78,.16,1);
+}
+::view-transition-old(*),
+::view-transition-new(*){
+  animation-duration:.58s;
+  animation-timing-function:cubic-bezier(.2,.78,.16,1);
+  mix-blend-mode:normal;
+}
+.personal-swap-clone{
+  z-index:9999!important;
+  box-sizing:border-box;
+  filter:drop-shadow(0 24px 46px rgba(0,0,0,.34));
+  will-change:transform,opacity;
+}
+.personal-media-card{
+  position:relative;
+  display:grid;
+  grid-template-columns:auto 92px minmax(0,1fr);
+  gap:14px;
+  align-items:stretch;
+  width:100%;
+  border:1px solid rgba(255,255,255,.12);
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.012)),
+    rgba(0,0,0,.16);
+  color:var(--text);
+  padding:10px;
+  text-align:left;
+  overflow:hidden;
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%);
+  transition:translate .22s ease,border-color .22s ease,background .22s ease,box-shadow .22s ease;
+  will-change:translate;
+}
+.personal-media-card:hover{
+  border-color:color-mix(in srgb,var(--gold) 58%,rgba(255,255,255,.18));
+  background:
+    linear-gradient(135deg,color-mix(in srgb,var(--gold) 14%,transparent),rgba(255,255,255,.03)),
+    rgba(0,0,0,.24);
+  translate:-5px 0;
+  box-shadow:0 18px 42px rgba(0,0,0,.16);
+}
+.personal-media-index{
+  display:grid;
+  place-items:center;
+  width:34px;
+  color:var(--gold);
+  font-weight:1000;
+  font-size:.72rem;
+  letter-spacing:.08em;
+}
+.personal-media-thumb{
+  position:relative;
+  display:block;
+  min-height:92px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.2);
+  overflow:hidden;
+}
+.personal-media-copy{
+  display:grid;
+  align-content:center;
+  gap:7px;
+  min-width:0;
+}
+.personal-media-copy strong{
+  color:#f8fafc;
+  line-height:1.15;
+  text-transform:uppercase;
+}
+.personal-media-copy span{
+  color:#d8e4f5;
+  line-height:1.45;
+  font-size:.9rem;
+}
+.personal-media-placeholder{
+  display:grid;
+  align-content:center;
+  justify-items:start;
+  gap:12px;
+  padding:28px;
+  color:#f8fafc;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.015)),
+    radial-gradient(circle at 22% 18%,color-mix(in srgb,var(--gold) 18%,transparent),transparent 36%),
+    repeating-linear-gradient(-12deg,rgba(255,255,255,.055) 0 1px,transparent 1px 18px),
+    rgba(0,0,0,.24);
+}
+.personal-media-placeholder strong{
+  max-width:560px;
+  font-size:clamp(1.35rem,2.6vw,2.25rem);
+  line-height:1.04;
+  text-transform:uppercase;
+}
+.personal-media-placeholder.compact{
+  width:100%;
+  height:100%;
+  min-height:92px;
+  justify-items:center;
+  text-align:center;
+  padding:12px;
+}
+.personal-media-placeholder.compact span{
+  font-size:.58rem;
+}
+.personal-media-placeholder.compact strong{
+  font-size:.8rem;
+}
+.profile-tabs{
+  position:relative;
+  z-index:3;
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:0;
+}
+.profile-tab-list{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:0;
+  border:1px solid rgba(255,255,255,.18);
+  border-bottom:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.18));
+  box-shadow:0 18px 70px rgba(0,0,0,.22);
+}
+.profile-tab-list button{
+  position:relative;
+  min-height:74px;
+  border:0;
+  border-right:1px solid rgba(255,255,255,.12);
+  border-bottom:1px solid rgba(255,255,255,.13);
+  background:rgba(0,0,0,.18);
+  color:var(--text);
+  padding:14px 16px 13px;
+  text-align:left;
+  clip-path:none;
+  transition:background .2s ease,color .2s ease,box-shadow .2s ease;
+}
+.profile-tab-list button:last-child{
+  border-right:0;
+}
+.profile-tab-list button:hover{
+  background:rgba(255,255,255,.12);
+}
+.profile-tab-list button.active{
+  border-bottom-color:transparent;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),
+    rgba(0,0,0,.28);
+  box-shadow:inset 0 3px 0 var(--gold);
+}
+.profile-tab-list button.active:after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+  height:1px;
+  background:rgba(8,14,20,.98);
+}
+.profile-tab-list button span{
+  display:block;
+  color:var(--gold);
+  font-size:.66rem;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.profile-tab-list button strong{
+  display:block;
+  margin-top:8px;
+  font-size:.96rem;
+  line-height:1.1;
+}
+.profile-tab-panel{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:minmax(190px,.34fr) minmax(0,1fr);
+  gap:16px;
+  margin-top:14px;
+  padding-top:16px;
+  border-top:1px solid rgba(255,255,255,.13);
+}
+.profile-tab-intro p,
+.profile-tab-section h4,
+.profile-tab-item p{
+  margin:0;
+  color:var(--gold);
+  font-size:.72rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.profile-tab-intro h3{
+  margin:9px 0 10px;
+  font-size:clamp(1.25rem,2vw,1.8rem);
+  line-height:1.06;
+  letter-spacing:.01em;
+  text-transform:uppercase;
+}
+.profile-tab-intro span,
+.profile-tab-item span,
+.profile-tab-item li{
+  color:#d2d2d2;
+  line-height:1.45;
+  font-size:.92rem;
+}
+.profile-tab-sections{
+  display:grid;
+  gap:14px;
+}
+.profile-tab-section h4{
+  margin-bottom:10px;
+}
+.profile-tab-items{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.profile-tab-item{
+  display:grid;
+  gap:6px;
+  padding:0 0 10px 12px;
+  border-left:1px solid rgba(255,255,255,.22);
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.profile-tab-item h5{
+  margin:0;
+  color:#f2fbf8;
+  font-size:1rem;
+  line-height:1.16;
+}
+.profile-tab-item strong{
+  color:var(--cyan2);
+  font-size:.84rem;
+}
+.profile-tab-item ul{
+  display:grid;
+  gap:6px;
+  margin:3px 0 0;
+  padding:0;
+  list-style:none;
+}
+.profile-tab-item li:before{
+  content:"/";
+  color:var(--gold);
+  margin-right:7px;
+}
+.site.fall-theme .profile-tab-list,
+.site.spring-theme .profile-tab-list{
+  border-color:var(--line);
+  background:rgba(255,255,255,.06);
+}
+.site.fall-theme .profile-tab-list button,
+.site.spring-theme .profile-tab-list button{
+  border-right-color:var(--line);
+  border-bottom-color:var(--line);
+  background:rgba(255,255,255,.04);
+}
+.site.fall-theme .profile-tab-list button.active,
+.site.spring-theme .profile-tab-list button.active{
+  border-bottom-color:transparent;
+  background:rgba(255,255,255,.12);
+}
+.site.fall-theme .profile-tab-list button.active:after,
+.site.spring-theme .profile-tab-list button.active:after{
+  background:rgba(8,14,20,.98);
+}
+.site.winter-theme .profile-tab-list button,
+.site.winter-theme .personal-subtab-list button,
+.site.winter-theme .personal-subtab-heading h3,
+.site.winter-theme .personal-subtab-heading span,
+.site.winter-theme .personal-subtab-body,
+.site.winter-theme .personal-media-placeholder,
+.site.winter-theme .personal-featured-media figcaption,
+.site.winter-theme .personal-featured-media figcaption strong,
+.site.winter-theme .personal-media-copy,
+.site.winter-theme .personal-media-copy strong,
+.site.winter-theme .personal-media-copy span,
+.site.winter-theme .profile-tab-intro span,
+.site.winter-theme .profile-tab-item span,
+.site.winter-theme .profile-tab-item li,
+.site.winter-theme .profile-tab-item h5,
+.site.winter-theme .profile-tab-item strong{
+  color:#050505;
+}
+@media (max-width:1180px){
+  .profile-tabs{
+    max-width:none;
+  }
+  .profile-tab-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .profile-tab-panel{
+    grid-template-columns:1fr;
+  }
+  .personal-media-experience{
+    grid-template-columns:1fr;
+  }
+  .personal-featured-media{
+    position:relative;
+    top:auto;
+  }
+}
+@media (max-width:760px){
+  .profile-tabs{
+    margin:0;
+    padding:0;
+  }
+  .profile-tab-list{
+    grid-template-columns:1fr;
+  }
+  .profile-tab-items{
+    grid-template-columns:1fr;
+  }
+  .personal-subtabs{
+    grid-template-columns:1fr;
+  }
+  .personal-subtab-list{
+    grid-template-columns:1fr;
+  }
+  .personal-subtab-panel{
+    padding:24px;
+  }
+  .personal-featured-media > img,
+  .personal-featured-media > video,
+  .personal-featured-media > .personal-media-placeholder{
+    height:clamp(260px,72vw,360px);
+  }
+  .personal-featured-media figcaption{
+    padding:18px;
+  }
+  .personal-media-card{
+    grid-template-columns:auto 74px minmax(0,1fr);
+    gap:10px;
+  }
+  .personal-media-thumb,
+  .personal-media-placeholder.compact{
+    min-height:74px;
+  }
+  .personal-media-copy span{
+    display:none;
+  }
+  .profile-tab-list button{
+    min-height:62px;
   }
 }
 `;
