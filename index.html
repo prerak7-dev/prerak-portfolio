@@ -3,11 +3,125 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" sizes="64x64" href="%BASE_URL%lore-guide-favicon.png" />
-    <meta name="description" content="Prerak Pandey — Backend / Full-Stack Engineer building game-technology systems." />
-    <title>Prerak Pandey | Portfolio</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="/lore-guide-favicon.png" />
+    <meta name="theme-color" content="#080806" />
+    <meta name="description" content="Prerak Pandey - backend and full-stack engineer building game-technology systems, Unreal tooling, pipelines, and telemetry platforms." />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' ws://127.0.0.1:*; object-src 'none'; base-uri 'self'; form-action 'none'" />
+    <title>Prerak Pandey | Aegis Systems Archive</title>
+    <style>
+      #boot-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: #050504;
+        color: #e9e2d6;
+        font-family: "Barlow Condensed", "Agency FB", "Arial Narrow", sans-serif;
+        visibility: visible;
+        clip-path: inset(0 0 0 0);
+        transform: translateZ(0) scale(1);
+        transform-origin: 50% 55%;
+        transition:
+          clip-path 820ms cubic-bezier(.72,.02,.26,1),
+          transform 920ms cubic-bezier(.16,.84,.24,1),
+          visibility 0ms linear 900ms;
+      }
+      #boot-loader.is-complete {
+        visibility: hidden;
+        clip-path: inset(0 50% 0 50%);
+        transform: translateZ(0) scale(1.075);
+      }
+      .boot-scene {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        perspective: 1600px;
+      }
+      .boot-image-stage {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: max(100vw, 177.68vh);
+        aspect-ratio: 1672 / 941;
+        transform: translate(-50%, -50%) scale(1.025);
+        transform-style: preserve-3d;
+      }
+      .boot-frame {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
+        filter: brightness(.64) contrast(1.08);
+        transform: translateZ(0) scale(1.01);
+        transition: transform 900ms cubic-bezier(.16,.84,.24,1), filter 900ms ease;
+      }
+      #boot-loader.is-complete .boot-frame { transform: translateZ(120px) scale(1.09); filter: brightness(.78) contrast(1.12); }
+      .boot-scene::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        background:
+          linear-gradient(90deg, rgba(0,0,0,.7), transparent 36% 66%, rgba(0,0,0,.58)),
+          linear-gradient(180deg, rgba(0,0,0,.5), transparent 40%, rgba(0,0,0,.68));
+        box-shadow: inset 0 0 16vw rgba(0,0,0,.48);
+      }
+      .boot-copy {
+        position: relative;
+        z-index: 2;
+        width: min(420px, calc(100vw - 48px));
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        padding: 16px 18px;
+        border: 1px solid rgba(214, 179, 107, .36);
+        background: rgba(8,7,6,.72);
+        box-shadow: 0 24px 70px rgba(0,0,0,.48), inset 0 0 0 5px rgba(214,179,107,.04);
+        clip-path: polygon(3% 0, 97% 0, 100% 24%, 100% 78%, 97% 100%, 3% 100%, 0 78%, 0 24%);
+        backdrop-filter: blur(8px);
+        transform: translateZ(0) rotateX(0);
+        transform-origin: 50% 100%;
+        transition: transform 520ms cubic-bezier(.55,.02,.85,.38), clip-path 520ms ease;
+      }
+      #boot-loader.is-complete .boot-copy {
+        transform: translate3d(0, 42px, -180px) rotateX(68deg);
+        clip-path: polygon(50% 48%, 50% 48%, 50% 52%, 50% 52%);
+      }
+      .boot-copy span { font-size: 13.66px; text-transform: uppercase; }
+      .boot-copy strong { color: #d6b36b; font-family: "Barlow Condensed", "Agency FB", "Arial Narrow", sans-serif; font-size: 14.9px; font-weight: 600; }
+      .boot-copy i {
+        grid-column: 1 / -1;
+        height: 2px;
+        overflow: hidden;
+        background: rgba(214, 179, 107, .16);
+      }
+      .boot-copy i::before {
+        content: "";
+        display: block;
+        width: 38%;
+        height: 100%;
+        background: #d6b36b;
+        animation: bootScan 1.1s ease-in-out infinite;
+      }
+      @keyframes bootScan { 0% { transform: translateX(-110%); } 100% { transform: translateX(370%); } }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-copy i::before { animation: none; }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-loader" aria-label="Loading the Aegis systems archive">
+      <div class="boot-scene" aria-hidden="true">
+        <div class="boot-image-stage">
+          <img id="boot-gateway-frame" class="boot-frame" src="/cinematic/default/gateway/frames/frame-00.webp" alt="" />
+        </div>
+      </div>
+      <div class="boot-copy"><span>Assembling the archive</span><strong id="boot-progress">000</strong><i aria-hidden="true"></i></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

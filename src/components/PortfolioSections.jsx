@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import loreGuidePersona from '../../content/lore-guide-persona.png';
+import loreGuidePersona from '../../content/lore-guide-persona.webp';
 import {
   developerPipelineSteps,
   manualWeatherCycle,
@@ -19,6 +19,45 @@ import {
 import { getSafeLinkProps } from '../security/contentSecurity.js';
 import { Chip, ProfileAvatar, SketchArrow } from './primitives.jsx';
 import { getTimelineBounds, normalizeTimelineItems, positionOnTimeline } from '../utils/timeline.js';
+
+export function DimensionalHeroStage({ activeContentTab }) {
+  const activeLabel = activeContentTab?.label || 'Engineering Case Studies';
+  const activeKicker = activeContentTab?.kicker || '01 / Systems';
+  const stageNodes = [
+    { label: 'pipeline', value: 'async services', depth: 'front' },
+    { label: 'plugin', value: 'unreal runtime', depth: 'right' },
+    { label: 'telemetry', value: 'signals -> decisions', depth: 'back' },
+    { label: 'timeline', value: 'proof over polish', depth: 'left' },
+  ];
+
+  return (
+    <aside className="hero-dimensional-stage" aria-label="3D portfolio system map">
+      <div className="dimension-field" aria-hidden="true">
+        <span className="dimension-ring ring-a" />
+        <span className="dimension-ring ring-b" />
+        <span className="dimension-ring ring-c" />
+        <span className="dimension-grid-plane" />
+        <div className="dimension-core">
+          <span>project://aegis</span>
+          <strong>{activeLabel}</strong>
+          <em>{activeKicker}</em>
+        </div>
+        {stageNodes.map((node, index) => (
+          <span key={node.label} className={`dimension-node ${node.depth}`}>
+            <small>{String(index + 1).padStart(2, '0')}</small>
+            <strong>{node.label}</strong>
+            <em>{node.value}</em>
+          </span>
+        ))}
+      </div>
+      <div className="dimension-console">
+        <span>initialise(lore)</span>
+        <strong>{'{ systems: readable, evidence: direct, world: interactive }'}</strong>
+        <em>scroll.depth += content.proof</em>
+      </div>
+    </aside>
+  );
+}
 
 export function FloatingHud({ weather, setWeather, weatherPower, setWeatherPower, activeSector, liveWeather, timeProfile, weatherStatus, weatherError, onUseLiveWeather, onInteract, fallTheme, setFallTheme, springTheme, setSpringTheme, winterTheme, setWinterTheme }) {
   const [collapsed, setCollapsed] = useState(false);

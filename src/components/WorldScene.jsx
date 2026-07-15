@@ -122,6 +122,7 @@ export function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrol
 
       drawHud(orbX, orbY, t);
       drawTrack(t);
+      drawSpatialConstellation(t);
     }
 
     function drawHud(cx, cy, t) {
@@ -308,6 +309,109 @@ export function WorldBackdrop({ mode, weather, weatherPower, activeSector, scrol
         ctx.arc(x, yy, !spring && !fall && !winter ? (active ? 42 + Math.sin(t * 0.004) * 5 : 24) : (active ? 34 + Math.sin(t * 0.004) * 4 : 19), 0, Math.PI * 2);
         ctx.stroke();
       });
+      ctx.restore();
+    }
+
+    function drawSpatialConstellation(t) {
+      const fall = refs.current.fallTheme;
+      const spring = refs.current.springTheme;
+      const winter = refs.current.winterTheme;
+      const pointer = pointerRef.current;
+      const ink = winter ? '90,150,184' : spring ? '11,89,72' : fall ? '73,19,35' : '245,245,245';
+      const accent = winter ? '255,255,255' : spring ? '184,245,95' : fall ? '255,227,111' : '255,255,255';
+      const originX = width * (0.52 + (pointer.x - 0.5) * 0.04);
+      const originY = height * (0.5 + (pointer.y - 0.5) * 0.035);
+      const focal = Math.min(width, height) * 1.08;
+      const spin = t * 0.00032;
+
+      const project = (point) => {
+        const scale = focal / (focal + point.z);
+        return {
+          x: originX + point.x * scale,
+          y: originY + point.y * scale,
+          scale,
+        };
+      };
+
+      const rotateY = (point, angle) => {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return {
+          x: point.x * cos - point.z * sin,
+          y: point.y,
+          z: point.x * sin + point.z * cos,
+        };
+      };
+
+      const cubePoints = (size, center, angle) => {
+        const half = size / 2;
+        return [
+          [-half, -half, -half], [half, -half, -half], [half, half, -half], [-half, half, -half],
+          [-half, -half, half], [half, -half, half], [half, half, half], [-half, half, half],
+        ].map(([x, y, z]) => {
+          const rotated = rotateY({ x, y, z }, angle);
+          return { x: rotated.x + center.x, y: rotated.y + center.y, z: rotated.z + center.z };
+        });
+      };
+
+      const edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0],
+        [4, 5], [5, 6], [6, 7], [7, 4],
+        [0, 4], [1, 5], [2, 6], [3, 7],
+      ];
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (let z = -340; z <= 440; z += 80) {
+        const a = project({ x: -width * 0.38, y: height * 0.16, z });
+        const b = project({ x: width * 0.38, y: height * 0.16, z });
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(${ink},${0.09 + Math.max(0, a.scale - 0.55) * 0.08})`;
+        ctx.lineWidth = Math.max(0.4, a.scale * 1.2);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      for (let x = -420; x <= 420; x += 70) {
+        const a = project({ x, y: height * 0.16, z: -340 });
+        const b = project({ x, y: height * 0.16, z: 440 });
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(${ink},.07)`;
+        ctx.lineWidth = 0.8;
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      [
+        { size: 165, center: { x: -210, y: -50, z: 10 }, speed: 1 },
+        { size: 118, center: { x: 220, y: 28, z: -70 }, speed: -1.35 },
+        { size: 82, center: { x: 45, y: -172, z: 90 }, speed: 1.8 },
+      ].forEach((cube, cubeIndex) => {
+        const points = cubePoints(cube.size, cube.center, spin * cube.speed + cubeIndex);
+        ctx.strokeStyle = `rgba(${cubeIndex === 0 ? accent : ink},${cubeIndex === 0 ? 0.34 : 0.22})`;
+        ctx.lineWidth = cubeIndex === 0 ? 1.8 : 1.25;
+        edges.forEach(([from, to]) => {
+          const a = project(points[from]);
+          const b = project(points[to]);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        });
+        points.forEach((point) => {
+          const p = project(point);
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(${accent},${0.16 * p.scale})`;
+          ctx.arc(p.x, p.y, Math.max(1.4, 3.5 * p.scale), 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+
       ctx.restore();
     }
 
