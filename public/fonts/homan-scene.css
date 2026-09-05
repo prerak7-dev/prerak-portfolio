@@ -1,0 +1,8 @@
+@font-face {
+  font-family: "Homan Scene";
+  src: url("./HomanScene-Complete.woff2?v=1.2.0") format("woff2"),
+       url("./HomanScene-Complete.ttf?v=1.2.0") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}

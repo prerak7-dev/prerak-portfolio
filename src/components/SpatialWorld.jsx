@@ -3,12 +3,19 @@ import * as THREE from 'three';
 import { getCinematicAssets } from '../data/cinematicAssets.js';
 import { createAssetPath } from '../security/contentSecurity.js';
 import { subscribeSpatialMotion } from '../state/spatialMotionStore.js';
+import { FRAME_INTERVAL_120_HZ, toggleCachedClass } from '../utils/motionPerformance.js';
+
+const MAX_PARTICLE_PIXEL_RATIO = 0.78;
+const MIN_PARTICLE_QUALITY = 0.62;
+const QUALITY_SAMPLE_FRAMES = 72;
+const QUALITY_ADJUST_COOLDOWN_MS = 1800;
+const CAMERA_RESPONSE_MS = 470;
 
 const PARTICLE_PROFILES = Object.freeze({
-  default: { mode: 0, size: 26, opacity: 0.4, alphaCutoff: 0.25, density: 1.12, saturation: 0.38, brightness: 0.96, tint: 0xb8ad95 },
-  spring: { mode: 1, size: 31, opacity: 0.45, alphaCutoff: 0.09, density: 1.15, saturation: 0.58, brightness: 0.96, tint: 0xd0dcc3 },
-  fall: { mode: 2, size: 32, opacity: 0.46, alphaCutoff: 0.09, density: 1.13, saturation: 0.65, brightness: 0.98, tint: 0xd2a17a },
-  winter: { mode: 3, size: 27, opacity: 0.44, alphaCutoff: 0.07, density: 1.18, saturation: 0.25, brightness: 1.04, tint: 0xe7f0f2 },
+  default: { mode: 0, size: 29, opacity: 0.4, alphaCutoff: 0.25, density: 1.12, saturation: 0.38, brightness: 0.96, tint: 0xb8ad95 },
+  spring: { mode: 1, size: 29, opacity: 0.45, alphaCutoff: 0.09, density: 1.15, saturation: 0.58, brightness: 0.96, tint: 0xd0dcc3 },
+  fall: { mode: 2, size: 29, opacity: 0.46, alphaCutoff: 0.09, density: 1.13, saturation: 0.65, brightness: 0.98, tint: 0xd2a17a },
+  winter: { mode: 3, size: 29, opacity: 0.44, alphaCutoff: 0.07, density: 1.18, saturation: 0.25, brightness: 1.04, tint: 0xe7f0f2 },
 });
 
 const PARTICLE_VERTEX_SHADER = `
@@ -125,7 +132,7 @@ function seededRandom(seed) {
   };
 }
 
-function createParticleGeometry(count = 420) {
+function createParticleGeometry(count = 320) {
   const random = seededRandom(4817);
   const positions = new Float32Array(count * 3);
   const sizes = new Float32Array(count);
@@ -166,22 +173,43 @@ function configureTexture(texture) {
   return texture;
 }
 
-async function loadThemeTextures() {
-  const loader = new THREE.TextureLoader();
-  const entries = await Promise.all(Object.keys(PARTICLE_PROFILES).map(async (themeId) => {
-    const url = createAssetPath(import.meta.env.BASE_URL, getCinematicAssets(themeId).particles);
-    try {
-      return [themeId, configureTexture(await loader.loadAsync(url))];
-    } catch (error) {
-      return [themeId, createFallbackTexture()];
-    }
-  }));
-  return Object.fromEntries(entries);
+function measureRefreshInterval(sampleCount = 24) {
+  if (document.hidden) return Promise.resolve(FRAME_INTERVAL_120_HZ * 2);
+  return new Promise((resolve) => {
+    const samples = [];
+    let previous = 0;
+
+    const sample = (timestamp) => {
+      if (previous) samples.push(timestamp - previous);
+      previous = timestamp;
+      if (samples.length < sampleCount) {
+        window.requestAnimationFrame(sample);
+        return;
+      }
+
+      const stableSamples = samples
+        .filter((interval) => interval > 3 && interval < 25)
+        .sort((a, b) => a - b);
+      const sampleIndex = Math.floor(stableSamples.length * 0.3);
+      resolve(stableSamples[sampleIndex] || FRAME_INTERVAL_120_HZ * 2);
+    };
+
+    window.requestAnimationFrame(sample);
+  });
+}
+
+async function loadThemeTexture(loader, themeId) {
+  const url = createAssetPath(import.meta.env.BASE_URL, getCinematicAssets(themeId).particles);
+  try {
+    return configureTexture(await loader.loadAsync(url));
+  } catch (error) {
+    return createFallbackTexture();
+  }
 }
 
 function applyProfile(material, textures, themeId) {
   const profile = PARTICLE_PROFILES[themeId] || PARTICLE_PROFILES.default;
-  material.uniforms.uAtlas.value = textures[themeId] || textures.default;
+  material.uniforms.uAtlas.value = textures[themeId] || textures.__fallback;
   material.uniforms.uBaseSize.value = profile.size;
   material.uniforms.uThemeMode.value = profile.mode;
   material.uniforms.uOpacity.value = profile.opacity;
@@ -194,7 +222,7 @@ function applyProfile(material, textures, themeId) {
 
 export function SpatialWorld({ theme, atmospherePower, onReady }) {
   const mountRef = useRef(null);
-  const stateRef = useRef({ scenePosition: 0, theme, atmospherePower });
+  const stateRef = useRef({ scenePosition: 0, velocity: 0, theme, atmospherePower });
   const readyRef = useRef(onReady);
 
   useEffect(() => {
@@ -202,8 +230,9 @@ export function SpatialWorld({ theme, atmospherePower, onReady }) {
     stateRef.current.atmospherePower = atmospherePower;
   }, [theme, atmospherePower]);
 
-  useEffect(() => subscribeSpatialMotion(({ scenePosition }) => {
+  useEffect(() => subscribeSpatialMotion(({ scenePosition, velocity }) => {
     stateRef.current.scenePosition = scenePosition;
+    stateRef.current.velocity = velocity;
   }), []);
 
   useEffect(() => {
@@ -222,6 +251,9 @@ export function SpatialWorld({ theme, atmospherePower, onReady }) {
     let geometry;
     let material;
     let textures = {};
+    let textureLoader;
+    let visibilityHandler;
+    const texturePromises = new Map();
     const pointer = { x: 0, y: 0 };
 
     const onPointerMove = (event) => {
@@ -235,7 +267,9 @@ export function SpatialWorld({ theme, atmospherePower, onReady }) {
         alpha: true,
         powerPreference: 'high-performance',
       });
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.35);
+      const basePixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PARTICLE_PIXEL_RATIO);
+      let qualityScale = 1;
+      let pixelRatio = basePixelRatio;
       renderer.setPixelRatio(pixelRatio);
       renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -243,7 +277,26 @@ export function SpatialWorld({ theme, atmospherePower, onReady }) {
       renderer.domElement.setAttribute('aria-hidden', 'true');
       mount.appendChild(renderer.domElement);
 
-      textures = await loadThemeTextures();
+      textureLoader = new THREE.TextureLoader();
+      textures.__fallback = createFallbackTexture();
+      const ensureThemeTexture = (themeId) => {
+        if (textures[themeId]) return Promise.resolve(textures[themeId]);
+        if (texturePromises.has(themeId)) return texturePromises.get(themeId);
+        const pending = loadThemeTexture(textureLoader, themeId).then((texture) => {
+          texturePromises.delete(themeId);
+          if (disposed) {
+            texture.dispose();
+            return textures.__fallback;
+          }
+          textures[themeId] = texture;
+          renderer?.initTexture(texture);
+          return texture;
+        });
+        texturePromises.set(themeId, pending);
+        return pending;
+      };
+
+      await ensureThemeTexture(stateRef.current.theme);
       if (disposed) {
         Object.values(textures).forEach((texture) => texture.dispose());
         return;
@@ -288,7 +341,7 @@ export function SpatialWorld({ theme, atmospherePower, onReady }) {
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
-        material.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 1.35);
+        material.uniforms.uPixelRatio.value = pixelRatio;
       };
       resizeHandler = resize;
       resizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
@@ -300,35 +353,164 @@ export function SpatialWorld({ theme, atmospherePower, onReady }) {
       Object.values(textures).forEach((texture) => renderer.initTexture(texture));
       renderer.compile(scene, camera);
       renderer.render(scene, camera);
-      readyRef.current?.();
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      readyRef.current?.();
       const startTime = performance.now();
       let currentTheme = stateRef.current.theme;
+      let refreshInterval = FRAME_INTERVAL_120_HZ * 2;
+      let previousFrameTime = 0;
+      let lastParticleRenderTime = 0;
+      let lastQualityAdjustment = startTime;
+      let stableQualityWindows = 0;
+      let constrainedQualityWindows = 0;
+      let frameIntervals = [];
+
+      const setQualityMarkers = () => {
+        const tier = qualityScale < 0.74
+          ? 'low'
+          : qualityScale < 0.9
+            ? 'balanced'
+            : 'high';
+        toggleCachedClass(document.documentElement, 'motion-quality-balanced', tier === 'balanced');
+        toggleCachedClass(document.documentElement, 'motion-quality-low', tier === 'low');
+        document.documentElement.dataset.motionQuality = tier;
+        document.documentElement.dataset.motionScale = qualityScale.toFixed(2);
+      };
+
+      const applyQualityScale = (nextScale) => {
+        const clampedScale = THREE.MathUtils.clamp(nextScale, MIN_PARTICLE_QUALITY, 1);
+        if (Math.abs(clampedScale - qualityScale) < 0.005) return;
+        qualityScale = clampedScale;
+        pixelRatio = basePixelRatio * qualityScale;
+        renderer.setPixelRatio(pixelRatio);
+        material.uniforms.uPixelRatio.value = pixelRatio;
+        setQualityMarkers();
+        resize();
+      };
+
+      setQualityMarkers();
+      measureRefreshInterval().then((measuredInterval) => {
+        if (disposed) return;
+        refreshInterval = measuredInterval;
+        document.documentElement.dataset.displayHz = String(Math.round(1000 / measuredInterval));
+      });
+
+      const updateAdaptiveQuality = (timestamp, frameInterval) => {
+        frameIntervals.push(frameInterval);
+        if (frameIntervals.length < QUALITY_SAMPLE_FRAMES) return;
+
+        const droppedFrames = frameIntervals.filter(
+          (interval) => interval > refreshInterval * 1.55,
+        ).length;
+        const droppedRatio = droppedFrames / frameIntervals.length;
+        const sortedIntervals = [...frameIntervals].sort((a, b) => a - b);
+        const p90 = sortedIntervals[Math.floor(sortedIntervals.length * 0.9)];
+        const median = sortedIntervals[Math.floor(sortedIntervals.length * 0.5)];
+        document.documentElement.dataset.motionFps = String(Math.round(1000 / Math.max(1, median)));
+        document.documentElement.dataset.motionP90Ms = p90.toFixed(1);
+        document.documentElement.dataset.motionDropped = droppedRatio.toFixed(2);
+        frameIntervals = [];
+
+        if (timestamp - lastQualityAdjustment < QUALITY_ADJUST_COOLDOWN_MS) return;
+        if (droppedRatio > 0.12 || p90 > refreshInterval * 1.55) {
+          constrainedQualityWindows += 1;
+          stableQualityWindows = 0;
+          if (constrainedQualityWindows >= 2) {
+            applyQualityScale(qualityScale - 0.1);
+            constrainedQualityWindows = 0;
+            lastQualityAdjustment = timestamp;
+          }
+          return;
+        }
+        constrainedQualityWindows = 0;
+
+        if (droppedRatio < 0.025 && p90 < refreshInterval * 1.18 && qualityScale < 1) {
+          stableQualityWindows += 1;
+          if (stableQualityWindows >= 4) {
+            applyQualityScale(qualityScale + 0.04);
+            stableQualityWindows = 0;
+            lastQualityAdjustment = timestamp;
+          }
+        } else {
+          stableQualityWindows = 0;
+        }
+      };
 
       const animate = (timestamp) => {
-        if (disposed) return;
-        frameId = window.requestAnimationFrame(animate);
-        if (document.hidden) return;
+        frameId = 0;
+        if (disposed || document.hidden) return;
 
+        const frameInterval = previousFrameTime
+          ? Math.min(50, Math.max(1, timestamp - previousFrameTime))
+          : refreshInterval;
+        previousFrameTime = timestamp;
         const runtime = stateRef.current;
+        const displayHz = Math.max(60, 1000 / Math.max(1, refreshInterval));
+        const isTransitioning = Math.abs(
+          runtime.scenePosition - Math.round(runtime.scenePosition)
+        ) > 0.001 || Math.abs(runtime.velocity || 0) > 0.01;
+        if (isTransitioning) {
+          updateAdaptiveQuality(timestamp, frameInterval);
+          frameId = window.requestAnimationFrame(animate);
+          return;
+        }
+        const particleTargetHz = Math.min(60, displayHz);
+        const particleFrameInterval = 1000 / particleTargetHz;
+        if (
+          lastParticleRenderTime
+          && timestamp - lastParticleRenderTime < particleFrameInterval - 0.4
+        ) {
+          updateAdaptiveQuality(timestamp, frameInterval);
+          frameId = window.requestAnimationFrame(animate);
+          return;
+        }
+        lastParticleRenderTime = timestamp;
+
         const intensity = THREE.MathUtils.clamp(Number(runtime.atmospherePower) || 1, 0.35, 1.7);
         if (runtime.theme !== currentTheme) {
           currentTheme = runtime.theme;
           applyProfile(material, textures, currentTheme);
+          if (!textures[currentTheme]) {
+            const requestedTheme = currentTheme;
+            ensureThemeTexture(requestedTheme).then(() => {
+              if (!disposed && stateRef.current.theme === requestedTheme) {
+                applyProfile(material, textures, requestedTheme);
+              }
+            });
+          }
         }
 
         material.uniforms.uTime.value = reduceMotion ? 0 : (timestamp - startTime) * 0.001;
-        material.uniforms.uIntensity.value = intensity;
+        if (material.uniforms.uIntensity.value !== intensity) {
+          material.uniforms.uIntensity.value = intensity;
+        }
         const cameraTargetX = reduceMotion ? 0 : pointer.x * 0.2;
         const cameraTargetY = reduceMotion ? 0 : -pointer.y * 0.12;
-        camera.position.x += (cameraTargetX - camera.position.x) * 0.028;
-        camera.position.y += (cameraTargetY - camera.position.y) * 0.028;
+        const cameraResponse = 1 - Math.exp(-frameInterval / CAMERA_RESPONSE_MS);
+        camera.position.x += (cameraTargetX - camera.position.x) * cameraResponse;
+        camera.position.y += (cameraTargetY - camera.position.y) * cameraResponse;
         camera.lookAt(camera.position.x * 0.1, camera.position.y * 0.1, -5);
         particleField.rotation.y = reduceMotion ? 0 : runtime.scenePosition * 0.004;
         renderer.render(scene, camera);
+        updateAdaptiveQuality(timestamp, frameInterval);
+        frameId = window.requestAnimationFrame(animate);
       };
 
+      visibilityHandler = () => {
+        if (document.hidden) {
+          window.cancelAnimationFrame(frameId);
+          frameId = 0;
+          previousFrameTime = 0;
+          lastParticleRenderTime = 0;
+          frameIntervals = [];
+          constrainedQualityWindows = 0;
+          stableQualityWindows = 0;
+          return;
+        }
+        if (!frameId) frameId = window.requestAnimationFrame(animate);
+      };
+      document.addEventListener('visibilitychange', visibilityHandler);
       frameId = window.requestAnimationFrame(animate);
     };
 
@@ -340,11 +522,17 @@ export function SpatialWorld({ theme, atmospherePower, onReady }) {
       resizeObserver?.disconnect();
       window.removeEventListener('pointermove', onPointerMove);
       if (resizeHandler) window.removeEventListener('resize', resizeHandler);
+      if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler);
       geometry?.dispose();
       material?.dispose();
       Object.values(textures).forEach((texture) => texture.dispose());
       renderer?.dispose();
       renderer?.domElement.remove();
+      toggleCachedClass(document.documentElement, 'motion-quality-balanced', false);
+      toggleCachedClass(document.documentElement, 'motion-quality-low', false);
+      delete document.documentElement.dataset.motionQuality;
+      delete document.documentElement.dataset.motionScale;
+      delete document.documentElement.dataset.motionDropped;
     };
   }, []);
 

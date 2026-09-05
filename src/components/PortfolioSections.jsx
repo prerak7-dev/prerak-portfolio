@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import loreGuidePersona from '../../content/lore-guide-persona.webp';
+import loreGuidePersona from '../../content/lore-guide-persona-planetary-cutout-v3.webp';
 import {
   developerPipelineSteps,
   manualWeatherCycle,

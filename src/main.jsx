@@ -4,6 +4,7 @@ import '@fontsource/barlow-condensed/latin-400.css';
 import '@fontsource/barlow-condensed/latin-500.css';
 import '@fontsource/barlow-condensed/latin-600.css';
 import '@fontsource/barlow-condensed/latin-700.css';
+import 'lenis/dist/lenis.css';
 import App from './App.jsx';
 
 createRoot(document.getElementById('root')).render(

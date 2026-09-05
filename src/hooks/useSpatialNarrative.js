@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { publishSpatialMotion } from '../state/spatialMotionStore.js';
+import {
+  CHAPTER_NAVIGATION_BASE_DURATION_MS,
+  CHAPTER_NAVIGATION_DURATION_PER_CHAPTER_MS,
+  CHAPTER_NAVIGATION_MAX_DURATION_MS,
+  SCROLL_CHAPTER_DWELL_STRENGTH,
+  shapeBoundaryDwellProgress,
+} from '../utils/cinematicTiming.js';
+import {
+  cinematicScrollEase,
+  createCinematicScroller,
+} from '../utils/cinematicScroll.js';
 import { clamp } from '../utils/weather.js';
 
-const CHAPTER_HOLD_FRACTION = 0.2;
-const SCROLL_RESPONSE_MS = 215;
-const SETTLE_EPSILON = 0.0001;
-const INITIAL_MOTION = Object.freeze({ progress: 0, scenePosition: 0, activeIndex: 0, direction: 1 });
-
-function smootherStep(value) {
-  const t = clamp(value, 0, 1);
-  return t * t * t * (t * (t * 6 - 15) + 10);
-}
+const MOTION_EPSILON = 0.000015;
+const VELOCITY_EPSILON = 0.002;
+const MAX_FRAME_DELTA_MS = 40;
 
 function shapeScenePosition(rawScenePosition, chapterCount) {
   const lastChapter = Math.max(0, chapterCount - 1);
@@ -19,15 +24,18 @@ function shapeScenePosition(rawScenePosition, chapterCount) {
 
   const chapter = Math.floor(clampedPosition);
   const localProgress = clampedPosition - chapter;
-  if (localProgress <= CHAPTER_HOLD_FRACTION) return chapter;
-  if (localProgress >= 1 - CHAPTER_HOLD_FRACTION) return chapter + 1;
-
-  const travelProgress = (localProgress - CHAPTER_HOLD_FRACTION) / (1 - CHAPTER_HOLD_FRACTION * 2);
-  return chapter + smootherStep(travelProgress);
+  return chapter + shapeBoundaryDwellProgress(
+    localProgress,
+    SCROLL_CHAPTER_DWELL_STRENGTH,
+  );
 }
 
-function getNarrativeState(chapterCount, maxScroll) {
-  const progress = clamp(window.scrollY / maxScroll, 0, 1);
+function getMaxScroll() {
+  return Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+}
+
+function getNarrativeState(chapterCount, maxScroll, scrollY) {
+  const progress = clamp(scrollY / maxScroll, 0, 1);
   const rawScenePosition = progress * Math.max(0, chapterCount - 1);
   const scenePosition = shapeScenePosition(rawScenePosition, chapterCount);
   return {
@@ -38,91 +46,128 @@ function getNarrativeState(chapterCount, maxScroll) {
 }
 
 export function useSpatialNarrative(chapterCount) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const lastScrollY = useRef(0);
-  const frameRef = useRef(0);
-  const lastFrameTimeRef = useRef(0);
+  const initialState = getNarrativeState(chapterCount, getMaxScroll(), window.scrollY);
+  const [activeIndex, setActiveIndex] = useState(initialState.activeIndex);
+  const activeIndexRef = useRef(initialState.activeIndex);
+  const scrollerRef = useRef(null);
   const maxScrollRef = useRef(1);
-  const stateRef = useRef(INITIAL_MOTION);
-  const targetRef = useRef(INITIAL_MOTION);
-  const activeIndexRef = useRef(activeIndex);
+  const frameRef = useRef(0);
+  const previousFrameRef = useRef({
+    timestamp: 0,
+    scrollY: window.scrollY,
+    scenePosition: initialState.scenePosition,
+    direction: 1,
+  });
 
   useEffect(() => {
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let disposed = false;
+    const scroller = createCinematicScroller();
+    scrollerRef.current = scroller;
 
-    const renderFrame = (timestamp) => {
-      frameRef.current = 0;
-      const current = stateRef.current;
-      const target = targetRef.current;
-      const elapsed = lastFrameTimeRef.current
-        ? Math.min(64, Math.max(1, timestamp - lastFrameTimeRef.current))
-        : 16.67;
-      lastFrameTimeRef.current = timestamp;
-      const response = reduceMotion ? 1 : 1 - Math.exp(-elapsed / SCROLL_RESPONSE_MS);
-      const progressDelta = target.progress - current.progress;
-      const sceneDelta = target.scenePosition - current.scenePosition;
-      const settled = Math.abs(progressDelta) < SETTLE_EPSILON && Math.abs(sceneDelta) < SETTLE_EPSILON;
-      const progress = settled ? target.progress : current.progress + progressDelta * response;
-      const scenePosition = settled ? target.scenePosition : current.scenePosition + sceneDelta * response;
-      const next = {
-        progress,
-        scenePosition,
-        activeIndex: Math.min(chapterCount - 1, Math.max(0, Math.round(scenePosition))),
-        direction: target.direction,
+    const updateMetrics = () => {
+      maxScrollRef.current = getMaxScroll();
+      scroller.resize();
+    };
+
+    const publishFrame = (timestamp) => {
+      if (disposed) return;
+      scroller.raf(timestamp);
+
+      const previous = previousFrameRef.current;
+      const elapsed = previous.timestamp
+        ? Math.min(MAX_FRAME_DELTA_MS, Math.max(1, timestamp - previous.timestamp))
+        : 1000 / 60;
+      const scrollY = Number.isFinite(scroller.animatedScroll)
+        ? scroller.animatedScroll
+        : window.scrollY;
+      const next = getNarrativeState(chapterCount, maxScrollRef.current, scrollY);
+      const scrollDelta = scrollY - previous.scrollY;
+      const direction = Math.abs(scrollDelta) > 0.01
+        ? (scrollDelta > 0 ? 1 : -1)
+        : previous.direction;
+      const velocity = (next.scenePosition - previous.scenePosition)
+        / Math.max(0.001, elapsed / 1000);
+      const atBoundary = Math.abs(next.scenePosition - Math.round(next.scenePosition))
+        < MOTION_EPSILON;
+      const settled = atBoundary
+        && Math.abs(velocity) < VELOCITY_EPSILON
+        && !scroller.isScrolling;
+
+      previousFrameRef.current = {
+        timestamp,
+        scrollY,
+        scenePosition: next.scenePosition,
+        direction,
       };
-
-      stateRef.current = next;
-      publishSpatialMotion(next);
+      publishSpatialMotion({
+        ...next,
+        direction,
+        velocity: settled ? 0 : velocity,
+        settled,
+        timestamp,
+      });
 
       if (next.activeIndex !== activeIndexRef.current) {
         activeIndexRef.current = next.activeIndex;
         setActiveIndex(next.activeIndex);
       }
-
-      if (!settled) frameRef.current = window.requestAnimationFrame(renderFrame);
+      frameRef.current = window.requestAnimationFrame(publishFrame);
     };
 
-    const readScrollTarget = () => {
-      const next = getNarrativeState(chapterCount, maxScrollRef.current);
-      const scrollY = window.scrollY;
-      const previousScrollY = lastScrollY.current;
-      const direction = scrollY > previousScrollY
-        ? 1
-        : scrollY < previousScrollY
-          ? -1
-          : targetRef.current.direction;
-      lastScrollY.current = scrollY;
-      targetRef.current = { ...next, direction };
-      if (!frameRef.current) {
-        lastFrameTimeRef.current = 0;
-        frameRef.current = window.requestAnimationFrame(renderFrame);
-      }
-    };
+    const scrollTrack = document.querySelector('.archive-scroll-track');
+    const resizeObserver = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(updateMetrics);
+    if (scrollTrack) resizeObserver?.observe(scrollTrack);
 
-    const updateScrollMetrics = () => {
-      maxScrollRef.current = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      readScrollTarget();
-    };
+    updateMetrics();
+    scroller.scrollTo(window.scrollY, { immediate: true, force: true });
+    frameRef.current = window.requestAnimationFrame(publishFrame);
+    window.addEventListener('resize', updateMetrics, { passive: true });
+    window.visualViewport?.addEventListener('resize', updateMetrics);
+    document.fonts?.ready.then(() => {
+      if (!disposed) updateMetrics();
+    });
 
-    lastScrollY.current = window.scrollY;
-    updateScrollMetrics();
-    window.addEventListener('scroll', readScrollTarget, { passive: true });
-    window.addEventListener('resize', updateScrollMetrics);
     return () => {
-      window.removeEventListener('scroll', readScrollTarget);
-      window.removeEventListener('resize', updateScrollMetrics);
-      if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+      disposed = true;
+      window.cancelAnimationFrame(frameRef.current);
       frameRef.current = 0;
-      lastFrameTimeRef.current = 0;
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateMetrics);
+      window.visualViewport?.removeEventListener('resize', updateMetrics);
+      scroller.destroy();
+      if (scrollerRef.current === scroller) scrollerRef.current = null;
     };
   }, [chapterCount]);
 
   const goToChapter = useCallback((index, behavior = 'smooth') => {
     const safeIndex = clamp(index, 0, Math.max(0, chapterCount - 1));
-    const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const maxScroll = getMaxScroll();
     const ratio = chapterCount <= 1 ? 0 : safeIndex / (chapterCount - 1);
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    window.scrollTo({ top: ratio * maxScroll, behavior: reduceMotion ? 'auto' : behavior });
+    const targetY = ratio * maxScroll;
+    const scroller = scrollerRef.current;
+    if (!scroller) {
+      window.scrollTo({ top: targetY, behavior: behavior === 'auto' ? 'auto' : 'smooth' });
+      return;
+    }
+
+    const chapterSpan = maxScroll / Math.max(1, chapterCount - 1);
+    const chapterDistance = Math.abs(targetY - scroller.animatedScroll)
+      / Math.max(1, chapterSpan);
+    const duration = Math.min(
+      CHAPTER_NAVIGATION_MAX_DURATION_MS,
+      CHAPTER_NAVIGATION_BASE_DURATION_MS
+        + chapterDistance * CHAPTER_NAVIGATION_DURATION_PER_CHAPTER_MS,
+    );
+    scroller.scrollTo(targetY, {
+      immediate: behavior === 'auto',
+      duration: duration / 750,
+      easing: cinematicScrollEase,
+      force: true,
+      lock: false,
+      userData: { source: 'chapter-navigation', chapter: safeIndex },
+    });
   }, [chapterCount]);
 
   return { activeIndex, goToChapter };

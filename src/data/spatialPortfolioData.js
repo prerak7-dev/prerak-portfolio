@@ -18,14 +18,22 @@ export const spatialChapters = [
   {
     id: 'intro',
     index: '00',
-    navLabel: 'Intro',
+    navLabel: 'Home',
     eyebrow: 'The threshold',
     title: 'Systems built for the worlds behind the screen.',
     guide: 'I build backend and full-stack systems for game technology, production tooling, and observable services. This threshold sets the focus for everything ahead.',
   },
   {
-    id: 'projects',
+    id: 'cores',
     index: '01',
+    navLabel: 'Cores',
+    eyebrow: 'Engineering centers',
+    title: 'Three cores. One connected practice.',
+    guide: 'At Cores, I map the three centers of my work: reliable backend services, Unreal production tooling, and telemetry that makes complex systems observable. Each light leads into evidence in the case studies ahead.',
+  },
+  {
+    id: 'projects',
+    index: '02',
     navLabel: 'Case Studies',
     eyebrow: 'Engineering systems',
     title: 'Proof attached to every claim.',
@@ -33,7 +41,7 @@ export const spatialChapters = [
   },
   {
     id: 'professional',
-    index: '02',
+    index: '03',
     navLabel: 'Experience',
     eyebrow: 'Professional record',
     title: 'Production work, traced through time.',
@@ -41,7 +49,7 @@ export const spatialChapters = [
   },
   {
     id: 'education',
-    index: '03',
+    index: '04',
     navLabel: 'Education',
     eyebrow: 'Learning record',
     title: 'A foundation that keeps moving.',
@@ -49,7 +57,7 @@ export const spatialChapters = [
   },
   {
     id: 'personal',
-    index: '04',
+    index: '05',
     navLabel: 'Field Notes',
     eyebrow: 'Outside the system',
     title: 'Photography, writing, and journeys in progress.',
@@ -57,7 +65,7 @@ export const spatialChapters = [
   },
   {
     id: 'contact',
-    index: '05',
+    index: '06',
     navLabel: 'Contact',
     eyebrow: 'The next transmission',
     title: 'Build the next system together.',
