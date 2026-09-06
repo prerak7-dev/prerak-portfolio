@@ -1452,6 +1452,8 @@ export function SpatialExperience({
   profile,
   activeIndex,
   goToChapter,
+  onChapterSelect = goToChapter,
+  chapterNavigationActive = false,
   theme,
   setTheme,
   atmospherePower,
@@ -1470,7 +1472,7 @@ export function SpatialExperience({
   const sceneRefs = useRef([]);
   const viewportRef = useRef(null);
   const displayedContentIndex = cinematicReadiness.readyIndex;
-  const chapterIsSettled = experienceVisible && cinematicReadiness.settled;
+  const chapterIsSettled = experienceVisible && cinematicReadiness.settled && !chapterNavigationActive;
   const projectsActive = chapterIsSettled && displayedContentIndex === 2;
   const projectsInteractive = projectsActive && chapterIsSettled && activeIndex === 2;
 
@@ -1550,7 +1552,7 @@ export function SpatialExperience({
       <CinematicEnvironment
         theme={theme}
         onReady={onEnvironmentReady}
-        gatewayOverlay={<IntroGateName isActive={experienceVisible && activeIndex === 0} name={profile.name} />}
+        gatewayOverlay={<IntroGateName isActive={experienceVisible && !chapterNavigationActive && activeIndex === 0} name={profile.name} />}
         systemsOverlay={systemsOverlay}
       />
       <div className="archive-color-grade" aria-hidden="true" />
@@ -1562,7 +1564,7 @@ export function SpatialExperience({
         collapsed={railCollapsed}
         intensity={atmospherePower}
         onCollapsedChange={setRailCollapsed}
-        onSelect={goToChapter}
+        onSelect={onChapterSelect}
         theme={theme}
       />
       <main className="archive-scene-stack" aria-live="polite">

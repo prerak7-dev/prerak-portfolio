@@ -1,5 +1,7 @@
 export const GATEWAY_FRAME_COUNT = 24;
-export const GATEWAY_COMPACT_MEDIA_QUERY = '(max-width: 1680px)';
+// Use compact plates only when they can cover the viewport without upscaling.
+// High-density mobile screens need the same full-resolution art as desktop.
+export const GATEWAY_COMPACT_MEDIA_QUERY = '(max-width: 760px) and (max-height: 600px) and (max-resolution: 1dppx)';
 export const GATEWAY_GEOMETRY_KEYFRAME_INDICES = Object.freeze([
   0, 3, 6, 9, 12, 15, 18, 21, 23,
 ]);

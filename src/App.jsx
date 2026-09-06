@@ -143,6 +143,7 @@ export default function App() {
   const [minimumLoadTimeMet, setMinimumLoadTimeMet] = useState(false);
   const [experienceVisible, setExperienceVisible] = useState(false);
   const [bootContourMounted, setBootContourMounted] = useState(true);
+  const [chapterNavigationActive, setChapterNavigationActive] = useState(false);
   const bootProgressRef = useRef(0);
 
   const bootTargetRef = useRef(0);
@@ -412,6 +413,55 @@ export default function App() {
       themeTransitionBusyRef.current = false;
     });
   }, [activeIndex, theme]);
+  const handleChapterSelect = useCallback(async (index) => {
+    if (!Number.isInteger(index) || index < 0 || index >= spatialChapters.length
+      || index === activeIndex || themeTransitionBusyRef.current) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      goToChapter(index, 'auto');
+      return;
+    }
+    themeTransitionBusyRef.current = true;
+    const compact = isCompactViewport();
+    const sceneIndex = CHAPTER_SCENE_INDICES[activeIndex];
+    const targetSceneIndex = CHAPTER_SCENE_INDICES[index];
+    const gatewayFrameIndex = Math.round(getGatewayTransition().progress * (GATEWAY_FRAME_COUNT - 1));
+    const finish = () => {
+      setChapterNavigationActive(false);
+      themeTransitionBusyRef.current = false;
+    };
+    try {
+      const [fromImage, toImage, geometryImage] = await Promise.all([
+        preloadImageUrl(resolveAsset(getCinematicSceneAsset(theme, sceneIndex, gatewayFrameIndex, { compact }))),
+        preloadImageUrl(resolveAsset(getCinematicSceneAsset(theme, targetSceneIndex, 0, { compact }))),
+        preloadImageUrl(resolveAsset(getCinematicGeometryAsset(theme, sceneIndex, gatewayFrameIndex))),
+        // A jump to Cores must also settle the underlying gate renderer.
+        preloadImageUrl(resolveAsset(getCinematicSceneAsset(theme, 0, index === 0 ? 0 : GATEWAY_FRAME_COUNT - 1, { compact }))),
+      ]);
+      if (!fromImage || !toImage || !geometryImage) {
+        goToChapter(index, 'auto');
+        finish();
+        return;
+      }
+      setChapterNavigationActive(true);
+      startThemeContourTransition({
+        kind: 'chapter',
+        fromTheme: theme,
+        toTheme: theme,
+        sceneIndex,
+        targetSceneIndex,
+        gatewayFrameIndex,
+        fromImage,
+        toImage,
+        geometryImage,
+        applyProgress: 0,
+        applyTheme: () => goToChapter(index, 'auto'),
+        onComplete: finish,
+      });
+    } catch {
+      finish();
+    }
+  }, [activeIndex, goToChapter, theme]);
+
   const trackHeight = 100 + (spatialChapters.length - 1) * CHAPTER_SCROLL_DISTANCE_VH;
 
   return (
@@ -424,6 +474,8 @@ export default function App() {
         profile={profile}
         activeIndex={activeIndex}
         goToChapter={goToChapter}
+        onChapterSelect={handleChapterSelect}
+        chapterNavigationActive={chapterNavigationActive}
         theme={theme}
         setTheme={handleThemeChange}
         atmospherePower={atmospherePower}

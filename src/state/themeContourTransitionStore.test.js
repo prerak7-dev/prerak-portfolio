@@ -90,3 +90,33 @@ test('theme transition completes even if the applyTheme callback never resolves'
   assert.equal(getThemeContourTransition().active, false);
   assert.equal(getThemeContourTransition().token, token);
 });
+
+test('direct chapter navigation commits one destination under the dissolve and finishes afterward', () => {
+  const { advance } = installFakeWindow();
+  const visits = [];
+  let completed = false;
+  startThemeContourTransition({
+    kind: 'chapter',
+    fromTheme: 'spring',
+    toTheme: 'spring',
+    sceneIndex: 0,
+    targetSceneIndex: 5,
+    fromImage: {},
+    toImage: {},
+    geometryImage: {},
+    applyProgress: 0,
+    applyTheme: () => visits.push(6),
+    onComplete: () => { completed = true; },
+    duration: 300,
+  });
+  advance(16);
+  assert.deepEqual(visits, [6]);
+  assert.equal(getThemeContourTransition().active, true);
+  assert.equal(getThemeContourTransition().targetSceneIndex, 5);
+  assert.equal(completed, false);
+  advance(150);
+  assert.equal(completed, false);
+  advance(200);
+  assert.equal(completed, true);
+  assert.deepEqual(visits, [6]);
+});

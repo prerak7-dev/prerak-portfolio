@@ -19,7 +19,8 @@ import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { gatewayDissolveProgress } from '../utils/cinematicTiming.js';
 
-const MAX_PIXEL_RATIO = 0.64;
+const MAX_PIXEL_RATIO = 2;
+const MAX_RENDER_PIXELS = 3840 * 2160;
 const DISSOLVE_ENTRY_RAMP = 0.1;
 const DISSOLVE_EXIT_RAMP = 0.08;
 // The gate already owns the opening and closing choreography. Restrict the
@@ -390,15 +391,14 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const root = document.documentElement;
-      const qualityScale = root.classList.contains('motion-quality-low')
-        ? 0.75
-        : root.classList.contains('motion-quality-balanced')
-          ? 0.86
-          : 1;
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO) * qualityScale;
       width = Math.max(1, rect.width);
       height = Math.max(1, rect.height);
+      // Particle quality changes must never resize the background mid-dissolve.
+      const pixelRatio = Math.min(
+        window.devicePixelRatio || 1,
+        MAX_PIXEL_RATIO,
+        Math.max(1, Math.sqrt(MAX_RENDER_PIXELS / (width * height))),
+      );
       if (
         Math.abs(canvas.width - width * pixelRatio) < 1
         && Math.abs(canvas.height - height * pixelRatio) < 1
@@ -533,7 +533,9 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         );
         outgoingTheme = themeTransition.fromTheme;
         incomingTheme = themeTransition.toTheme;
-        envelope = 1;
+        envelope = themeTransition.kind === 'theme' && themeTransition.fromTheme !== 'boot'
+          ? smootherStep(progress / 0.035) * smootherStep((1 - progress) / 0.035)
+          : 1;
         // keep using the main watercolor material during theme transitions
       } else {
         const { transition, blend, gatewayFrameIndex } = resolveTransition();
@@ -590,13 +592,17 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
           themeTransitionProjectionToken = themeTransition.token;
         }
         const liveSceneImage = getProjectionNode(themeTransition.sceneIndex);
-        themeTransitionProjection = readSceneImageProjection(
-          liveSceneImage,
-          themeTransitionProjection || fallbackProjection,
-          width,
-        );
+        if (themeTransition.kind !== 'chapter' || !themeTransitionProjection) {
+          themeTransitionProjection = readSceneImageProjection(
+            liveSceneImage,
+            themeTransitionProjection || fallbackProjection,
+            width,
+          );
+        }
         projection = themeTransitionProjection;
-        incomingProjection = themeTransitionProjection;
+        incomingProjection = themeTransition.kind === 'chapter'
+          ? readSceneImageProjection(getProjectionNode(themeTransition.targetSceneIndex), fallbackProjection, width)
+          : themeTransitionProjection;
       } else {
         projection = readSceneImageProjection(outgoingImage, fallbackProjection, width);
         incomingProjection = readSceneImageProjection(

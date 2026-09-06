@@ -16,6 +16,8 @@ const transitionState = {
   fromTheme: 'default',
   toTheme: 'default',
   sceneIndex: 0,
+  targetSceneIndex: 0,
+  kind: 'theme',
   gatewayFrameIndex: 0,
   progress: 0,
   fromImage: null,
@@ -59,6 +61,9 @@ export function startThemeContourTransition({
   fromTheme,
   toTheme,
   sceneIndex,
+  targetSceneIndex = sceneIndex,
+  kind = 'theme',
+  applyProgress = THEME_APPLY_PROGRESS,
   gatewayFrameIndex = 0,
   fromImage,
   toImage,
@@ -77,6 +82,8 @@ export function startThemeContourTransition({
     fromTheme,
     toTheme,
     sceneIndex,
+    targetSceneIndex,
+    kind,
     gatewayFrameIndex,
     progress: 0,
     fromImage,
@@ -118,7 +125,7 @@ export function startThemeContourTransition({
     if (transitionState.token !== token) return;
     if (!startTime) startTime = timestamp;
     const rawProgress = Math.min(1, Math.max(0, (timestamp - startTime) / duration));
-    if (!themeApplied && rawProgress >= THEME_APPLY_PROGRESS) {
+    if (!themeApplied && rawProgress >= applyProgress) {
       settleThemeCommit();
     }
     transitionState.progress = shapeCenterDwellProgress(
