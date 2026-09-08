@@ -12,20 +12,13 @@ function revealBetween(scenePosition, start, duration) {
   return progress - (0.14 * Math.sin(Math.PI * 2 * progress)) / (Math.PI * 2);
 }
 
-// The names finish dropping behind the roofline at 0.28. Hold the closed gate
-// for a beat before opening so the two actions read as one deliberate sequence.
-const GATEWAY_OPEN_START = 0.31;
-const GATEWAY_OPEN_END = 0.84;
+// Let the names clear the roofline before the static Home painting dissolves.
 
 export function getCinematicSceneReveals(scenePosition) {
   const position = Number.isFinite(scenePosition) ? scenePosition : 0;
   return Object.freeze({
-    gatewayProgress: revealBetween(
-      position,
-      GATEWAY_OPEN_START,
-      GATEWAY_OPEN_END - GATEWAY_OPEN_START,
-    ),
-    coresMix: revealBetween(position, 0.56, 0.44),
+    gatewayProgress: 0,
+    coresMix: revealBetween(position, 0.28, 0.72),
     systemsMix: revealBetween(position, 1, 1),
     chronologyMix: revealBetween(position, 2, 1),
     fieldMix: revealBetween(position, 4, 1),

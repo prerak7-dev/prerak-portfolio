@@ -2,6 +2,7 @@ import { useLayoutEffect } from 'react';
 import { CHAPTER_RAIL_STAGES } from '../data/chapterRailCelestialData.js';
 import { getCinematicSceneReveals } from '../data/cinematicSceneTimeline.js';
 import { subscribeSpatialMotion } from '../state/spatialMotionStore.js';
+import { subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { setCachedStyleProperty, toggleCachedClass } from '../utils/motionPerformance.js';
 
@@ -179,6 +180,8 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
     let scenePosition = 0;
     let frame = 0;
     let chronologyProjection = null;
+    let navigation = null;
+    let renderedItems = [];
     const compactQuery = window.matchMedia('(max-width: 760px)');
     const projectionNodes = new Map();
 
@@ -209,7 +212,9 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
       if (!isDesktop) return;
 
       const fallback = createFallbackProjection();
-      const transition = getStageTransition(scenePosition);
+      const transition = navigation
+        ? { fromIndex: navigation.target, toIndex: navigation.target, mix: navigation.progress }
+        : getStageTransition(scenePosition);
       const fromStageSource = CHAPTER_RAIL_STAGES[transition.fromIndex];
       const toStageSource = CHAPTER_RAIL_STAGES[transition.toIndex];
       const fromProjection = readStageProjection(fromStageSource, fallback);
@@ -223,12 +228,13 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
 
       itemRefs.current.slice(0, itemCount).forEach((item, index) => {
         if (!item) return;
-        const itemMix = transition.fromIndex === transition.toIndex
+        const itemMix = !navigation && transition.fromIndex === transition.toIndex
           ? 0
           : smootherStep((transition.mix - ITEM_STAGGER * index) / staggerSpan);
-        const fromPoint = projectStagePoint(fromStage, index, itemCount, fromProjection);
+        const fromPoint = navigation?.items[index]?.point
+          ?? projectStagePoint(fromStage, index, itemCount, fromProjection);
         const toPoint = projectStagePoint(toStage, index, itemCount, toProjection);
-        const fromMotion = getStageMotion(fromStage, index);
+        const fromMotion = navigation?.items[index]?.motion ?? getStageMotion(fromStage, index);
         const toMotion = getStageMotion(toStage, index);
         const x = lerp(fromPoint.x, toPoint.x, itemMix);
         const y = lerp(fromPoint.y, toPoint.y, itemMix);
@@ -243,12 +249,22 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
         const orbitLiftX = lerp(fromMotion.orbitLift.x, toMotion.orbitLift.x, itemMix);
         const orbitLiftY = lerp(fromMotion.orbitLift.y, toMotion.orbitLift.y, itemMix);
         const labelAlign = itemMix < 0.5
-          ? (fromStage.labelAlign ?? 'center')
+          ? (navigation?.items[index]?.labelAlign ?? fromStage.labelAlign ?? 'center')
           : (toStage.labelAlign ?? 'center');
         const crossing = Math.sin(Math.PI * itemMix);
         const labelOpacity = 1 - 0.88 * crossing * crossing * crossing * crossing;
 
         points[index] = { x, y };
+        renderedItems[index] = {
+          point: { x, y }, labelAlign,
+          motion: {
+            label: { x: labelOffsetX, y: labelOffsetY },
+            marker: { x: markerOffsetX, y: markerOffsetY },
+            orbitForward: { x: orbitForwardX, y: orbitForwardY },
+            orbitBack: { x: orbitBackX, y: orbitBackY },
+            orbitLift: { x: orbitLiftX, y: orbitLiftY },
+          },
+        };
         setCachedStyleProperty(item, '--chapter-tab-x', `${x.toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-tab-y', `${y.toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-label-offset-x', `${labelOffsetX.toFixed(2)}px`);
@@ -287,6 +303,24 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
       scenePosition = motion.scenePosition;
       scheduleRender();
     });
+    const unsubscribeNavigation = subscribeThemeContourTransition((transition) => {
+      if (transition.active && transition.kind === 'chapter'
+        && Number.isInteger(transition.targetChapterIndex)) {
+        if (navigation?.token !== transition.token) {
+          // Snapshot the visible pose before the scroll position jumps under the dissolve.
+          navigation = {
+            token: transition.token,
+            target: transition.targetChapterIndex,
+            items: renderedItems.slice(),
+            progress: 0,
+          };
+        }
+        navigation.progress = transition.progress;
+      } else {
+        navigation = null;
+      }
+      scheduleRender();
+    });
 
     window.addEventListener('resize', handleResize, { passive: true });
     window.visualViewport?.addEventListener('resize', handleResize, { passive: true });
@@ -294,6 +328,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
 
     return () => {
       unsubscribe();
+      unsubscribeNavigation();
       window.cancelAnimationFrame(frame);
       window.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('resize', handleResize);

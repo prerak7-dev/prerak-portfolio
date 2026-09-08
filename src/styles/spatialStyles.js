@@ -593,6 +593,12 @@ export const spatialStyles = `
     object-fit: cover;
     object-position: 50% 50%;
   }
+  .gateway-sequence-preloads img:not(:first-child) {
+    display: none;
+  }
+  .gateway-static-plate .gateway-sequence-preloads {
+    visibility: visible;
+  }
   .cores-plate { z-index: 2; }
   .systems-plate { z-index: 3; }
   .chronology-plate { z-index: 4; }

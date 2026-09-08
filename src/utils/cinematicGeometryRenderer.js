@@ -303,8 +303,24 @@ function drawElongatedHead(context, points, color, alpha, radius) {
   context.restore();
 }
 
+let projectionCache = new WeakMap();
+let projectionCacheFrame = 0;
+
 export function readSceneImageProjection(image, fallback, viewportWidth) {
   if (!image?.isConnected) return fallback;
+  // Every gate frame occupies exactly the same box. Measure that box once,
+  // independent of the image used by the dissolve texture.
+  if (image.parentElement?.classList.contains('gateway-sequence-preloads')) {
+    image = image.parentElement.firstElementChild;
+  }
+  const cached = projectionCache.get(image);
+  if (cached?.viewportWidth === viewportWidth) return cached;
+  if (!projectionCacheFrame) {
+    projectionCacheFrame = window.requestAnimationFrame(() => {
+      projectionCache = new WeakMap();
+      projectionCacheFrame = 0;
+    });
+  }
   const rect = image.getBoundingClientRect();
   const boxWidth = image.clientWidth;
   const boxHeight = image.clientHeight;
@@ -323,13 +339,15 @@ export function readSceneImageProjection(image, fallback, viewportWidth) {
   const transformScaleY = rect.height / boxHeight;
   const renderedWidth = sourceWidth * coverScale * transformScaleX;
   const renderedHeight = sourceHeight * coverScale * transformScaleY;
-  return {
+  const projection = {
     left: rect.left + (rect.width - renderedWidth) / 2,
     top: rect.top + (rect.height - renderedHeight) / 2,
     width: renderedWidth,
     height: renderedHeight,
     viewportWidth,
   };
+  projectionCache.set(image, projection);
+  return projection;
 }
 
 export function drawGeometryStreamlines({

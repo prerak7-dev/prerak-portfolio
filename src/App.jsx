@@ -445,6 +445,7 @@ export default function App() {
       setChapterNavigationActive(true);
       startThemeContourTransition({
         kind: 'chapter',
+        targetChapterIndex: index,
         fromTheme: theme,
         toTheme: theme,
         sceneIndex,

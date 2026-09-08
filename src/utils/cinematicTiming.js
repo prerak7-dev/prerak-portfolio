@@ -14,6 +14,10 @@ export function gatewayBackingProgress(handoff) {
   return progress * progress * progress * (progress * (progress * 6 - 15) + 10);
 }
 
+export function gatewayPlateOpacity(handoff) {
+  return (1 - clampUnit(handoff)) * (1 - gatewayBackingProgress(handoff));
+}
+
 export const THEME_CONTOUR_TRANSITION_DURATION_MS = 3000;
 export const THEME_CONTOUR_CENTER_DWELL = 0.45;
 export const BOOT_CONTOUR_TRANSITION_DURATION_MS = 2600;

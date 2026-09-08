@@ -83,6 +83,7 @@ const FRAGMENT_SHADER = `
   uniform vec4 uIncomingProjection;
   uniform vec2 uSource;
   uniform float uSourceReach;
+  uniform float uOriginFocus;
   uniform float uProgress;
   uniform float uEnvelope;
   uniform vec4 uOutgoingGrade;
@@ -222,7 +223,7 @@ const FRAGMENT_SHADER = `
     float edgeFlourish = sin(bloomAngle * 3.0 + broadWash * 4.8) * 0.032
       + sin(bloomAngle * 7.0 - brokenWash * 5.4) * 0.014;
     float contourOrder = clamp(
-      bloomOrder * 0.68
+      mix(bloomOrder, primaryOrder, uOriginFocus) * 0.68
         + (1.0 - pigment) * 0.2
         + (broadWash - 0.5) * 0.13
         + edgeFlourish,
@@ -353,6 +354,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         uIncomingProjection: { value: new THREE.Vector4(0, 0, 1, 1) },
         uSource: { value: new THREE.Vector2(0.5, 0.5) },
         uSourceReach: { value: 0.72 },
+        uOriginFocus: { value: 0 },
         uProgress: { value: 0 },
         uEnvelope: { value: 0 },
         uOutgoingGrade: { value: new THREE.Vector4(...initialGrade) },
@@ -583,7 +585,6 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         geometryTextures.set(geometryImage, createTexture(geometryImage));
       }
 
-      resize();
       let projection;
       let incomingProjection;
       if (themeTransitionActive) {
@@ -629,6 +630,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         incomingProjection.height,
       );
       material.uniforms.uSource.value.set(source[0], source[1]);
+      material.uniforms.uOriginFocus.value = sourceField?.motif === 'gateway' ? 1 : 0;
       material.uniforms.uSourceReach.value = Math.max(0.25, sourceField?.sourceReach || 0.72);
       material.uniforms.uProgress.value = progress;
       material.uniforms.uEnvelope.value = envelope;

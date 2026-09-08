@@ -24,7 +24,7 @@ import {
   toggleCachedClass,
 } from '../utils/motionPerformance.js';
 import { preloadImageUrl } from '../utils/preloadAssets.js';
-import { gatewayBackingProgress, GATEWAY_DISSOLVE_END } from '../utils/cinematicTiming.js';
+import { gatewayBackingProgress, gatewayPlateOpacity, GATEWAY_DISSOLVE_END } from '../utils/cinematicTiming.js';
 
 function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
@@ -106,198 +106,16 @@ function EnvironmentPlate({ filename, className, plateRef, imageRef, eager = fal
   );
 }
 
-function createGatewayFrameRenderer(canvas, firstImage) {
-  if (!canvas || !firstImage?.naturalWidth) return null;
-  canvas.width = firstImage.naturalWidth;
-  canvas.height = firstImage.naturalHeight;
-  canvas.dataset.frameIndex = '0';
-  canvas.dataset.framePosition = '0.0000';
-
-  const gl = canvas.getContext('webgl', {
-    alpha: false,
-    antialias: false,
-    depth: false,
-    desynchronized: true,
-    powerPreference: 'high-performance',
-    preserveDrawingBuffer: false,
-  });
-
-  if (!gl) {
-    const context = canvas.getContext('2d', { alpha: false, desynchronized: true });
-    canvas.dataset.renderer = '2d';
-    return {
-      render(framePosition, currentImage, nextImage) {
-        const currentIndex = Math.floor(framePosition);
-        if (!context || !currentImage?.naturalWidth || !nextImage?.naturalWidth) return false;
-        context.globalAlpha = 1;
-        context.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
-        const blend = framePosition - currentIndex;
-        if (blend > GATEWAY_FRAME_EPSILON && nextImage !== currentImage) {
-          context.globalAlpha = blend;
-          context.drawImage(nextImage, 0, 0, canvas.width, canvas.height);
-          context.globalAlpha = 1;
-        }
-        canvas.dataset.frameIndex = String(Math.round(framePosition));
-        canvas.dataset.framePosition = framePosition.toFixed(4);
-        return true;
-      },
-      dispose() {},
-    };
-  }
-
-  const compileShader = (type, source) => {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      gl.deleteShader(shader);
-      return null;
-    }
-    return shader;
-  };
-  const vertexShader = compileShader(gl.VERTEX_SHADER, `
-    attribute vec2 aPosition;
-    varying vec2 vUv;
-    void main() {
-      vUv = (aPosition + 1.0) * 0.5;
-      gl_Position = vec4(aPosition, 0.0, 1.0);
-    }
-  `);
-  const fragmentShader = compileShader(gl.FRAGMENT_SHADER, `
-    precision mediump float;
-    uniform sampler2D uCurrent;
-    uniform sampler2D uNext;
-    uniform float uBlend;
-    varying vec2 vUv;
-    void main() {
-      gl_FragColor = mix(texture2D(uCurrent, vUv), texture2D(uNext, vUv), uBlend);
-    }
-  `);
-  if (!vertexShader || !fragmentShader) return null;
-
-  const program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  gl.deleteShader(vertexShader);
-  gl.deleteShader(fragmentShader);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    gl.deleteProgram(program);
-    return null;
-  }
-
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-    gl.STATIC_DRAW,
-  );
-  const positionLocation = gl.getAttribLocation(program, 'aPosition');
-  const blendLocation = gl.getUniformLocation(program, 'uBlend');
-  const currentLocation = gl.getUniformLocation(program, 'uCurrent');
-  const nextLocation = gl.getUniformLocation(program, 'uNext');
-
-  gl.useProgram(program);
-  gl.enableVertexAttribArray(positionLocation);
-  gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-  gl.uniform1i(currentLocation, 0);
-  gl.uniform1i(nextLocation, 1);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  gl.viewport(0, 0, canvas.width, canvas.height);
-
-  const textures = new Map();
-  const textureOrder = [];
-  const MAX_CACHED_GATEWAY_TEXTURES = 4;
-
-  const getTexture = (index, image) => {
-    if (!image?.naturalWidth) return null;
-    const cached = textures.get(index);
-    if (cached?.image === image) return cached.texture;
-    if (cached) gl.deleteTexture(cached.texture);
-
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-    textures.set(index, { image, texture });
-    const existingOrder = textureOrder.indexOf(index);
-    if (existingOrder >= 0) textureOrder.splice(existingOrder, 1);
-    textureOrder.push(index);
-    while (textureOrder.length > MAX_CACHED_GATEWAY_TEXTURES) {
-      const oldestIndex = textureOrder.shift();
-      const oldest = textures.get(oldestIndex);
-      if (oldest) gl.deleteTexture(oldest.texture);
-      textures.delete(oldestIndex);
-    }
-    return texture;
-  };
-
-  canvas.dataset.renderer = 'webgl';
-
-  return {
-    render(framePosition, currentImage, nextImage) {
-      const currentIndex = Math.floor(framePosition);
-      const nextIndex = currentImage === nextImage ? currentIndex : currentIndex + 1;
-      const currentTexture = getTexture(currentIndex, currentImage);
-      const nextTexture = getTexture(nextIndex, nextImage);
-      if (!currentTexture || !nextTexture) return false;
-      canvas.dataset.frameIndex = String(Math.round(framePosition));
-      canvas.dataset.framePosition = framePosition.toFixed(4);
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, currentTexture);
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, nextTexture);
-      gl.uniform1f(blendLocation, framePosition - currentIndex);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      return true;
-    },
-    dispose() {
-      textures.forEach(({ texture }) => gl.deleteTexture(texture));
-      gl.deleteBuffer(buffer);
-      gl.deleteProgram(program);
-    },
-  };
-}
-
-function GatewaySequence({ canvasRef, filenames, imageRefs, plateRef, initialFrameIndex = 0 }) {
+function GatewaySequence({ filenames, imageRefs, plateRef }) {
   const { width, height } = CINEMATIC_ASSET_GEOMETRY.scene;
-  const firstFrame = Math.min(
-    GATEWAY_FRAME_COUNT - 1,
-    Math.max(0, Math.floor(initialFrameIndex)),
-  );
-  const lastInitialFrame = Math.min(GATEWAY_FRAME_COUNT - 1, firstFrame + 1);
+  const source = assetPath(filenames[0]);
   return (
-    <div ref={plateRef} className="environment-plate gateway-sequence-plate" aria-hidden="true">
+    <div ref={plateRef} className="environment-plate gateway-sequence-plate gateway-static-plate" aria-hidden="true">
       <div className="environment-living-layer gateway-living-layer">
-        <canvas ref={canvasRef} className="gateway-sequence-canvas" aria-hidden="true" />
-        <div className="gateway-sequence-preloads" aria-hidden="true">
-          {filenames.map((filename, frameIndex) => (
-            (() => {
-              const source = assetPath(filename);
-              const isInitialFrame = frameIndex >= firstFrame && frameIndex <= lastInitialFrame;
-              return (
-                <img
-                  key={filename}
-                  ref={(node) => { imageRefs.current[frameIndex] = node; }}
-                  src={isInitialFrame ? source : undefined}
-                  data-src={source}
-                  alt=""
-                  width={width}
-                  height={height}
-                  draggable="false"
-                  decoding="async"
-                  loading={isInitialFrame ? 'eager' : 'lazy'}
-                  fetchpriority={isInitialFrame ? 'high' : 'low'}
-                  data-frame-index={frameIndex}
-                />
-              );
-            })()
-          ))}
+        <div className="gateway-sequence-preloads">
+          <img ref={(node) => { imageRefs.current[0] = node; }}
+            src={source} data-src={source} data-frame-index="0"
+            width={width} height={height} alt="" decoding="async" fetchpriority="high" />
         </div>
       </div>
     </div>
@@ -489,7 +307,6 @@ export function CinematicEnvironment({
     ];
     let cancelled = false;
     let gatewayAnimationFrame = 0;
-    let gatewayRenderer = null;
     let gatewayCanvasVisible = false;
     const initialGatewayTransition = getGatewayTransition();
     let gatewayTargetFramePosition = 0;
@@ -607,7 +424,7 @@ export function CinematicEnvironment({
         if (cancelled || !decodedImage || image.dataset.src !== source) return;
         image.src = source;
         decodeImage(image).then(() => {
-          if (!cancelled) updateChapterReadiness();
+          if (!cancelled) scheduleGatewayFrame();
         });
       });
     };
@@ -641,7 +458,12 @@ export function CinematicEnvironment({
 
       load
         .then((readyImage) => readyImage && decodeImage(readyImage))
-        .then(() => markGatewayFrameReady(image, frameIndex));
+        .then(async () => {
+          if (cancelled) return;
+          markGatewayFrameReady(image, frameIndex);
+          if (!gatewayFrameReady[frameIndex]) requestedGatewayFrames.delete(requestKey);
+        })
+        .catch(() => requestedGatewayFrames.delete(requestKey));
     };
 
     const scheduleGatewayFrame = () => {
@@ -650,44 +472,18 @@ export function CinematicEnvironment({
       }
     };
 
-    const renderGatewayFrames = (framePosition) => {
-      const currentIndex = Math.floor(framePosition);
-      const nextIndex = Math.min(GATEWAY_FRAME_COUNT - 1, currentIndex + 1);
-      const blend = framePosition - currentIndex;
-      ensureGatewayFrame(currentIndex);
-      ensureGatewayFrame(nextIndex);
-      if (!gatewayFrameReady[currentIndex]) return gatewayVisualFramePosition;
-
-      const hasAdjacentFrame = nextIndex === currentIndex || gatewayFrameReady[nextIndex];
-      const renderBlend = hasAdjacentFrame ? blend : 0;
-      if (!gatewayRenderer) {
-        gatewayRenderer = createGatewayFrameRenderer(
-          gatewayCanvasRef.current,
-          imageRefs.current[currentIndex],
-        );
-      }
-      const rendered = gatewayRenderer?.render(
-        currentIndex + renderBlend,
-        imageRefs.current[currentIndex],
-        hasAdjacentFrame ? imageRefs.current[nextIndex] : imageRefs.current[currentIndex],
-      );
-      if (rendered) setGatewayCanvasVisible(true);
-      return rendered ? (hasAdjacentFrame ? framePosition : currentIndex) : gatewayVisualFramePosition;
-    };
-
     imageRefs.current.forEach((image, frameIndex) => {
       if (image?.getAttribute('src') === image.dataset.src) ensureGatewayFrame(frameIndex);
     });
-    const initialFrameIndex = Math.floor(gatewayVisualFramePosition);
-    ensureGatewayFrame(initialFrameIndex);
-    ensureGatewayFrame(Math.min(GATEWAY_FRAME_COUNT - 1, initialFrameIndex + 1));
+    ensureGatewayFrame(0);
+    ensureSceneImage(1);
 
     const updateGatewayPlateMotion = () => {
       const root = rootRef.current;
       if (!root) return;
       const visualProgress = gatewayVisualFramePosition / Math.max(1, GATEWAY_FRAME_COUNT - 1);
       const coordinatedCoresMix = gatewayVisualHandoff;
-      const gatewayScale = 1.005 + visualProgress * 0.24 + coordinatedCoresMix * 0.19;
+      const gatewayScale = 1.005;
       const gatewayPassage = Math.sin(coordinatedCoresMix * Math.PI);
       const seasonalVinesOpacity = assets.seasonalVines
         ? 0.72 * (1 - gatewayPassage * 0.58) * (1 - gatewayTransitionPulse * 0.08)
@@ -700,13 +496,14 @@ export function CinematicEnvironment({
       setCachedStyleProperty(root, '--gateway-vegetation-scale', (1.025 + visualProgress * 0.075).toFixed(5));
 
       const gatewayTransform = plateTransform({
-        x: -coordinatedCoresMix * gatewayTravelDirection * 0.7,
-        y: -visualProgress * 0.7,
-        depth: coordinatedCoresMix * 82,
+        x: 0,
+        y: 0,
+        depth: 0,
         scale: gatewayScale,
       });
-      setPlateStyle(gatewayPlateRef.current, 1 - coordinatedCoresMix, gatewayTransform);
-      setPlateStyle(gatewayOverlayPlateRef.current, 1 - coordinatedCoresMix, gatewayTransform);
+      const gateOpacity = gatewayPlateOpacity(coordinatedCoresMix);
+      setPlateStyle(gatewayPlateRef.current, gateOpacity, gatewayTransform);
+      setPlateStyle(gatewayOverlayPlateRef.current, gateOpacity, gatewayTransform);
       setPlateStyle(
         coresPlateRef.current,
         coresBackingOpacity * holdUntilPainted(gatewaySystemsMix),
@@ -731,12 +528,14 @@ export function CinematicEnvironment({
     };
 
     function commitGatewayFrame() {
+      if (gatewayAnimationFrame) window.cancelAnimationFrame(gatewayAnimationFrame);
       gatewayAnimationFrame = 0;
-      gatewayVisualFramePosition = renderGatewayFrames(gatewayTargetFramePosition);
+      gatewayVisualFramePosition = 0;
 
       const visualProgress = gatewayVisualFramePosition / Math.max(1, GATEWAY_FRAME_COUNT - 1);
-      const gateReadiness = smootherStep((visualProgress - 0.56) / 0.44);
-      gatewayHandoffTarget = Math.min(gatewayCoresMix, gateReadiness);
+      // Drive the reveal from scroll, not the last decoded image. Otherwise a
+      // late gate frame can freeze or rewind an already visible Cores scene.
+      gatewayHandoffTarget = gatewayCoresMix;
       gatewayVisualHandoff = gatewayHandoffTarget;
       publishGatewayTransition({
         progress: visualProgress,
@@ -786,7 +585,6 @@ export function CinematicEnvironment({
       gatewayTravelDirection = travelDirection;
       ensureGatewayFrame(Math.floor(gatewayFrameTarget));
       ensureGatewayFrame(Math.ceil(gatewayFrameTarget));
-      if (travelDirection < 0) ensureGatewayFrame(Math.floor(gatewayFrameTarget) - 1, 'auto');
       commitGatewayFrame();
 
       toggleCachedClass(root, 'direction-forward', travelDirection > 0);
@@ -869,9 +667,8 @@ export function CinematicEnvironment({
     return () => {
       cancelled = true;
       cancelReadiness();
-      if (gatewayAnimationFrame) window.cancelAnimationFrame(gatewayAnimationFrame);
-      gatewayRenderer?.dispose();
       unsubscribe();
+      if (gatewayAnimationFrame) window.cancelAnimationFrame(gatewayAnimationFrame);
     };
   }, [gatewayFilenames, theme]);
 

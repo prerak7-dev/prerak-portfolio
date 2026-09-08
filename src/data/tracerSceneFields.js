@@ -3,7 +3,7 @@ import { getCinematicAtmosphereTransition } from './cinematicSceneTimeline.js';
 const SCENE_FIELDS = Object.freeze([
   Object.freeze({
     motif: 'gateway',
-    source: Object.freeze([0.5, 0.7]),
+    source: Object.freeze([0.503, 0.623]),
     direction: Object.freeze([0, -1]),
     horizon: 0.76,
     spread: 0.72,

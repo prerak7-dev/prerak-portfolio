@@ -3,7 +3,7 @@ export const GATEWAY_FRAME_COUNT = 24;
 // High-density mobile screens need the same full-resolution art as desktop.
 export const GATEWAY_COMPACT_MEDIA_QUERY = '(max-width: 760px) and (max-height: 600px) and (max-resolution: 1dppx)';
 export const GATEWAY_GEOMETRY_KEYFRAME_INDICES = Object.freeze([
-  0, 3, 6, 9, 12, 15, 18, 21, 23,
+  0,
 ]);
 
 export const CINEMATIC_ASSET_GEOMETRY = Object.freeze({
@@ -25,7 +25,7 @@ const SCENE_KEYS = [
   'particles',
   'topologyRope',
 ];
-const PREVIEW_GATEWAY_FRAME_COUNT = 3;
+const PREVIEW_GATEWAY_FRAME_COUNT = 1;
 
 function uniqueManifest(items) {
   const manifest = new Map();
@@ -112,9 +112,9 @@ export function getCinematicAssets(theme) {
 export function getThemePreloadAssets(theme) {
   const assets = getCinematicAssets(theme);
   return [...new Set([
-    ...assets.gatewayFrames,
+    assets.gatewayFrames[0],
     ...SCENE_KEYS.map((key) => assets[key]).filter(Boolean),
-    ...assets.geometry.gatewayFrames,
+    assets.geometry.gatewayFrames[0],
     assets.geometry.cores,
     assets.geometry.systems,
     assets.geometry.chronology,
@@ -124,7 +124,7 @@ export function getThemePreloadAssets(theme) {
 }
 
 function getResponsiveGatewayFrames(assets, compact) {
-  return compact ? assets.gatewayCompactFrames : assets.gatewayFrames;
+  return [compact ? assets.gatewayCompactFrames[0] : assets.gatewayFrames[0]];
 }
 
 function getResponsiveSceneAsset(assets, key, compact) {
@@ -229,8 +229,7 @@ export function getCompletePreloadManifest(initialTheme) {
 
 export function getGatewayFrameAsset(theme, index, { compact = false } = {}) {
   const assets = getCinematicAssets(theme);
-  const safeIndex = Math.min(GATEWAY_FRAME_COUNT - 1, Math.max(0, Math.round(index)));
-  return getResponsiveGatewayFrames(assets, compact)[safeIndex];
+  return getResponsiveGatewayFrames(assets, compact)[0];
 }
 
 export function getCinematicSceneAsset(theme, sceneIndex, gatewayFrameIndex = 0, options = {}) {

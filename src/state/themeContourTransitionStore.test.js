@@ -101,6 +101,7 @@ test('direct chapter navigation commits one destination under the dissolve and f
     toTheme: 'spring',
     sceneIndex: 0,
     targetSceneIndex: 5,
+    targetChapterIndex: 6,
     fromImage: {},
     toImage: {},
     geometryImage: {},
@@ -113,10 +114,14 @@ test('direct chapter navigation commits one destination under the dissolve and f
   assert.deepEqual(visits, [6]);
   assert.equal(getThemeContourTransition().active, true);
   assert.equal(getThemeContourTransition().targetSceneIndex, 5);
+  assert.equal(getThemeContourTransition().targetChapterIndex, 6);
   assert.equal(completed, false);
   advance(150);
+  assert.ok(getThemeContourTransition().progress > 0);
+  assert.ok(getThemeContourTransition().progress < 1);
   assert.equal(completed, false);
   advance(200);
   assert.equal(completed, true);
   assert.deepEqual(visits, [6]);
+  assert.equal(getThemeContourTransition().progress, 1);
 });
