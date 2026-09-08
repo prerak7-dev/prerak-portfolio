@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Moon, Leaf, Flower2, Snowflake } from 'lucide-react';
 import {
   projectArchitectures,
   spatialChapters,
@@ -29,7 +30,7 @@ import { CinematicEnvironment } from './CinematicEnvironment.jsx';
 import { LoreAvatarContourField } from './LoreAvatarContourField.jsx';
 import { ProfileAvatar } from './primitives.jsx';
 import { SpatialWorld } from './SpatialWorld.jsx';
-import { BoundaryFilamentField, WayfinderCosmicField } from './WayfinderCosmicField.jsx';
+import { BoundaryFilamentField } from './WayfinderCosmicField.jsx';
 const FIELD_POSITIONS = {
   photography: '18% 48%',
   writing: '51% 76%',
@@ -542,67 +543,25 @@ function ArchiveHeader({ profile, onIntro }) {
   );
 }
 
-function SpatialHud({ activeIndex, theme, onThemeChange, atmospherePower, onAtmospherePowerChange, onThemeChosen }) {
-  const [collapsed, setCollapsed] = useState(() => window.matchMedia('(max-width: 1120px), (max-height: 780px)').matches);
-  const activeTheme = spatialThemes.find((item) => item.id === theme) || spatialThemes[0];
+const THEME_ICONS = { default: Moon, fall: Leaf, spring: Flower2, winter: Snowflake };
 
+function SpatialHud({ theme, onThemeChange, onThemeChosen }) {
   return (
-    <aside className={`spatial-hud tracer-shell celestial-panel ${collapsed ? 'is-collapsed' : ''}`} aria-label="Scene wayfinder">
-      <WayfinderCosmicField
-        theme={theme}
-        intensity={atmospherePower}
-        collapsed={collapsed}
-      />
-      <button
-        type="button"
-        className="hud-collapse"
-        aria-label={collapsed ? 'Expand explorer HUD' : 'Collapse explorer HUD'}
-        aria-expanded={!collapsed}
-        onClick={() => setCollapsed((value) => !value)}
-      >
-        <TrianglePointer direction={collapsed ? 'up' : 'down'} />
-      </button>
-      <div className="spatial-hud-content">
-        <div className="hud-coordinate">
-          <span>Wayfinder</span>
-          <strong>{spatialChapters[activeIndex].navLabel}</strong>
-          <small>{activeTheme.label} passage</small>
-        </div>
-        <div className="hud-theme-row" role="group" aria-label="Environment theme">
-          {spatialThemes.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`tracer-control celestial-control ${theme === item.id ? 'active' : ''}`}
-              aria-pressed={theme === item.id}
-              title={item.label}
-              onClick={() => {
-                onThemeChosen();
-                onThemeChange(item.id);
-              }}
-            >
-              <i className={`theme-swatch ${item.id}`} />
-              <span>{item.label}</span>
+    <aside className="spatial-hud theme-switcher" aria-label="Theme selector">
+      <div className="theme-switcher-wash" aria-hidden="true" />
+      <div className="theme-icon-row" role="group" aria-label="Choose theme">
+        {spatialThemes.map((item) => {
+          const Icon = THEME_ICONS[item.id];
+          return (
+            <button key={item.id} type="button"
+              className={theme === item.id ? 'active' : ''}
+              aria-label={item.label} aria-pressed={theme === item.id}
+              onClick={() => { onThemeChosen(); onThemeChange(item.id); }}>
+              <Icon aria-hidden="true" strokeWidth={1.5} />
+              <span className="theme-icon-tooltip" role="tooltip">{item.label}</span>
             </button>
-          ))}
-        </div>
-        <div className="hud-atmosphere-row">
-          <span>Air and weather</span>
-          <strong>{activeTheme.atmosphere}</strong>
-        </div>
-        <label className="hud-intensity">
-          <span>Presence</span>
-          <input
-            type="range"
-            min="0.35"
-            max="1.7"
-            step="0.05"
-            value={atmospherePower}
-            onChange={(event) => {
-              onAtmospherePowerChange(Number(event.target.value));
-            }}
-          />
-        </label>
+          );
+        })}
       </div>
     </aside>
   );
@@ -646,9 +605,9 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
 
   const message = !introGuideReady
     ? ''
-    : themePromptCompleted
+    : themePromptCompleted || activeIndex !== 0
       ? spatialChapters[activeIndex]?.guide || spatialChapters[0].guide
-      : 'Before I guide you through my work, start with the Wayfinder. Switch between Monochrome, Fall, Spring, and Winter, then choose the atmosphere you want to carry through my portfolio.';
+      : 'Make yourself at home. Choose a mood with the theme icons at the bottom left: Monochrome, Fall, Spring, or Winter. Then join me at Cores to explore what I build.';
   const typed = useTypewriter(message, 14, textAnimationReady);
   const guideState = !introGuideReady ? 'is-awaiting' : textAnimationReady ? 'is-ready' : 'is-opening';
 
@@ -670,7 +629,7 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
         disabled={!introGuideReady}
         onClick={() => setCollapsed((value) => !value)}
       >
-        <TrianglePointer direction={collapsed ? 'right' : 'left'} />
+        <TrianglePointer direction={collapsed ? 'left' : 'right'} />
       </button>
     </aside>
   );
@@ -1583,11 +1542,8 @@ export function SpatialExperience({
       </main>
       <MemoLoreGuide activeIndex={displayedContentIndex >= 0 ? displayedContentIndex : 0} introGuideReady={introGuideReady} themePromptCompleted={themePromptCompleted} theme={theme} />
       <MemoSpatialHud
-        activeIndex={activeIndex}
         theme={theme}
         onThemeChange={setTheme}
-        atmospherePower={atmospherePower}
-        onAtmospherePowerChange={setAtmospherePower}
         onThemeChosen={handleThemeChosen}
       />
       <ArchiveProgress activeIndex={activeIndex} />

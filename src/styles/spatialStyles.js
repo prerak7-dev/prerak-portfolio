@@ -7281,6 +7281,89 @@ export const spatialStyles = `
     }
   }
 
+  .archive-viewport .spatial-hud.theme-switcher {
+    position: absolute;
+    left: 24px;
+    right: auto;
+    bottom: 24px;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    height: auto;
+    min-height: 0;
+    padding: 13px 16px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+    transform: none;
+    scale: 1;
+    isolation: isolate;
+    --theme-wash: rgba(105, 102, 93, .48);
+  }
+  .archive-viewport.theme-fall .spatial-hud.theme-switcher { --theme-wash: rgba(110, 78, 72, .48); }
+  .archive-viewport.theme-spring .spatial-hud.theme-switcher { --theme-wash: rgba(78, 102, 89, .48); }
+  .archive-viewport.theme-winter .spatial-hud.theme-switcher { --theme-wash: rgba(84, 101, 113, .48); }
+  .theme-switcher-wash {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: var(--theme-wash);
+    background-image: url('${import.meta.env.BASE_URL}cinematic/ui/watercolor-paper-fiber-overlay-v1.webp');
+    background-size: 340px auto;
+    background-blend-mode: soft-light;
+    backdrop-filter: blur(8px);
+    clip-path: polygon(1% 17%, 4% 9%, 12% 12%, 19% 5%, 31% 8%, 42% 3%, 55% 7%, 68% 4%, 79% 8%, 93% 5%, 98% 14%, 96% 29%, 100% 42%, 98% 58%, 100% 76%, 96% 90%, 87% 86%, 75% 96%, 63% 91%, 49% 98%, 36% 93%, 24% 97%, 14% 89%, 3% 94%, 1% 77%, 3% 64%, 0% 45%, 3% 32%);
+    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent), linear-gradient(transparent, #000 18%, #000 80%, transparent);
+    mask-composite: intersect;
+    transition: background-color 900ms ease;
+  }
+  .theme-switcher .theme-icon-row { display: flex; gap: 6px; }
+  .archive-viewport .theme-switcher .theme-icon-row button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    padding: 10px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #d5d1c9;
+    cursor: pointer;
+    transition: color 300ms ease, background-color 300ms ease;
+  }
+  .archive-viewport .theme-switcher .theme-icon-row button.active {
+    color: #fff6df;
+    background: rgba(255, 244, 215, .13);
+  }
+  .theme-switcher .theme-icon-row button:hover { color: #fff; }
+  .theme-switcher .theme-icon-row button:focus-visible { outline: 2px solid #fff1cf; outline-offset: 2px; }
+  .theme-switcher .theme-icon-row svg { width: 25px; height: 25px; }
+  .theme-icon-tooltip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    opacity: 0;
+    padding: 5px 9px;
+    background: rgba(20, 22, 24, .94);
+    color: #fff7e7;
+    font: 16px/1.2 'Elounda', sans-serif;
+    white-space: nowrap;
+    transition: opacity 160ms ease;
+  }
+  .theme-icon-row button:is(:hover, :focus-visible) .theme-icon-tooltip { opacity: 1; }
+  @media (max-width: 760px) {
+    .archive-viewport .spatial-hud.theme-switcher { left: 10px; bottom: 36px; padding: 9px 11px; }
+    .theme-switcher .theme-icon-row { gap: 0; }
+    .archive-viewport .theme-switcher .theme-icon-row button { width: 44px; height: 44px; min-width: 44px; }
+    .theme-switcher .theme-icon-row svg { width: 23px; height: 23px; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .archive-app .archive-viewport .chapter-rail .chapter-rail-list button :is(strong, .chapter-celestial-marker) {
       transition: none;

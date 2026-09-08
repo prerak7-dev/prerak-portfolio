@@ -7,6 +7,7 @@ const outputRoot = path.join(projectRoot, 'dist');
 const themes = ['default', 'fall', 'spring', 'winter'];
 const sceneNames = ['cores', 'systems', 'chronology', 'field', 'surface'];
 const runtimeCinematicFiles = new Set(['cinematic/ui/text-distress-mask.png']);
+runtimeCinematicFiles.add('cinematic/ui/watercolor-paper-fiber-overlay-v1.webp');
 runtimeCinematicFiles.add('cinematic/ui/boot-celestial-v1.webp');
 runtimeCinematicFiles.add('cinematic/default/ui/control-slab-gate-watercolor-v10.webp');
 runtimeCinematicFiles.add('cinematic/spring/ui/control-slab-gate-watercolor-v10.webp');

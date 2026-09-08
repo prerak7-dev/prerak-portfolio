@@ -21,7 +21,7 @@ export const spatialChapters = [
     navLabel: 'Home',
     eyebrow: 'The threshold',
     title: 'Systems built for the worlds behind the screen.',
-    guide: 'I build backend and full-stack systems for game technology, production tooling, and observable services. This threshold sets the focus for everything ahead.',
+    guide: 'I am Prerak: a full-stack engineer, wonderer, and storyteller. Explore my three cores, dive into my case studies, or grab my resume from the header.',
   },
   {
     id: 'cores',
@@ -29,7 +29,7 @@ export const spatialChapters = [
     navLabel: 'Cores',
     eyebrow: 'Engineering centers',
     title: 'Three cores. One connected practice.',
-    guide: 'At Cores, I map the three centers of my work: reliable backend services, Unreal production tooling, and telemetry that makes complex systems observable. Each light leads into evidence in the case studies ahead.',
+    guide: 'My work connects three cores: reliable services, Unreal tooling, and telemetry. In Case Studies, I show how those disciplines come together in working systems.',
   },
   {
     id: 'projects',
@@ -37,7 +37,7 @@ export const spatialChapters = [
     navLabel: 'Case Studies',
     eyebrow: 'Engineering systems',
     title: 'Proof attached to every claim.',
-    guide: 'In Case Studies, I unpack three evidence-led builds: an asynchronous animation pipeline, an Unreal procedural motion plugin, and a telemetry analytics tool. I have recorded the problem, my role, the difficult decisions, and the result for each one.',
+    guide: 'Choose a project to explore my pipeline, Unreal plugin, or telemetry tool. Inspect the topology and technical stack, then open the repository to see the implementation behind my decisions.',
   },
   {
     id: 'professional',
@@ -45,7 +45,7 @@ export const spatialChapters = [
     navLabel: 'Experience',
     eyebrow: 'Professional record',
     title: 'Production work, traced through time.',
-    guide: 'In Experience, I trace my professional work across enterprise web delivery and data analysis, including my responsibilities, the production context, and the technical stack I used along the way.',
+    guide: 'I am reworking this chapter of my professional story. For now, my resume in the header has my experience, and Case Studies shows the systems I have built.',
   },
   {
     id: 'education',
@@ -53,7 +53,7 @@ export const spatialChapters = [
     navLabel: 'Education',
     eyebrow: 'Learning record',
     title: 'A foundation that keeps moving.',
-    guide: 'In Education, I connect my computer science foundation with the independent learning I continue in backend architecture, real-time systems, Unreal tooling, and game technology.',
+    guide: 'I am preparing this chapter about my education and continuing learning. My resume has the current details; my projects show where I put that learning to work.',
   },
   {
     id: 'personal',
@@ -61,7 +61,7 @@ export const spatialChapters = [
     navLabel: 'Field Notes',
     eyebrow: 'Outside the system',
     title: 'Photography, writing, and journeys in progress.',
-    guide: 'In Field Notes, I share photography, writing, and travel or adventure work. These are the observation, storytelling, and curiosity that I carry alongside engineering.',
+    guide: 'This is where I will collect stories, photographs, and observations beyond engineering. I am still putting these field notes together.',
   },
   {
     id: 'contact',
@@ -69,7 +69,7 @@ export const spatialChapters = [
     navLabel: 'Contact',
     eyebrow: 'The next transmission',
     title: 'Build the next system together.',
-    guide: 'In Contact, I have gathered my email, GitHub, LinkedIn, and resume. Reach out when you want to talk about engineering, platforms, online services, tooling, or game technology.',
+    guide: 'Thanks for spending a little of your time with me. While I finish this chapter, you can find my GitHub and resume in the header, including my contact details in the resume.',
   },
 ];
 
