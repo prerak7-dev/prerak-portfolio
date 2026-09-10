@@ -29,11 +29,11 @@ const SCENE_PROJECTION_SELECTORS = Object.freeze([
 ]);
 
 const INTRO_PLANET = Object.freeze({
-  centerX: 0.879,
-  centerY: 0.154,
-  radius: 0.272,
-  startAngle: 0.78,
-  endAngle: 3.56,
+  centerX: 0.9285,
+  centerY: -0.1517,
+  radius: 0.3471,
+  startAngle: 1.72,
+  endAngle: 2.8,
 });
 const introGeometryCache = new WeakMap();
 

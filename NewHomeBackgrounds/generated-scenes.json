@@ -1,0 +1,126 @@
+{
+  "tool": "Built-in image_gen",
+  "generatedDirectory": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596",
+  "assets": [
+    {
+      "theme": "default",
+      "scene": "cores",
+      "source": "exec-4d2502f6-c722-460f-a457-06a81c8eafff.png",
+      "prompt": "Repaint original Cores as a light monochrome/gold watercolor using the supplied Home as style reference; preserve exact scene geometry."
+    },
+    {
+      "theme": "default",
+      "scene": "systems",
+      "source": "exec-6e1e887e-365b-4eb6-87c9-60c79a0cc841.png",
+      "prompt": "Use case: lighting-weather/style-transfer. One finished wide 16:9 watercolor landscape. Image1 EDIT TARGET: preserve precisely its planetary curve, horizon, subject sizes, landmarks, empty space and camera framing. Image2 STYLE REFERENCE only: luminous cold-pressed white paper, granular gray ink washes, delicate gold accents, fine contour brush lines and crisp organic painted edges. Repaint Image1 as LIGHT-MODE monochrome/gold daylight, expansive white paper sky, pale-gray celestial body and terrain, gold rim details. Keep composition unchanged; no gate or tree imports from reference. Rich intricate wet-on-wet brushwork, not a brightness filter. No text, labels, panels, watermark or borders. Highest quality landscape, 2560x1440 if supported. Scene systems."
+    },
+    {
+      "theme": "default",
+      "scene": "chronology",
+      "source": "exec-3973a29d-f007-4394-8bb2-9e0434f87f62.png",
+      "prompt": "Use case: lighting-weather/style-transfer. One finished wide 16:9 watercolor landscape. Image1 EDIT TARGET: preserve precisely its planetary curve, horizon, subject sizes, landmarks, empty space and camera framing. Image2 STYLE REFERENCE only: luminous cold-pressed white paper, granular gray ink washes, delicate gold accents, fine contour brush lines and crisp organic painted edges. Repaint Image1 as LIGHT-MODE monochrome/gold daylight, expansive white paper sky, pale-gray celestial body and terrain, gold rim details. Keep composition unchanged; no gate or tree imports from reference. Rich intricate wet-on-wet brushwork, not a brightness filter. No text, labels, panels, watermark or borders. Highest quality landscape, 2560x1440 if supported. Scene chronology."
+    },
+    {
+      "theme": "default",
+      "scene": "field",
+      "source": "exec-267ee37b-3120-4654-bc93-d5879d726f38.png",
+      "prompt": "Use case: lighting-weather/style-transfer. One finished wide 16:9 watercolor landscape. Image1 EDIT TARGET: preserve precisely its planetary curve, horizon, subject sizes, landmarks, empty space and camera framing. Image2 STYLE REFERENCE only: luminous cold-pressed white paper, granular gray ink washes, delicate gold accents, fine contour brush lines and crisp organic painted edges. Repaint Image1 as LIGHT-MODE monochrome/gold daylight, expansive white paper sky, pale-gray celestial body and terrain, gold rim details. Keep composition unchanged; no gate or tree imports from reference. Rich intricate wet-on-wet brushwork, not a brightness filter. No text, labels, panels, watermark or borders. Highest quality landscape, 2560x1440 if supported. Scene field."
+    },
+    {
+      "theme": "default",
+      "scene": "surface",
+      "source": "exec-270c1de7-a6cf-43c5-9ca0-bf5282814420.png",
+      "prompt": "Use case: lighting-weather/style-transfer. One finished wide 16:9 watercolor landscape. Image1 EDIT TARGET: preserve precisely its planetary curve, horizon, subject sizes, landmarks, empty space and camera framing. Image2 STYLE REFERENCE only: luminous cold-pressed white paper, granular gray ink washes, delicate gold accents, fine contour brush lines and crisp organic painted edges. Repaint Image1 as LIGHT-MODE monochrome/gold daylight, expansive white paper sky, pale-gray celestial body and terrain, gold rim details. Keep composition unchanged; no gate or tree imports from reference. Rich intricate wet-on-wet brushwork, not a brightness filter. No text, labels, panels, watermark or borders. Highest quality landscape, 2560x1440 if supported. Scene surface."
+    },
+    {
+      "theme": "fall",
+      "scene": "cores",
+      "source": "exec-7fd49053-096c-4b18-bfee-e2d3e54b3e66.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE fall version with autumn ochre, copper gold, light ash-gray terrain, sparse orange foliage in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene cores. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "fall",
+      "scene": "systems",
+      "source": "exec-eee0d3bb-0860-4600-a0dd-7475bdca633f.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE fall version with autumn ochre, copper gold, light ash-gray terrain, sparse orange foliage in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene systems. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "fall",
+      "scene": "chronology",
+      "source": "exec-234f59d8-c129-42c8-9b7c-ce33bf0f9c4b.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE fall version with autumn ochre, copper gold, light ash-gray terrain, sparse orange foliage in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene chronology. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "fall",
+      "scene": "field",
+      "source": "exec-3ebb48ae-9dda-43ed-b535-2ef4bc73cf76.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE fall version with autumn ochre, copper gold, light ash-gray terrain, sparse orange foliage in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene field. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "fall",
+      "scene": "surface",
+      "source": "exec-8e00a0be-e683-439d-a185-a32def337774.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE fall version with autumn ochre, copper gold, light ash-gray terrain, sparse orange foliage in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene surface. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "spring",
+      "scene": "cores",
+      "source": "exec-bee188b5-b251-4a4a-a30e-983cb4599f39.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE spring version with blush pink blossom accents, pale sage and gray terrain, sparse cherry blossom twigs in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene cores. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "spring",
+      "scene": "systems",
+      "source": "exec-155a1d38-4903-47e9-b73e-1cc791bb66ea.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE spring version with blush pink blossom accents, pale sage and gray terrain, sparse cherry blossom twigs in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene systems. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "spring",
+      "scene": "chronology",
+      "source": "exec-750d0c36-20f9-41dc-914a-6cb540c6942c.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE spring version with blush pink blossom accents, pale sage and gray terrain, sparse cherry blossom twigs in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene chronology. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "spring",
+      "scene": "field",
+      "source": "exec-f777f241-e9bd-4ba4-b5ea-1e4fcc404190.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE spring version with blush pink blossom accents, pale sage and gray terrain, sparse cherry blossom twigs in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene field. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "spring",
+      "scene": "surface",
+      "source": "exec-326e209a-6044-48a1-9665-2f6c89ee919b.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE spring version with blush pink blossom accents, pale sage and gray terrain, sparse cherry blossom twigs in foreground corners. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene surface. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "winter",
+      "scene": "cores",
+      "source": "exec-099223d0-918e-47f6-ad4c-71ad3b1ca486.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE winter version with cool silver, restrained ice blue washes, snow-covered terrain, frosted edges. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene cores. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "winter",
+      "scene": "systems",
+      "source": "exec-fae54aa2-62e1-4b9b-8426-2edb69ad079f.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE winter version with cool silver, restrained ice blue washes, snow-covered terrain, frosted edges. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene systems. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "winter",
+      "scene": "chronology",
+      "source": "exec-6c0a0e5b-2d23-4a4a-b132-ab3fc905533f.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE winter version with cool silver, restrained ice blue washes, snow-covered terrain, frosted edges. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene chronology. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "winter",
+      "scene": "field",
+      "source": "exec-2abd668c-cfe5-4faf-9955-574b9cb5598e.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE winter version with cool silver, restrained ice blue washes, snow-covered terrain, frosted edges. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene field. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    },
+    {
+      "theme": "winter",
+      "scene": "surface",
+      "source": "exec-796bd78c-76bc-49d7-bf48-d87a0d823155.png",
+      "prompt": "Use case: lighting-weather and style-transfer. Generate ONE final 16:9 landscape painting, highest detail. First input is the EDIT TARGET, not inspiration: preserve EXACTLY all celestial disk/curve/ring positions, sizes, horizon, camera, land masses and small landmarks. Second input STYLE REFERENCE only: match its delicate crisp watercolor on white cold-pressed paper, organic ink contours, stippled wet blooms and fine gold detailing. Convert target to a LIGHT-MODE winter version with cool silver, restrained ice blue washes, snow-covered terrain, frosted edges. Upper sky remains predominantly white/light paper with fine pale washes, not dark. Keep terrain atmospheric, original large quiet negative spaces. Do not import the reference gate, character or mountains; keep original scene surface. No text, UI, panels, labels, watermarks, decorative border or collage. Preserve exact normalized scene geometry and full framing."
+    }
+  ]
+}

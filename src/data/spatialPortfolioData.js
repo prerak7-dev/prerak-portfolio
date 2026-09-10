@@ -21,7 +21,7 @@ export const spatialChapters = [
     navLabel: 'Home',
     eyebrow: 'The threshold',
     title: 'Systems built for the worlds behind the screen.',
-    guide: 'I am Prerak: a full-stack engineer, wonderer, and storyteller. Explore my three cores, dive into my case studies, or grab my resume from the header.',
+    guide: 'A gate beneath a planet. Subtle. Notice the little circle at its heart? Even enormous mysteries tend to have a small way in.',
   },
   {
     id: 'cores',
@@ -29,7 +29,7 @@ export const spatialChapters = [
     navLabel: 'Cores',
     eyebrow: 'Engineering centers',
     title: 'Three cores. One connected practice.',
-    guide: 'My work connects three cores: reliable services, Unreal tooling, and telemetry. In Case Studies, I show how those disciplines come together in working systems.',
+    guide: 'Three suns, and not one willing to set first. Watch the horizon hold them apart. Some ancient agreements are written in light rather than words.',
   },
   {
     id: 'projects',
@@ -37,7 +37,7 @@ export const spatialChapters = [
     navLabel: 'Case Studies',
     eyebrow: 'Engineering systems',
     title: 'Proof attached to every claim.',
-    guide: 'Choose a project to explore my pipeline, Unreal plugin, or telemetry tool. Inspect the topology and technical stack, then open the repository to see the implementation behind my decisions.',
+    guide: 'That bright rim looks like an ending. Follow it a little farther. The sky has a habit of leaving its doors sideways.',
   },
   {
     id: 'professional',
@@ -45,7 +45,7 @@ export const spatialChapters = [
     navLabel: 'Experience',
     eyebrow: 'Professional record',
     title: 'Production work, traced through time.',
-    guide: 'I am reworking this chapter of my professional story. For now, my resume in the header has my experience, and Case Studies shows the systems I have built.',
+    guide: 'Keep an eye on the curve above us. The little wandering lights seem to know it by heart. I would ask for directions, but they look terribly busy being celestial.',
   },
   {
     id: 'education',
@@ -53,7 +53,7 @@ export const spatialChapters = [
     navLabel: 'Education',
     eyebrow: 'Learning record',
     title: 'A foundation that keeps moving.',
-    guide: 'I am preparing this chapter about my education and continuing learning. My resume has the current details; my projects show where I put that learning to work.',
+    guide: 'Recognise that curve? Good. A familiar sky is not always the same sky. Sometimes the trick is to stay still long enough to notice what moved.',
   },
   {
     id: 'personal',
@@ -61,7 +61,7 @@ export const spatialChapters = [
     navLabel: 'Field Notes',
     eyebrow: 'Outside the system',
     title: 'Photography, writing, and journeys in progress.',
-    guide: 'This is where I will collect stories, photographs, and observations beyond engineering. I am still putting these field notes together.',
+    guide: 'There is a thin trail of light along the edge of this world. No footprints, naturally. Whoever passed through had the unfair advantage of not needing feet.',
   },
   {
     id: 'contact',
@@ -69,7 +69,7 @@ export const spatialChapters = [
     navLabel: 'Contact',
     eyebrow: 'The next transmission',
     title: 'Build the next system together.',
-    guide: 'Thanks for spending a little of your time with me. While I finish this chapter, you can find my GitHub and resume in the header, including my contact details in the resume.',
+    guide: 'Look up. The last curve shelters a little more darkness than it explains. We could call that the end. The sky, rather inconveniently, has left room for another beginning.',
   },
 ];
 

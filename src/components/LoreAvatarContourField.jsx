@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
+import { getSeason } from '../data/themeAppearance.js';
 
 const SAMPLE_SIZE = 288;
 const CONTOUR_POINTS = 240;
@@ -26,8 +27,8 @@ const THEME_PALETTES = {
     glow: [213, 88, 52],
   },
   spring: {
-    core: [211, 247, 223],
-    glow: [65, 191, 151],
+    core: [255, 225, 233],
+    glow: [192, 124, 148],
   },
   winter: {
     core: [243, 252, 255],
@@ -206,7 +207,7 @@ export const LoreAvatarContourField = memo(function LoreAvatarContourField({ the
     const image = figure.querySelector('.lore-avatar-image.is-current');
     if (!image) return undefined;
 
-    const palette = THEME_PALETTES[theme] ?? THEME_PALETTES.default;
+    const palette = THEME_PALETTES[getSeason(theme)];
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let contour = [];
     let timer = 0;

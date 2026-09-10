@@ -1,0 +1,133 @@
+{
+  "tool": "Built-in image_gen",
+  "generatedDirectory": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596",
+  "assets": [
+    {
+      "theme": "default",
+      "scene": "cores",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a nighttime companion painting, not a new composition. Asset: Cores chapter, monochrome dark. Preserve EXACT framing, all three suns' center points and sizes, horizon height, terrain, cloud silhouettes, and empty upper copy space from Image 1. Image 2 is ONLY the dark palette/material reference: charcoal-black cold-pressed paper, layered silver-gray watercolor, delicate muted gold ink highlights. Match Image 1's actual brush style: granular overlapping translucent pigment, fine dry brush contours, uneven pigment pooling, clear handmade paper grain. Replace bright white sky with deep charcoal washes; keep the three suns softly luminous gold with detailed painted cores and reflected highlights. Night atmosphere, rich legible midtones, no flat black crushed areas, no photoreal CGI. DO NOT import gates, new moons, trees or figures from Image 2. Same 16:9 landscape camera and geometry. No text, watermark, frame, UI. Highest quality finished full-bleed painting.",
+      "source": "exec-4d4797ed-ea06-4cf3-b63d-be0492fd5a07.png"
+    },
+    {
+      "theme": "default",
+      "scene": "systems",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: systems chapter, default dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: charcoal black, silver-gray watercolor washes and delicate muted gold highlights. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-1aa384f4-4543-4c7b-a658-e66cd84c84f3.png"
+    },
+    {
+      "theme": "default",
+      "scene": "chronology",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: chronology chapter, default dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: charcoal black, silver-gray watercolor washes and delicate muted gold highlights. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-a3f88ead-cc43-4378-81e2-fa357616b979.png"
+    },
+    {
+      "theme": "default",
+      "scene": "field",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: field chapter, default dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: charcoal black, silver-gray watercolor washes and delicate muted gold highlights. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-5a5e2f92-fd3d-4ea6-a740-3a61da2b3f31.png"
+    },
+    {
+      "theme": "default",
+      "scene": "surface",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: surface chapter, default dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: charcoal black, silver-gray watercolor washes and delicate muted gold highlights. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-d870ac56-c950-4057-a0ba-cce3f5057343.png"
+    },
+    {
+      "theme": "fall",
+      "scene": "cores",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: cores chapter, fall dark. Preserve EXACT camera/framing, all celestial circular contours and subject sizes/locations, horizon, terrain ridges, cloud shapes, seasonal foliage and empty copy space from Image 1. Image 2 is ONLY the dark material/palette reference: charcoal sepia and umber night washes, dried copper leaves and restrained amber-gold highlights. Repaint in the identical handcrafted watercolor/ink style of Image 1: fine dry-brush outlines, flowing wet-on-wet washes, granular pigment, visible paper fibers, luminous painted celestial rims and legible rich midtones. Preserve three suns if present. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape; no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-37aa9a94-cf5b-4e26-8a22-de321132eef4.png"
+    },
+    {
+      "theme": "fall",
+      "scene": "systems",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: systems chapter, fall dark. Preserve EXACT camera/framing, all celestial circular contours and subject sizes/locations, horizon, terrain ridges, cloud shapes, seasonal foliage and empty copy space from Image 1. Image 2 is ONLY the dark material/palette reference: charcoal sepia and umber night washes, dried copper leaves and restrained amber-gold highlights. Repaint in the identical handcrafted watercolor/ink style of Image 1: fine dry-brush outlines, flowing wet-on-wet washes, granular pigment, visible paper fibers, luminous painted celestial rims and legible rich midtones. Preserve three suns if present. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape; no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-b5c336d0-ec0e-4f8c-9db0-682cb2e5f44b.png"
+    },
+    {
+      "theme": "ui",
+      "scene": "loader-brush",
+      "prompt": "Use case: stylized-concept. Production web UI asset: ONE horizontal hand-painted watercolor brush stroke on a genuinely transparent background. A wide softly torn graphite-gray ink wash with organic feathered bristle edges, pigment pooling, subtle dry-brush interruptions, translucent lighter gray fibers, and a slightly tapered natural right tip. Fine handmade cold-pressed paper texture INSIDE the pigment only. Restrained graceful monochrome watercolor, not glossy, not stone, no solid rectangular outline. Stroke occupies 90% width and central 30% height on a 3:1 wide landscape transparent canvas, clean padding around all sides. Single stroke, no extra marks, no brush tool, no objects, no text or labels. Used as a progressive loading indicator above a grayscale watercolor painting; the grain must read at small size.",
+      "source": "exec-83e93c5c-e125-40f1-8406-021f16049e9f.png"
+    },
+    {
+      "theme": "fall",
+      "scene": "chronology",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: chronology chapter, fall dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: charcoal-black watercolor paper, muted copper orange and amber autumnal light. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-f0f762db-9b7e-414d-9c94-1580b5fd6efd.png"
+    },
+    {
+      "theme": "fall",
+      "scene": "field",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: field chapter, fall dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: charcoal-black watercolor paper, muted copper orange and amber autumnal light. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-335ad60d-644c-46dc-99a7-851288ee7de8.png"
+    },
+    {
+      "theme": "fall",
+      "scene": "surface",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: surface chapter, fall dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: charcoal-black watercolor paper, muted copper orange and amber autumnal light. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-b50e011a-dced-4859-af2a-08d0918cc133.png"
+    },
+    {
+      "theme": "spring",
+      "scene": "cores",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: cores chapter, spring dark. Preserve all THREE suns exactly, their sizes, positions and horizon alignment. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: midnight navy watercolor paper, silver-blue clouds, pale gold celestial light and delicate pink cherry blossoms. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-02ae2794-b6bb-404b-912d-65a1cd486159.png"
+    },
+    {
+      "theme": "spring",
+      "scene": "systems",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: systems chapter, spring dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: midnight navy watercolor paper, silver-blue clouds, pale gold celestial light and delicate pink cherry blossoms. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-50b91e85-e6a9-4d3f-a1ed-57a29ee07292.png"
+    },
+    {
+      "theme": "spring",
+      "scene": "chronology",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: chronology chapter, spring dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: midnight navy watercolor paper, silver-blue clouds, pale gold celestial light and delicate pink cherry blossoms. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-c5420e40-a80b-450c-9eb6-34c62dddbfc2.png"
+    },
+    {
+      "theme": "spring",
+      "scene": "field",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: field chapter, spring dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: midnight navy watercolor paper, silver-blue clouds, pale gold celestial light and delicate pink cherry blossoms. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-e868f9da-aa6b-4962-a174-1c9f38ffbf92.png"
+    },
+    {
+      "theme": "spring",
+      "scene": "surface",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: surface chapter, spring dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: midnight navy watercolor paper, silver-blue clouds, pale gold celestial light and delicate pink cherry blossoms. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-cae8f18f-983e-48e3-99bb-adeca41d2b7f.png"
+    },
+    {
+      "theme": "winter",
+      "scene": "cores",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: cores chapter, winter dark. Preserve all THREE suns exactly, their sizes, positions and horizon alignment. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: deep winter blue watercolor paper, frosty silver and ice-blue clouds, snow-covered terrain, pale gold celestial light and soft scattered snowfall; no blossoms or autumn leaves. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-20ad7103-c09d-4ad7-bea8-ea25a5e856e1.png"
+    },
+    {
+      "theme": "winter",
+      "scene": "systems",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: systems chapter, winter dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: deep winter blue watercolor paper, frosty silver and ice-blue clouds, snow-covered terrain, pale gold celestial light and soft scattered snowfall; no blossoms or autumn leaves. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-8f173318-b23e-4028-886e-3be8e1b22b2a.png"
+    },
+    {
+      "theme": "winter",
+      "scene": "chronology",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: chronology chapter, winter dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: deep winter blue watercolor paper, frosty silver and ice-blue clouds, snow-covered terrain, pale gold celestial light and soft scattered snowfall; no blossoms or autumn leaves. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-c6b4c115-48db-45d9-9113-a07351efaa32.png"
+    },
+    {
+      "theme": "winter",
+      "scene": "field",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: field chapter, winter dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: deep winter blue watercolor paper, frosty silver and ice-blue clouds, snow-covered terrain, pale gold celestial light and soft scattered snowfall; no blossoms or autumn leaves. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-4c4d74a0-d15e-4490-9836-77ab6208b8a6.png"
+    },
+    {
+      "theme": "winter",
+      "scene": "surface",
+      "prompt": "Use case: lighting-weather. EDIT Image 1 into a dark nighttime companion. Asset: surface chapter, winter dark. Preserve EXACT camera/framing, planetary silhouettes and circular curves, subject sizes and locations, horizon, terrain ridges, cloud shapes and empty copy space from Image 1. Image 2 is ONLY the dark material and palette reference: deep winter blue watercolor paper, frosty silver and ice-blue clouds, snow-covered terrain, pale gold celestial light and soft scattered snowfall; no blossoms or autumn leaves. Repaint in the identical handcrafted watercolor/ink style of Image 1, with fine dry-brush outlines, flowing wet-on-wet washes, granular pigment and paper fibers, luminous painted celestial rims and legible detailed midtones. No flat black crushed areas, no CGI or photographic textures. DO NOT import gates or any additional subjects from Image 2. Geometry unchanged. One finished full-bleed 16:9 landscape, no text, watermark, frame or UI. Highest quality.",
+      "source": "exec-0b117b76-cf6b-459f-b64c-78b5624c3ab5.png"
+    }
+  ],
+  "pending": []
+}

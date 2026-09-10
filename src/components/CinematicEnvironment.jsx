@@ -25,6 +25,8 @@ import {
 } from '../utils/motionPerformance.js';
 import { preloadImageUrl } from '../utils/preloadAssets.js';
 import { gatewayBackingProgress, gatewayPlateOpacity, GATEWAY_DISSOLVE_END } from '../utils/cinematicTiming.js';
+import { subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
+import { getThemeVignetteOpacity } from '../utils/themeExposure.js';
 
 function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
@@ -176,6 +178,7 @@ export function CinematicEnvironment({
     : assets.gatewayFrames;
   const coresFilename = compactGatewayRef.current ? assets.coresCompact : assets.cores;
   const rootRef = useRef(null);
+  const vignetteRef = useRef(null);
   const gatewayOverlayRootRef = useRef(null);
   const overlayRootRef = useRef(null);
   const gatewayPlateRef = useRef(null);
@@ -198,6 +201,12 @@ export function CinematicEnvironment({
   const initialGatewayFrameIndex = Math.round(
     getGatewayTransition().progress * (GATEWAY_FRAME_COUNT - 1),
   );
+
+  useLayoutEffect(() => subscribeThemeContourTransition(transition => {
+    // Theme state commits before the reveal finishes. Exposure follows the
+    // painting's timeline, including the first loader-to-Home dissolve.
+    setCachedInlineStyle(vignetteRef.current, 'opacity', getThemeVignetteOpacity(theme, transition).toFixed(5));
+  }), [theme]);
 
   useEffect(() => {
     let cancelled = false;
@@ -730,7 +739,7 @@ export function CinematicEnvironment({
         </div>
         <CinematicContourDissolve theme={theme} />
         <div className="environment-volumetrics" />
-        <div className="environment-vignette" />
+        <div ref={vignetteRef} className="environment-vignette" />
       </div>
       <CinematicAtmosphereField theme={theme} />
       {gatewayOverlay && (

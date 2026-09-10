@@ -1,9 +1,10 @@
 import { getCinematicAtmosphereTransition } from './cinematicSceneTimeline.js';
+import { getSeason } from './themeAppearance.js';
 
 const SCENE_FIELDS = Object.freeze([
   Object.freeze({
     motif: 'gateway',
-    source: Object.freeze([0.503, 0.623]),
+    source: Object.freeze([0.5, 0.55]),
     direction: Object.freeze([0, -1]),
     horizon: 0.76,
     spread: 0.72,
@@ -72,7 +73,7 @@ function lerp(from, to, mix) {
 
 function resolveField(theme, sceneIndex) {
   const safeIndex = Math.min(SCENE_FIELDS.length - 1, Math.max(0, Math.round(sceneIndex || 0)));
-  const themeKey = THEME_DYNAMICS[theme] ? theme : 'default';
+  const themeKey = getSeason(theme);
   const cacheKey = `${themeKey}:${safeIndex}`;
   if (resolvedFieldCache.has(cacheKey)) return resolvedFieldCache.get(cacheKey);
   const dynamics = THEME_DYNAMICS[themeKey];
@@ -94,7 +95,7 @@ export function getTracerSceneBlend(theme, scenePosition) {
   const transition = getCinematicAtmosphereTransition(scenePosition);
   const { fromIndex, toIndex } = transition;
   const mix = Math.round(transition.mix * 512) / 512;
-  const themeKey = THEME_DYNAMICS[theme] ? theme : 'default';
+  const themeKey = getSeason(theme);
   const cacheKey = `${themeKey}:${fromIndex}:${toIndex}:${mix}`;
   if (blendedFieldCache.has(cacheKey)) return blendedFieldCache.get(cacheKey);
   const from = resolveField(theme, fromIndex);

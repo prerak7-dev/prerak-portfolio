@@ -1,14 +1,9 @@
-import defaultCelestial from '../../content/chapter-celestial/chapter-celestial-default-v1.webp';
-import fallCelestial from '../../content/chapter-celestial/chapter-celestial-fall-v1.webp';
-import springCelestial from '../../content/chapter-celestial/chapter-celestial-spring-v1.webp';
-import winterCelestial from '../../content/chapter-celestial/chapter-celestial-winter-v1.webp';
+import { APPEARANCE_IDS, paintedAsset } from './themeAppearance.js';
+import { createAssetPath } from '../security/contentSecurity.js';
 
-const chapterCelestialByTheme = Object.freeze({
-  default: defaultCelestial,
-  fall: fallCelestial,
-  spring: springCelestial,
-  winter: winterCelestial,
-});
+const chapterCelestialByTheme = Object.freeze(Object.fromEntries(
+  APPEARANCE_IDS.map(theme => [theme, createAssetPath(import.meta.env.BASE_URL, paintedAsset(theme, 'satellite'))]),
+));
 
 export const chapterCelestialSources = Object.freeze(Object.values(chapterCelestialByTheme));
 
@@ -61,10 +56,10 @@ export const CHAPTER_RAIL_STAGES = Object.freeze([
     id: 'intro',
     selector: '.gateway-sequence-preloads img[data-frame-index="0"]',
     orbit: {
-      center: { x: 0.869945, y: 0.073646 },
-      radius: { x: 0.273855, y: 0.486854 },
-      startAngle: 181,
-      endAngle: 123,
+      center: { x: 0.9285, y: -0.1517 },
+      radius: { x: 0.3471, y: 0.6167 },
+      startAngle: 151,
+      endAngle: 110,
     },
     labelDirection: { x: 1, y: 0 },
     labelDistance: 96,

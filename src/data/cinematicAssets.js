@@ -1,3 +1,5 @@
+import { APPEARANCE_IDS, getSeason, hasPaintedScene, paintedAsset } from './themeAppearance.js';
+
 export const GATEWAY_FRAME_COUNT = 24;
 // Use compact plates only when they can cover the viewport without upscaling.
 // High-density mobile screens need the same full-resolution art as desktop.
@@ -48,62 +50,56 @@ function manifestItem(filename, decode = false, priority = 'auto') {
 function gatewayFrames(theme) {
   return Array.from(
     { length: GATEWAY_FRAME_COUNT },
-    (_, index) => `cinematic/${theme}/gateway/cosmic-frames-v9/frame-${String(index).padStart(2, '0')}.webp`,
+    () => paintedAsset(theme, 'home'),
   );
 }
 
 function compactGatewayFrames(theme) {
   return Array.from(
     { length: GATEWAY_FRAME_COUNT },
-    (_, index) => `cinematic/${theme}/gateway/cosmic-frames-v9-compact/frame-${String(index).padStart(2, '0')}.webp`,
+    () => paintedAsset(theme, 'home'),
   );
 }
 
 function gatewayGeometryFrames(theme) {
   return Array.from(
     { length: GATEWAY_FRAME_COUNT },
-    (_, index) => `cinematic/${theme}/geometry/gateway/cosmic-frames-v9/frame-${String(index).padStart(2, '0')}.webp`,
+    () => paintedAsset(theme, 'geometry/home'),
   );
 }
 
 function geometryAssets(theme) {
+  const field = scene => hasPaintedScene(theme, scene)
+    ? paintedAsset(theme, `geometry/${scene}`)
+    : `cinematic/${getSeason(theme)}/geometry/${scene}-flow.webp`;
   return Object.freeze({
     gatewayFrames: Object.freeze(gatewayGeometryFrames(theme)),
-    cores: `cinematic/${theme}/geometry/cores-flow.webp`,
-    systems: `cinematic/${theme}/geometry/systems-flow.webp`,
-    chronology: `cinematic/${theme}/geometry/chronology-flow.webp`,
-    field: `cinematic/${theme}/geometry/field-flow.webp`,
-    surface: `cinematic/${theme}/geometry/surface-flow.webp`,
+    cores: field('cores'), systems: field('systems'), chronology: field('chronology'),
+    field: field('field'), surface: field('surface'),
   });
 }
 
 function themeAssets(theme) {
-  const seasonalVines = ['fall', 'spring'].includes(theme)
-    ? `cinematic/${theme}/seasonal-vines-watercolor-v1.webp`
-    : null;
+  const season = getSeason(theme);
+  const scene = name => hasPaintedScene(theme, name)
+    ? paintedAsset(theme, name) : `cinematic/${season}/${name}.webp`;
 
   return Object.freeze({
     gatewayFrames: gatewayFrames(theme),
     gatewayCompactFrames: Object.freeze(compactGatewayFrames(theme)),
-    seasonalVines,
-    cores: `cinematic/${theme}/cores.webp`,
-    coresCompact: `cinematic/${theme}/cores-compact.webp`,
-    systems: `cinematic/${theme}/systems.webp`,
-    chronology: `cinematic/${theme}/chronology.webp`,
-    field: `cinematic/${theme}/field.webp`,
-    surface: `cinematic/${theme}/surface.webp`,
-    particles: `cinematic/${theme}/particles-watercolor.webp`,
-    topologyRope: `cinematic/${theme}/topology-rope-segment-watercolor-v2.webp`,
+    seasonalVines: null,
+    cores: scene('cores'), coresCompact: scene('cores'),
+    systems: scene('systems'), chronology: scene('chronology'),
+    field: scene('field'), surface: scene('surface'),
+    particles: `cinematic/${season}/particles-watercolor.webp`,
+    topologyRope: `cinematic/${season}/topology-rope-segment-watercolor-v2.webp`,
     geometry: geometryAssets(theme),
   });
 }
 
-export const CINEMATIC_THEMES = Object.freeze({
-  default: themeAssets('default'),
-  fall: themeAssets('fall'),
-  spring: themeAssets('spring'),
-  winter: themeAssets('winter'),
-});
+export const CINEMATIC_THEMES = Object.freeze(Object.fromEntries(
+  APPEARANCE_IDS.map(theme => [theme, themeAssets(theme)]),
+));
 
 export function getCinematicAssets(theme) {
   return CINEMATIC_THEMES[theme] || CINEMATIC_THEMES.default;

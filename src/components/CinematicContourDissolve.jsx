@@ -36,7 +36,7 @@ const SCENE_PROJECTION_SELECTORS = Object.freeze([
 ]);
 const THEME_GRADES = Object.freeze({
   // saturation, hue rotation (radians), brightness, contrast
-  boot: Object.freeze([0.32, 0, 0.48, 1.1]),
+  boot: Object.freeze([0, 0, 1, 1]),
   default: Object.freeze([1, 0, 1, 1]),
   fall: Object.freeze([0.64, THREE.MathUtils.degToRad(5), 1, 0.97]),
   spring: Object.freeze([0.58, THREE.MathUtils.degToRad(-6), 1.015, 0.97]),
@@ -90,6 +90,7 @@ const FRAGMENT_SHADER = `
   uniform vec4 uIncomingGrade;
   uniform vec3 uPigment;
   uniform float uApplyGrade;
+  uniform float uRevealLiveScene;
   varying vec2 vUv;
 
   float hash21(vec2 point) {
@@ -195,9 +196,13 @@ const FRAGMENT_SHADER = `
         + flow * (1.8 + uProgress * 2.1)
         + vec2(uSource.y, -uSource.x) * 7.1
     );
-    float paperFiber = watercolorNoise(
-      local * vec2(47.0, 103.0) + flow * 3.2 + uSource * 19.0
-    );
+    // Long bristle marks follow the painted contour tangent. Fine dry gaps
+    // and wider wet blooms share the same field rather than a screen-space wipe.
+    vec2 crossFlow = vec2(-flow.y, flow.x);
+    vec2 brushSpace = vec2(dot(local, flow), dot(local, crossFlow));
+    float paperFiber = watercolorNoise(brushSpace * vec2(26.0, 218.0));
+    float brushLoad = watercolorNoise(brushSpace * vec2(8.0, 58.0) + uSource * 7.0);
+    float bristle = smoothstep(0.28, 0.76, paperFiber);
     vec2 bleedPosition = local
       + flow * (broadWash - 0.5) * (0.035 + energy * 0.026)
       - flow * flowTravel * (0.009 + energy * 0.012);
@@ -225,7 +230,9 @@ const FRAGMENT_SHADER = `
     float contourOrder = clamp(
       mix(bloomOrder, primaryOrder, uOriginFocus) * 0.68
         + (1.0 - pigment) * 0.2
-        + (broadWash - 0.5) * 0.13
+        + (broadWash - 0.5) * 0.085
+        + (brushLoad - 0.5) * 0.085
+        + (bristle - 0.5) * 0.025 * energy
         + edgeFlourish,
       0.0,
       1.0
@@ -234,7 +241,7 @@ const FRAGMENT_SHADER = `
     float contourLift = smoothstep(0.14, 0.84, pigment) * 0.155 * flowPresence;
     float wetEdgeWidth = mix(
       0.014,
-      0.052 + brokenWash * 0.04 + energy * 0.014,
+      0.023 + brokenWash * 0.027 + brushLoad * 0.018,
       flowPresence
     );
     float edgeDistance = abs(paintProgress + contourLift - contourOrder);
@@ -243,22 +250,35 @@ const FRAGMENT_SHADER = `
       wetEdgeWidth * 1.72,
       edgeDistance
     );
+    float capillaryFront = paintProgress + contourLift
+      + (bristle - 0.5) * 0.022 * flowPresence;
+    float edgeAA = max(fwidth(contourOrder) * 1.5, 0.0015);
     float handoff = smoothstep(
-      contourOrder - wetEdgeWidth,
-      contourOrder + wetEdgeWidth,
-      paintProgress + contourLift
+      contourOrder - wetEdgeWidth - edgeAA,
+      contourOrder + wetEdgeWidth + edgeAA,
+      capillaryFront
     );
     handoff = clamp(
-      handoff * flowPresence + (paperFiber - 0.5) * wetEdge * edgePresence * 0.075,
+      handoff * flowPresence + (bristle - 0.5) * wetEdge * edgePresence * 0.045,
       0.0,
       1.0
     );
+    // Exhaust the mask, including pixels whose contour order reaches one.
+    handoff = mix(handoff, 1.0, smoothstep(0.92, 1.0, uProgress));
 
     vec3 gradedScene = sceneColor.rgb;
     vec3 gradedIncoming = incomingColor.rgb;
     if (uApplyGrade > 0.5) {
       gradedScene = applyCssGrade(sceneColor.rgb, uOutgoingGrade);
       gradedIncoming = applyCssGrade(incomingColor.rgb, uIncomingGrade);
+    }
+
+    // Reveal the final live painting, including its native framing and grading.
+    if (uRevealLiveScene > 0.5) {
+      gl_FragColor = vec4(gradedScene, sceneColor.a * sceneCoverage * (1.0 - handoff));
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+      return;
     }
 
     float sceneWeight = (1.0 - handoff) * sceneColor.a * sceneCoverage;
@@ -361,6 +381,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         uIncomingGrade: { value: new THREE.Vector4(...initialGrade) },
         uPigment: { value: new THREE.Vector3(...initialPigment) },
         uApplyGrade: { value: 0 },
+        uRevealLiveScene: { value: 0 },
       },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
@@ -515,6 +536,13 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         && themeTransition.toImage
         && themeTransition.geometryImage,
       );
+      // The top-level loader canvas owns this reveal. A second copy underneath
+      // would reveal another dissolve instead of the final painting.
+      if (themeTransitionActive && themeTransition.fromTheme === 'boot'
+        && !className.includes('boot-contour-dissolve')) {
+        clear();
+        return;
+      }
       let progress;
       let outgoingImage;
       let incomingImage;
@@ -535,9 +563,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         );
         outgoingTheme = themeTransition.fromTheme;
         incomingTheme = themeTransition.toTheme;
-        envelope = themeTransition.kind === 'theme' && themeTransition.fromTheme !== 'boot'
-          ? smootherStep(progress / 0.035) * smootherStep((1 - progress) / 0.035)
-          : 1;
+        envelope = 1;
         // keep using the main watercolor material during theme transitions
       } else {
         const { transition, blend, gatewayFrameIndex } = resolveTransition();
@@ -592,8 +618,10 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
           themeTransitionProjection = null;
           themeTransitionProjectionToken = themeTransition.token;
         }
-        const liveSceneImage = getProjectionNode(themeTransition.sceneIndex);
-        if (themeTransition.kind !== 'chapter' || !themeTransitionProjection) {
+        const liveSceneImage = outgoingTheme === 'boot'
+          ? document.getElementById('boot-gateway-frame')
+          : getProjectionNode(themeTransition.sceneIndex);
+        if (!themeTransitionProjection) {
           themeTransitionProjection = readSceneImageProjection(
             liveSceneImage,
             themeTransitionProjection || fallbackProjection,
@@ -601,9 +629,9 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
           );
         }
         projection = themeTransitionProjection;
-        incomingProjection = themeTransition.kind === 'chapter'
-          ? readSceneImageProjection(getProjectionNode(themeTransition.targetSceneIndex), fallbackProjection, width)
-          : themeTransitionProjection;
+        incomingProjection = readSceneImageProjection(
+          getProjectionNode(themeTransition.targetSceneIndex), fallbackProjection, width,
+        );
       } else {
         projection = readSceneImageProjection(outgoingImage, fallbackProjection, width);
         incomingProjection = readSceneImageProjection(
@@ -614,6 +642,26 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       }
       const source = sourceField?.source || [0.5, 0.5];
       applyThemeGrades(outgoingTheme, incomingTheme, progress);
+      const outgoingIsHome = themeTransitionActive
+        ? themeTransition.sceneIndex === 0
+        : sourceField?.motif === 'gateway';
+      const incomingIsHome = themeTransitionActive
+        && (themeTransition.targetSceneIndex ?? themeTransition.sceneIndex) === 0;
+      // Authored watercolor plates already contain their final lighting. Match
+      // the live DOM's unfiltered art instead of reapplying the legacy grade.
+      if ((outgoingIsHome || outgoingImage.src.includes('/painted-v1/')) && outgoingTheme !== 'boot') {
+        material.uniforms.uOutgoingGrade.value.set(1, 0, 1, 1);
+      }
+      if (incomingIsHome || incomingImage.src.includes('/painted-v1/')) {
+        material.uniforms.uIncomingGrade.value.set(1, 0, 1, 1);
+      }
+      const liveIncoming = themeTransitionActive
+        ? getProjectionNode(themeTransition.targetSceneIndex) : null;
+      const liveThemeReady = themeTransitionActive && themeRef.current === incomingTheme
+        && liveIncoming?.complete && liveIncoming.naturalWidth > 0
+        && liveIncoming.src === incomingImage.src;
+      material.uniforms.uRevealLiveScene.value = liveThemeReady
+        || (incomingIsHome && outgoingTheme === 'boot') ? 1 : 0;
       material.uniforms.uScene.value = outgoingTexture;
       material.uniforms.uIncomingScene.value = incomingTexture;
       material.uniforms.uGeometry.value = geometryTextures.get(geometryImage);

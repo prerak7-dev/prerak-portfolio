@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCinematicSceneReveals } from './cinematicSceneTimeline.js';
 import { getGatewayFrameAsset, getCriticalPreloadManifest, getCinematicGeometryAsset } from './cinematicAssets.js';
+import { APPEARANCE_IDS } from './themeAppearance.js';
 
 test('Home holds one painting while its dissolve progresses continuously', () => {
   let previous = 0;
@@ -16,11 +17,11 @@ test('Home holds one painting while its dissolve progresses continuously', () =>
 });
 
 test('all themes load only the closed Home painting and its contour map', () => {
-  for (const theme of ['default', 'spring', 'fall', 'winter']) {
+  for (const theme of APPEARANCE_IDS) {
     assert.equal(getGatewayFrameAsset(theme, 23), getGatewayFrameAsset(theme, 0));
     assert.equal(getCinematicGeometryAsset(theme, 0, 23), getCinematicGeometryAsset(theme, 0, 0));
-    const frames = getCriticalPreloadManifest(theme).filter(item => /frame-\d+/.test(item.filename));
+    const frames = getCriticalPreloadManifest(theme).filter(item => /\/home\.webp$/.test(item.filename));
     assert.ok(frames.length > 0);
-    assert.ok(frames.every(item => item.filename.includes('frame-00')));
+    assert.ok(frames.every(item => item.filename.includes('painted-v1/')));
   }
 });

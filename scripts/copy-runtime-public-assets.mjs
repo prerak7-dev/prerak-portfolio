@@ -38,7 +38,7 @@ function normalizePath(value) {
 
 function shouldCopy(relativePath) {
   const normalized = normalizePath(relativePath);
-  return !normalized.startsWith('cinematic/') || runtimeCinematicFiles.has(normalized);
+  return !normalized.startsWith('cinematic/') || normalized.startsWith('cinematic/painted-v1/') || runtimeCinematicFiles.has(normalized);
 }
 
 let copiedFiles = 0;

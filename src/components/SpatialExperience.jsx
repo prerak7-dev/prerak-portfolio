@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Moon, Leaf, Flower2, Snowflake } from 'lucide-react';
+import { Moon, Sun, Leaf, Flower2, Snowflake } from 'lucide-react';
+import { getSeason, isLightAppearance, appearanceId } from '../data/themeAppearance.js';
 import {
   projectArchitectures,
   spatialChapters,
@@ -12,6 +13,8 @@ import { getLoreAvatarState } from '../data/loreAvatarData.js';
 import { createAssetPath, createMailtoHref, getSafeLinkProps } from '../security/contentSecurity.js';
 import { CASE_STUDY_TIMING, useCaseStudySequence } from '../hooks/useCaseStudySequence.js';
 import { useChapterRailChoreography } from '../hooks/useChapterRailChoreography.js';
+import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
+import { ContourCores, ContourCaseStudies } from './ContourChapterContent.jsx';
 import {
   getGatewayTransition,
   subscribeGatewayTransition,
@@ -546,6 +549,8 @@ function ArchiveHeader({ profile, onIntro }) {
 const THEME_ICONS = { default: Moon, fall: Leaf, spring: Flower2, winter: Snowflake };
 
 function SpatialHud({ theme, onThemeChange, onThemeChosen }) {
+  const season = getSeason(theme);
+  const light = isLightAppearance(theme);
   return (
     <aside className="spatial-hud theme-switcher" aria-label="Theme selector">
       <div className="theme-switcher-wash" aria-hidden="true" />
@@ -554,14 +559,20 @@ function SpatialHud({ theme, onThemeChange, onThemeChosen }) {
           const Icon = THEME_ICONS[item.id];
           return (
             <button key={item.id} type="button"
-              className={theme === item.id ? 'active' : ''}
-              aria-label={item.label} aria-pressed={theme === item.id}
-              onClick={() => { onThemeChosen(); onThemeChange(item.id); }}>
+              className={season === item.id ? 'active' : ''}
+              aria-label={item.label} aria-pressed={season === item.id}
+              onClick={() => { onThemeChosen(); onThemeChange(appearanceId(item.id, light)); }}>
               <Icon aria-hidden="true" strokeWidth={1.5} />
               <span className="theme-icon-tooltip" role="tooltip">{item.label}</span>
             </button>
           );
         })}
+        <button type="button" className={`appearance-toggle ${light ? 'active' : ''}`}
+          role="switch" aria-label="Light appearance" aria-checked={light}
+          onClick={() => onThemeChange(appearanceId(season, !light))}>
+          {light ? <Sun aria-hidden="true" strokeWidth={1.5} /> : <Moon aria-hidden="true" strokeWidth={1.5} />}
+          <span className="theme-icon-tooltip" role="tooltip">{light ? 'Switch to dark' : 'Switch to light'}</span>
+        </button>
       </div>
     </aside>
   );
@@ -570,6 +581,8 @@ function SpatialHud({ theme, onThemeChange, onThemeChosen }) {
 function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }) {
   const [collapsed, setCollapsed] = useState(true);
   const [textAnimationReady, setTextAnimationReady] = useState(false);
+  const [pointerReading, setPointerReading] = useState(false);
+  const [focusReading, setFocusReading] = useState(false);
   const chapterId = spatialChapters[activeIndex]?.id || 'intro';
   const avatarState = getLoreAvatarState(theme, chapterId);
   const avatarSourceRef = useRef(avatarState.src);
@@ -601,18 +614,29 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
       reducedMotion ? 0 : LORE_TEXT_REVEAL_DELAY_MS,
     );
     return () => window.clearTimeout(timer);
-  }, [introGuideReady]);
+  }, [introGuideReady, activeIndex, theme]);
 
   const message = !introGuideReady
     ? ''
     : themePromptCompleted || activeIndex !== 0
       ? spatialChapters[activeIndex]?.guide || spatialChapters[0].guide
-      : 'Make yourself at home. Choose a mood with the theme icons at the bottom left: Monochrome, Fall, Spring, or Winter. Then join me at Cores to explore what I build.';
+      : 'Before we try the gate, a small experiment: touch one of the seasonal signs below. Same world, different weather. Even a planet is allowed a change of mood.';
   const typed = useTypewriter(message, 14, textAnimationReady);
+  useEffect(() => {
+    if (collapsed || !textAnimationReady || !message || typed !== message
+      || pointerReading || focusReading) return undefined;
+    // Start reading time after the final character, and pause for interaction.
+    const readingMs = Math.max(9000, message.trim().split(/\s+/).length * 400 + 2500);
+    const timer = window.setTimeout(() => setCollapsed(true), readingMs);
+    return () => window.clearTimeout(timer);
+  }, [collapsed, textAnimationReady, message, typed, pointerReading, focusReading]);
   const guideState = !introGuideReady ? 'is-awaiting' : textAnimationReady ? 'is-ready' : 'is-opening';
 
   return (
-    <aside className={`spatial-lore-guide ${collapsed ? 'is-collapsed' : ''} ${guideState} theme-${theme}`} data-avatar-mood={avatarState.mood} aria-label="Lore navigation guide">
+    <aside className={`spatial-lore-guide ${collapsed ? 'is-collapsed' : ''} ${guideState} theme-${theme}`} data-avatar-mood={avatarState.mood} aria-label="Lore navigation guide"
+      onMouseEnter={() => setPointerReading(true)} onMouseLeave={() => setPointerReading(false)}
+      onFocus={() => setFocusReading(true)}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocusReading(false); }}>
       <div className="lore-medallion" aria-hidden="true">
         <div className="lore-avatar-figure">
           {leavingAvatar && <img className="lore-avatar-image is-leaving" src={leavingAvatar} alt="" />}
@@ -798,6 +822,7 @@ function IntroGateName({ isActive, name }) {
 
 function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
   const copyStageRef = useRef(null);
+  useContourContentLayout(copyStageRef, 'intro', isActive);
   const gateEntryRef = useRef(null);
   const nameMotionRef = useRef({
     copyX: '',
@@ -1457,8 +1482,8 @@ export function SpatialExperience({
 
   const scenes = useMemo(() => [
     <IntroChapter isActive={chapterIsSettled && displayedContentIndex === 0} profile={profile} onEnter={() => goToChapter(1)} onGuideReady={handleIntroGuideReady} />,
-    <CoresChapter isActive={chapterIsSettled && displayedContentIndex === 1} onContinue={() => goToChapter(2)} />,
-    <ProjectsChapter
+    <ContourCores isActive={chapterIsSettled && displayedContentIndex === 1} onContinue={() => goToChapter(2)} />,
+    <ContourCaseStudies
       cycle={projectCycle}
       displayedProjectIndex={displayedProjectIndex}
       entryDelay={projectEntryDelay}
@@ -1507,12 +1532,12 @@ export function SpatialExperience({
   }), []);
 
   return (
-    <div ref={viewportRef} className={`archive-viewport theme-${theme} rail-${railCollapsed ? 'collapsed' : 'expanded'} ${experienceVisible ? 'experience-visible' : 'experience-concealed'} ${chapterIsSettled ? 'chapter-settled' : 'chapter-transitioning'}`} style={environmentStyle}>
+    <div ref={viewportRef} data-chapter={spatialChapters[activeIndex]?.id} className={`archive-viewport theme-${theme} rail-${railCollapsed ? 'collapsed' : 'expanded'} ${experienceVisible ? 'experience-visible' : 'experience-concealed'} ${chapterIsSettled ? 'chapter-settled' : 'chapter-transitioning'}`} style={environmentStyle}>
       <CinematicEnvironment
         theme={theme}
         onReady={onEnvironmentReady}
         gatewayOverlay={<IntroGateName isActive={experienceVisible && !chapterNavigationActive && activeIndex === 0} name={profile.name} />}
-        systemsOverlay={systemsOverlay}
+        systemsOverlay={null}
       />
       <div className="archive-color-grade" aria-hidden="true" />
       <SpatialWorld theme={theme} atmospherePower={atmospherePower} onReady={onWorldReady} />

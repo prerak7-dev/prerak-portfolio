@@ -1,4 +1,5 @@
 import { getCinematicAtmosphereTransition } from './cinematicSceneTimeline.js';
+import { getSeason } from './themeAppearance.js';
 
 const freezeColors = (colors) => Object.freeze(colors.map((color) => Object.freeze(color)));
 
@@ -74,7 +75,7 @@ const resolvedPaletteCache = new Map();
 const blendedPaletteCache = new Map();
 
 export function getSwarmScenePalette(theme, sceneIndex, variant) {
-  const themeKey = SWARM_SCENE_PALETTES[theme] ? theme : 'default';
+  const themeKey = getSeason(theme);
   const themePalettes = SWARM_SCENE_PALETTES[themeKey];
   const safeIndex = Math.min(SWARM_SCENE_KEYS.length - 1, Math.max(0, Math.round(sceneIndex || 0)));
   const cacheKey = `${themeKey}:${safeIndex}:${variant}`;
@@ -96,7 +97,7 @@ export function getSwarmScenePaletteBlend(theme, scenePosition, variant) {
   const transition = getCinematicAtmosphereTransition(scenePosition);
   const { fromIndex, toIndex } = transition;
   const mix = Math.round(transition.mix * 256) / 256;
-  const themeKey = SWARM_SCENE_PALETTES[theme] ? theme : 'default';
+  const themeKey = getSeason(theme);
   const cacheKey = `${themeKey}:${fromIndex}:${toIndex}:${variant}:${mix}`;
   if (blendedPaletteCache.has(cacheKey)) return blendedPaletteCache.get(cacheKey);
   const from = getSwarmScenePalette(theme, fromIndex, variant);

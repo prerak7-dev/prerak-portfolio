@@ -1107,7 +1107,7 @@ export const spatialStyles = `
     --intro-name-size: max(3.5vw, 6.25vh);
     --intro-name-size: 5.95cqh;
     --intro-name-buried-shift: 145%;
-    --intro-gate-edge-y: 30.12%;
+    --intro-gate-edge-y: 28.5%;
     --intro-first-shift: 0%;
     --intro-last-shift: 0%;
     position: absolute;
@@ -1118,12 +1118,12 @@ export const spatialStyles = `
     clip-path: polygon(
       0 0,
       100% 0,
-      100% 33.8%,
-      62.2% 33.8%,
-      50.92% var(--intro-gate-edge-y),
-      50.08% var(--intro-gate-edge-y),
-      37.8% 33.8%,
-      0 33.8%
+      100% 35.1%,
+      62.4% 35.1%,
+      51% var(--intro-gate-edge-y),
+      49.3% var(--intro-gate-edge-y),
+      37.5% 35.1%,
+      0 35.1%
     );
     pointer-events: none;
     text-transform: uppercase;
@@ -1150,16 +1150,16 @@ export const spatialStyles = `
   }
 
   .intro-name-first {
-    right: 50.08%;
+    right: 50.7%;
     text-align: right;
-    transform: matrix(.987, -.161, -.035, .999, 0, 0);
+    transform: matrix(.955, -.306, -.035, .999, 0, 0);
     transform-origin: 100% 100%;
   }
 
   .intro-name-last {
-    left: 50.92%;
+    left: 51%;
     text-align: left;
-    transform: matrix(.987, .161, .035, .999, 0, 0);
+    transform: matrix(.955, .306, .035, .999, 0, 0);
     transform-origin: 0 100%;
   }
 
@@ -7063,7 +7063,7 @@ export const spatialStyles = `
   }
 
   .archive-viewport .spatial-lore-guide .lore-toggle {
-    left: 13px;
+    left: -7px;
     right: auto;
   }
 
@@ -7185,7 +7185,7 @@ export const spatialStyles = `
     }
 
     .archive-viewport .spatial-lore-guide:not(.is-collapsed) .lore-toggle {
-      left: 10px;
+      left: -6px;
       right: auto;
     }
   }
@@ -7735,6 +7735,95 @@ export const spatialStyles = `
     animation-delay: 780ms;
   }
 
+  /* Content occupies source-image safe space; long records advance in place. */
+  .archive-viewport .archive-scene:is(.scene-intro, .scene-cores, .scene-projects) {
+    inset: 0 !important;
+    padding: 0;
+    overflow: visible;
+  }
+  .archive-viewport .contour-content {
+    position: absolute;
+    left: var(--content-left, 44px);
+    top: var(--content-top, 112px);
+    width: var(--content-width, 600px);
+    height: var(--content-height, 460px);
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin: 0;
+    padding: 0;
+    background: none;
+    overflow: visible;
+    color: var(--ink);
+    text-shadow: 0 2px 5px rgba(0,0,0,.9), 0 0 18px rgba(0,0,0,.35);
+    opacity: 0;
+    translate: 0 16px;
+    transition: opacity 600ms ease, translate 800ms cubic-bezier(.2,.7,.2,1);
+    pointer-events: none;
+  }
+  .archive-viewport .contour-content.is-present { opacity: 1; translate: 0 0; pointer-events: auto; }
+  .archive-viewport .contour-content.is-departing { opacity: 0; translate: -18px 0; }
+  .contour-content header { flex: none; }
+  .archive-viewport .contour-content h2 { font-family: var(--font-display) !important; font-size: 40px; line-height: 1.08; margin: 0; letter-spacing: 0; }
+  .archive-viewport .contour-content h3 { font-family: var(--font-display) !important; font-size: 30px; line-height: 1.14; margin: 0 0 16px; letter-spacing: 0; overflow-wrap: anywhere; }
+  .archive-viewport .contour-content p { font-family: var(--font-navigation); font-size: 22px; line-height: 1.45; margin: 0; overflow-wrap: anywhere; }
+  .archive-viewport .contour-content .contour-eyebrow { color: var(--accent); font-size: 16px; line-height: 1.3; margin: 0 0 10px; }
+  .contour-focus { min-height: 0; flex: 1; display: flex; flex-direction: column; justify-content: center; animation: contourFocusIn 650ms cubic-bezier(.2,.7,.2,1) both; }
+  .contour-focus.is-leaving { animation: contourFocusOut 240ms ease both; }
+  .contour-content footer { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; }
+  .focus-pager { display: flex; align-items: center; gap: 14px; }
+  .focus-pager span { font: 16px/1.2 var(--font-navigation); white-space: nowrap; }
+  .archive-viewport .contour-content button, .archive-viewport .contour-content a { color: var(--ink); font: 18px/1.2 var(--font-navigation); background: transparent; border: 0; box-shadow: none; padding: 8px; min-height: 44px; cursor: pointer; }
+  .contour-content svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .focus-pager button { display: grid; place-items: center; width: 44px; height: 44px; }
+  .contour-content button:disabled { opacity: .3; cursor: default; }
+  .contour-content :is(button,a):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .contour-link { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+  .contour-project-tabs, .case-focus-modes { display: flex; flex: none; flex-wrap: wrap; gap: 6px; }
+  .archive-viewport .contour-content [aria-pressed="true"] { color: var(--accent); text-decoration: underline; text-underline-offset: 7px; }
+  .case-focus-modes button { display: flex; align-items: center; gap: 8px; }
+  .archive-viewport .intro-copy-stage {
+    left: var(--content-left, 44px);
+    top: var(--content-top, 140px);
+    width: var(--content-width, 360px);
+    height: var(--content-height, 460px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 24px;
+  }
+  .archive-viewport .intro-copy-stage > * { margin-top: 0; margin-bottom: 0; flex: none; }
+  .archive-viewport .intro-copy-stage .intro-role { font-size: 32px; line-height: 1.1; }
+  .archive-viewport .intro-copy-stage .intro-status { font-size: 17px; line-height: 1.4; }
+  @keyframes contourFocusIn { from { opacity: 0; transform: translate3d(16px, 6px, 0); } to { opacity: 1; transform: none; } }
+  @keyframes contourFocusOut { to { opacity: 0; transform: translate3d(-14px, -4px, 0); } }
+  @media (max-width: 899px) {
+    .archive-viewport .contour-content { gap: 12px; }
+    .archive-viewport .contour-content h2 { font-size: 30px; }
+    .archive-viewport .contour-content h3 { font-size: 25px; margin-bottom: 10px; }
+    .archive-viewport .contour-content p { font-size: 19px; line-height: 1.35; }
+    .archive-viewport .contour-content .contour-eyebrow { font-size: 14px; }
+    .archive-viewport .contour-content button, .archive-viewport .contour-content a { font-size: 16px; }
+    .case-focus-modes button span { display: none; }
+    .archive-viewport .intro-copy-stage { gap: 10px; }
+    .archive-viewport .intro-copy-stage .intro-role { font-size: 26px; }
+    .archive-viewport .intro-copy-stage .intro-status { font-size: 14px; }
+    .focus-pager { gap: 6px; }
+  }
+
+  @media (max-width: 899px) and (max-height: 779px) {
+    .archive-viewport .contour-projects { gap: 8px; }
+    .archive-viewport .contour-projects h2 { font-size: 24px; }
+    .archive-viewport .contour-projects h3 { font-size: 20px; margin-bottom: 6px; }
+    .archive-viewport .contour-projects p { font-size: 17px; line-height: 1.3; }
+    .archive-viewport .contour-projects .contour-eyebrow { font-size: 12px; margin-bottom: 4px; }
+  }
+  @media (max-width: 760px) {
+    .archive-viewport .intro-gate-entry { top: calc(100% - 220px); }
+    .archive-viewport .intro-gate-cta { min-height: 32px; padding: 5px 12px; }
+  }
+
   @keyframes archiveUiEnter {
     0% {
       opacity: 0;
@@ -7762,5 +7851,65 @@ export const spatialStyles = `
     }
 
     .scenic-text { animation: none; }
+  }
+
+  .cinematic-environment .environment-living-layer > img[src*="/painted-v1/"] {
+    filter: none !important;
+  }
+
+  /* Daylight is an authored painting, with ink that remains legible on paper. */
+  .archive-app[class*="-light"] {
+    color-scheme: light;
+    --bg: #f4f4f1;
+    --ink: #202b34;
+    --muted: #35434b;
+    --faint: #46545b;
+    --panel-ink: #202b34;
+    --panel-muted: #35434b;
+    --parchment-ink: #202b34;
+    --accent: #75511b;
+    --accent-rgb: 117, 81, 27;
+    --surface-text-shadow: 0 1px 2px rgba(255,255,255,.8);
+    color: var(--ink);
+  }
+  .archive-app.theme-spring-light { --accent: #7d344f; --accent-rgb: 125,52,79; }
+  .archive-app.theme-winter-light { --accent: #254b68; --accent-rgb: 37,75,104; }
+  .archive-app.theme-fall-light { --accent: #88411e; --accent-rgb: 136,65,30; }
+  .archive-app[class*="-light"] :is(h1,h2,h3,p,small,strong,a,button,.chapter-rail-label,.scenic-text,.intro-motto-word,.intro-scroll-text) {
+    color: var(--ink) !important;
+    -webkit-text-fill-color: currentColor !important;
+    text-shadow: 0 0 2px #fff, 0 0 4px rgba(255,255,255,.95), 0 1px 8px rgba(255,255,255,.7) !important;
+  }
+  .archive-app[class*="-light"] .intro-name-word {
+    -webkit-text-stroke: .4px rgba(255,255,255,.7);
+    color: #202b34;
+    text-shadow: 0 1px 2px rgba(255,255,255,.7);
+  }
+  .archive-app[class*="-light"] .spatial-hud.theme-switcher {
+    --theme-wash: rgba(232,235,232,.78);
+  }
+  .archive-app[class*="-light"] .theme-icon-row button.active {
+    background: rgba(40,54,61,.12);
+    color: var(--accent) !important;
+  }
+  .archive-app[class*="-light"] .theme-icon-row button:focus-visible {
+    outline-color: var(--accent);
+  }
+  .archive-app[class*="-light"] .theme-icon-tooltip {
+    background: #f5f5ef;
+    color: #202b34;
+  }
+  @media (min-width: 761px) {
+    .archive-app .theme-winter-light[data-chapter="projects"] .chapter-rail-label,
+    .archive-app .theme-winter-light[data-chapter="projects"] .archive-header-actions a {
+      color: #f4f5f2 !important;
+      -webkit-text-fill-color: currentColor !important;
+      text-shadow: 0 1px 3px #172735, 0 0 7px rgba(23,39,53,.8) !important;
+    }
+  }
+  .theme-switcher .appearance-toggle { margin-left: 12px; }
+  .archive-viewport .lore-medallion img { filter: drop-shadow(0 3px 4px rgba(0,0,0,.16)); }
+  @media (max-width: 760px) {
+    .theme-switcher .appearance-toggle { margin-left: 6px; }
   }
 `;

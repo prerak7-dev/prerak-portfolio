@@ -11,8 +11,8 @@ import {
   GATEWAY_FRAME_COUNT,
   GATEWAY_GEOMETRY_KEYFRAME_INDICES,
 } from './data/cinematicAssets.js';
-import { chapterCelestialSources } from './data/chapterRailCelestialData.js';
-import { loreAvatarSources } from './data/loreAvatarData.js';
+import { chapterCelestialSources, getChapterCelestialAsset } from './data/chapterRailCelestialData.js';
+import { loreAvatarSources, getLoreAvatarState } from './data/loreAvatarData.js';
 import { profile } from './data/portfolioData.js';
 import { spatialChapters, spatialThemes } from './data/spatialPortfolioData.js';
 import { useSpatialNarrative } from './hooks/useSpatialNarrative.js';
@@ -24,7 +24,7 @@ import { BOOT_CONTOUR_TRANSITION_DURATION_MS } from './utils/cinematicTiming.js'
 import { loadCinematicGeometryField } from './utils/cinematicGeometryField.js';
 import { preloadAssetManifest, preloadImageUrls, preloadImageUrl } from './utils/preloadAssets.js';
 
-const themeIds = new Set(spatialThemes.map((theme) => theme.id));
+const themeIds = new Set(spatialThemes.flatMap((theme) => [theme.id, `${theme.id}-light`]));
 const CHAPTER_SCROLL_DISTANCE_VH = 400;
 const backgroundPreloads = new Map();
 const geometryPreloads = new Map();
@@ -167,9 +167,9 @@ export default function App() {
       compact: compactViewport,
     });
     const bootContourAssets = [
-      getCinematicSceneAsset('default', 0, 0, { compact: compactViewport }),
+      getCinematicSceneAsset('default-light', 0, 0, { compact: compactViewport }),
       getCinematicSceneAsset(initialThemeRef.current, 0, 0, { compact: compactViewport }),
-      getCinematicGeometryAsset('default', 0, 0),
+      getCinematicGeometryAsset('default-light', 0, 0),
     ].map(resolveAsset);
     const interfaceAssets = [
       ...chapterCelestialSources,
@@ -193,11 +193,11 @@ export default function App() {
       if (progressElement && progressElement.previousElementSibling) {
         const progress = bootProgressRef.current;
         progressElement.previousElementSibling.textContent = progress < 28
-          ? 'Tracing the passage'
+          ? 'Laying the first wash'
           : progress < 66
-            ? 'Awakening the gate'
+            ? 'Following the brushwork'
             : progress < 92
-              ? 'Binding the constellations'
+              ? 'Letting the worlds settle'
               : 'The archive is ready';
       }
       progressTrack?.setAttribute('aria-valuenow', String(bootProgressRef.current));
@@ -376,6 +376,10 @@ export default function App() {
         2,
       ),
       nextThemeSeasonalVines ? preloadImageUrl(nextThemeSeasonalVines, 'high') : Promise.resolve(null),
+      preloadImageUrls([
+        getChapterCelestialAsset(nextTheme),
+        getLoreAvatarState(nextTheme, spatialChapters[activeIndex]?.id).src,
+      ], 2),
     ]).then(([fromImage, toImage, geometryImage]) => {
       if (themeRequestRef.current !== requestId) return;
       document.documentElement.classList.remove('theme-assets-preparing');
@@ -388,6 +392,7 @@ export default function App() {
         startThemeContourTransition({
           fromTheme: theme,
           toTheme: nextTheme,
+          applyProgress: 0,
           sceneIndex,
           gatewayFrameIndex,
           fromImage,
