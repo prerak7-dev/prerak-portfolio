@@ -11,8 +11,12 @@ try {
   await page.locator('.chapter-rail-list button').filter({ hasText: 'Cores' }).click({ force: true });
   await page.mouse.move(500, 100);
   const guide = page.locator('.spatial-lore-guide');
-  await page.waitForFunction(() => document.querySelector('.lore-parchment p')?.textContent.includes('Three suns'));
-  await page.waitForFunction(() => document.querySelector('.spatial-lore-guide')?.classList.contains('is-collapsed'), { timeout: 25000 });
+  const coresLore = await page.evaluate(async () => {
+    const { spatialChapters } = await import('/prerak-portfolio/src/data/spatialPortfolioData.js');
+    return spatialChapters.find(chapter => chapter.id === 'cores').guide;
+  });
+  await page.waitForFunction(message => document.querySelector('.lore-parchment p')?.textContent.includes(message), coresLore);
+  await page.waitForFunction(() => document.querySelector('.spatial-lore-guide')?.classList.contains('is-collapsed'), null, { timeout: 25000 });
   await page.getByRole('button', { name: 'Expand lore guide' }).click({ force: true });
   if (await guide.evaluate(node => node.classList.contains('is-collapsed'))) throw new Error('Reopen failed');
   console.log(JSON.stringify({ errors, autoHide: true, reopen: true }));

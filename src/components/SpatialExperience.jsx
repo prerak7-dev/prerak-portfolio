@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Moon, Sun, Leaf, Flower2, Snowflake } from 'lucide-react';
+import { Moon, Sun, Leaf, Flower2, Snowflake, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getSeason, isLightAppearance, appearanceId } from '../data/themeAppearance.js';
 import {
   projectArchitectures,
@@ -14,6 +14,9 @@ import { createAssetPath, createMailtoHref, getSafeLinkProps } from '../security
 import { CASE_STUDY_TIMING, useCaseStudySequence } from '../hooks/useCaseStudySequence.js';
 import { useChapterRailChoreography } from '../hooks/useChapterRailChoreography.js';
 import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
+import { useHomeCompositionLayout } from '../hooks/useHomeCompositionLayout.js';
+import { useTextMaterials } from '../hooks/useTextMaterials.js';
+import { HOME_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
 import { ContourCores, ContourCaseStudies } from './ContourChapterContent.jsx';
 import {
   getGatewayTransition,
@@ -416,7 +419,7 @@ function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onS
   });
 
   useEffect(() => {
-    if (!window.matchMedia('(max-width: 760px)').matches) return undefined;
+    if (!window.matchMedia(HOME_COMPACT_QUERY).matches) return undefined;
     const frame = window.requestAnimationFrame(() => {
       const list = listRef.current;
       const activeTab = list?.querySelector('[role="tab"][aria-selected="true"]');
@@ -607,7 +610,7 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
       return undefined;
     }
 
-    setCollapsed(false);
+    setCollapsed(window.matchMedia(HOME_COMPACT_QUERY).matches);
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const timer = window.setTimeout(
       () => setTextAnimationReady(true),
@@ -616,11 +619,18 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
     return () => window.clearTimeout(timer);
   }, [introGuideReady, activeIndex, theme]);
 
+  useEffect(() => {
+    const compact = window.matchMedia(HOME_COMPACT_QUERY);
+    const changed = () => { if (compact.matches) setCollapsed(true); };
+    compact.addEventListener('change', changed);
+    return () => compact.removeEventListener('change', changed);
+  }, []);
+
   const message = !introGuideReady
     ? ''
     : themePromptCompleted || activeIndex !== 0
       ? spatialChapters[activeIndex]?.guide || spatialChapters[0].guide
-      : 'Before we try the gate, a small experiment: touch one of the seasonal signs below. Same world, different weather. Even a planet is allowed a change of mood.';
+      : 'Choose a season. An old friend left me four accounts of this night; not one agrees with the others. I have my suspicions about the friend.';
   const typed = useTypewriter(message, 14, textAnimationReady);
   useEffect(() => {
     if (collapsed || !textAnimationReady || !message || typed !== message
@@ -644,7 +654,7 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
           <LoreAvatarContourField theme={theme} imageSrc={currentAvatar} />
         </div>
       </div>
-      <div className="lore-parchment tracer-slab" data-tracer-prop="lore" aria-hidden={collapsed}><p>{typed}{textAnimationReady && <span className="lore-caret" aria-hidden="true" />}</p></div>
+      <div className="lore-parchment tracer-slab" data-lenis-prevent data-tracer-prop="lore" aria-hidden={collapsed}><p>{typed}{textAnimationReady && <span className="lore-caret" aria-hidden="true" />}</p></div>
       <button
         type="button"
         className="lore-toggle"
@@ -821,8 +831,10 @@ function IntroGateName({ isActive, name }) {
 }
 
 function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
+  const compositionRef = useRef(null);
+  const compact = useHomeCompositionLayout(compositionRef);
+  const [selectedBeat, setSelectedBeat] = useState(null);
   const copyStageRef = useRef(null);
-  useContourContentLayout(copyStageRef, 'intro', isActive);
   const gateEntryRef = useRef(null);
   const nameMotionRef = useRef({
     copyX: '',
@@ -851,6 +863,10 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
   const resumeComplete = segments[7].length === copy[7].length;
   const statusVisible = segments[8].length > 0;
   const statusComplete = segments[8].length === copy[8].length;
+  const narrativeBeat = activeSegment < 4 ? 0 : activeSegment < 7 ? 1 : activeSegment === 7 ? 2 : 3;
+  const beat = selectedBeat ?? narrativeBeat;
+  useEffect(() => { if (!isActive) setSelectedBeat(null); }, [isActive]);
+  const availableBeat = isComplete ? 3 : narrativeBeat;
   const scrollCueStart = copy[8].lastIndexOf('SCROLL');
   const statusLead = segments[8].slice(0, scrollCueStart);
   const statusCue = segments[8].slice(scrollCueStart);
@@ -922,7 +938,7 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
   }), []);
 
   return (
-    <div className={`intro-chapter-content ${isActive ? 'is-active' : ''} ${isComplete ? 'is-copy-complete' : ''} ${resumeVisible ? 'is-resume-visible' : ''} ${resumeComplete ? 'is-resume-complete' : ''} ${statusVisible ? 'is-status-visible' : ''}`} aria-live="off">
+    <div ref={compositionRef} data-compact={compact} data-beat={beat} className={`intro-chapter-content home-composition ${isActive ? 'is-active' : ''} ${isComplete ? 'is-copy-complete' : ''} ${resumeVisible ? 'is-resume-visible' : ''} ${resumeComplete ? 'is-resume-complete' : ''} ${statusVisible ? 'is-status-visible' : ''}`} aria-live="off">
       <div ref={copyStageRef} className="intro-copy-stage">
         <div className="intro-manifesto" aria-label={copy.slice(0, 4).join(' ')}>
           {copy.slice(0, 4).map((phrase, index) => (
@@ -956,6 +972,11 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
           <span>{statusLead}{statusCue && <span className="intro-scroll-cue">{statusCue}{statusComplete && <span className="intro-scroll-arrow" aria-hidden="true">&#8595;</span>}</span>}{caret(8)}</span>
         </div>
       </div>
+      {compact && <div className="home-beat-controls" aria-label="Home introduction">
+        <button type="button" aria-label="Previous introduction passage" disabled={beat === 0} onClick={() => setSelectedBeat(Math.max(0, beat - 1))}><ChevronLeft aria-hidden="true" /></button>
+        <span aria-live="polite">{beat + 1} / 4</span>
+        <button type="button" aria-label="Next introduction passage" disabled={beat >= availableBeat} onClick={() => setSelectedBeat(Math.min(availableBeat, beat + 1))}><ChevronRight aria-hidden="true" /></button>
+      </div>}
       <div ref={gateEntryRef} className="intro-gate-entry">
         <div className="intro-gate-scroll-shell">
           <button className="intro-gate-cta tracer-action" data-tracer-prop="action" type="button" onClick={onEnter}><span>Enter the archive</span></button>
@@ -1455,9 +1476,11 @@ export function SpatialExperience({
   }));
   const sceneRefs = useRef([]);
   const viewportRef = useRef(null);
-  const displayedContentIndex = cinematicReadiness.readyIndex;
+  useTextMaterials(viewportRef);
+  const displayedContentIndex = chapterNavigationActive ? activeIndex : cinematicReadiness.readyIndex;
   const chapterIsSettled = experienceVisible && cinematicReadiness.settled && !chapterNavigationActive;
-  const projectsActive = chapterIsSettled && displayedContentIndex === 2;
+  const contentIsVisible = chapterIsSettled || (experienceVisible && chapterNavigationActive);
+  const projectsActive = contentIsVisible && displayedContentIndex === 2;
   const projectsInteractive = projectsActive && chapterIsSettled && activeIndex === 2;
 
   useEffect(() => subscribeCinematicReadiness((next) => {
@@ -1472,7 +1495,7 @@ export function SpatialExperience({
     selectedIndex: selectedProjectIndex,
     selectProject,
   } = useCaseStudySequence(projectsActive, spatialPortfolio.projects.length);
-  const handleIntro = useCallback(() => goToChapter(0), [goToChapter]);
+  const handleIntro = useCallback(() => onChapterSelect(0), [onChapterSelect]);
   const handleIntroGuideReady = useCallback(() => setIntroGuideReady(true), []);
   const handleThemeChosen = useCallback(() => setThemePromptCompleted(true), []);
   const handleArchitectureClose = useCallback(() => setArchitectureProject(null), []);
@@ -1481,8 +1504,8 @@ export function SpatialExperience({
   }, [displayedProjectIndex]);
 
   const scenes = useMemo(() => [
-    <IntroChapter isActive={chapterIsSettled && displayedContentIndex === 0} profile={profile} onEnter={() => goToChapter(1)} onGuideReady={handleIntroGuideReady} />,
-    <ContourCores isActive={chapterIsSettled && displayedContentIndex === 1} onContinue={() => goToChapter(2)} />,
+    <IntroChapter isActive={contentIsVisible && displayedContentIndex === 0} profile={profile} onEnter={() => onChapterSelect(1)} onGuideReady={handleIntroGuideReady} />,
+    <ContourCores isActive={contentIsVisible && displayedContentIndex === 1} onContinue={() => onChapterSelect(2)} />,
     <ContourCaseStudies
       cycle={projectCycle}
       displayedProjectIndex={displayedProjectIndex}
@@ -1498,7 +1521,7 @@ export function SpatialExperience({
     null,
     null,
     null,
-  ], [chapterIsSettled, displayedContentIndex, displayedProjectIndex, goToChapter, handleArchitectureOpen, handleIntroGuideReady, profile, projectCycle, projectEntryDelay, projectSequencePhase, projectsActive, selectProject, selectedProjectIndex, theme]);
+  ], [contentIsVisible, displayedContentIndex, displayedProjectIndex, onChapterSelect, handleArchitectureOpen, handleIntroGuideReady, profile, projectCycle, projectEntryDelay, projectSequencePhase, projectsActive, selectProject, selectedProjectIndex, theme]);
   const systemsOverlay = useMemo(() => (
     <ProjectTopology
       cycle={projectCycle}
@@ -1536,7 +1559,6 @@ export function SpatialExperience({
       <CinematicEnvironment
         theme={theme}
         onReady={onEnvironmentReady}
-        gatewayOverlay={<IntroGateName isActive={experienceVisible && !chapterNavigationActive && activeIndex === 0} name={profile.name} />}
         systemsOverlay={null}
       />
       <div className="archive-color-grade" aria-hidden="true" />
@@ -1556,9 +1578,9 @@ export function SpatialExperience({
           <section
             key={spatialChapters[index].id}
             ref={(node) => { sceneRefs.current[index] = node; }}
-            className={`archive-scene scene-${spatialChapters[index].id} ${index === activeIndex ? 'near' : ''} ${chapterIsSettled && index === displayedContentIndex ? 'active content-ready' : ''}`}
+            className={`archive-scene scene-${spatialChapters[index].id} ${index === activeIndex ? 'near' : ''} ${contentIsVisible && index === displayedContentIndex ? 'active content-ready' : ''}`}
             style={sceneStyle(index, index === 0 ? 0 : -1)}
-            aria-hidden={!chapterIsSettled || index !== displayedContentIndex}
+            aria-hidden={!contentIsVisible || index !== displayedContentIndex}
             {...(!chapterIsSettled || index !== displayedContentIndex ? { inert: '' } : {})}
           >
             {scene}

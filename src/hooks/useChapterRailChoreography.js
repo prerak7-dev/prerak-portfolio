@@ -122,7 +122,7 @@ function projectStagePoint(stage, index, itemCount, projection) {
     : projectPathPoint(stage.points, index, itemCount, projection);
 }
 
-function getStageMotion(stage, index) {
+function getStageMotion(stage, index, labelSize, selected) {
   const magnitude = Math.hypot(stage.labelDirection.x, stage.labelDirection.y) || 1;
   const inward = {
     x: stage.labelDirection.x / magnitude,
@@ -134,11 +134,15 @@ function getStageMotion(stage, index) {
   const orbitAmplitude = 4.8 + (index % 3) * 0.9;
   const orbitLift = 2.2 + (index % 2) * 0.7;
   const markerDistance = stage.markerDistance ?? 22;
+  const scale = selected ? 1 : .75;
+  const labelRadius = (Math.abs(inward.x) * labelSize.width + Math.abs(inward.y) * labelSize.height) * scale / 2;
+  const markerRadius = selected ? 24.5 : 10.5;
+  const labelDistance = labelRadius + markerRadius + 10 - markerDistance;
 
   return {
     label: {
-      x: inward.x * stage.labelDistance,
-      y: inward.y * stage.labelDistance,
+      x: inward.x * labelDistance,
+      y: inward.y * labelDistance,
     },
     marker: {
       x: outward.x * markerDistance,
@@ -182,7 +186,8 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
     let chronologyProjection = null;
     let navigation = null;
     let renderedItems = [];
-    const compactQuery = window.matchMedia('(max-width: 760px)');
+    const compactQuery = window.matchMedia('(max-width: 1100px), (max-height: 700px)');
+    let labelSizes = [];
     const projectionNodes = new Map();
 
     const readStageImage = (selector) => {
@@ -210,6 +215,10 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
       const isDesktop = !compactQuery.matches;
       toggleCachedClass(rail, 'is-orbit-ready', isDesktop);
       if (!isDesktop) return;
+      if (!labelSizes.length) labelSizes = itemRefs.current.map(item => {
+        const label = item?.querySelector('strong');
+        return { width: label?.offsetWidth || 120, height: label?.offsetHeight || 24 };
+      });
 
       const fallback = createFallbackProjection();
       const transition = navigation
@@ -234,10 +243,11 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
         const fromPoint = navigation?.items[index]?.point
           ?? projectStagePoint(fromStage, index, itemCount, fromProjection);
         const toPoint = projectStagePoint(toStage, index, itemCount, toProjection);
-        const fromMotion = navigation?.items[index]?.motion ?? getStageMotion(fromStage, index);
-        const toMotion = getStageMotion(toStage, index);
-        const x = lerp(fromPoint.x, toPoint.x, itemMix);
-        const y = lerp(fromPoint.y, toPoint.y, itemMix);
+        const selected = item.getAttribute('aria-selected') === 'true';
+        const fromMotion = navigation?.items[index]?.motion ?? getStageMotion(fromStage, index, labelSizes[index], selected);
+        const toMotion = getStageMotion(toStage, index, labelSizes[index], selected);
+        let x = lerp(fromPoint.x, toPoint.x, itemMix);
+        let y = lerp(fromPoint.y, toPoint.y, itemMix);
         const labelOffsetX = lerp(fromMotion.label.x, toMotion.label.x, itemMix);
         const labelOffsetY = lerp(fromMotion.label.y, toMotion.label.y, itemMix);
         const markerOffsetX = lerp(fromMotion.marker.x, toMotion.marker.x, itemMix);
@@ -251,6 +261,11 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
         const labelAlign = itemMix < 0.5
           ? (navigation?.items[index]?.labelAlign ?? fromStage.labelAlign ?? 'center')
           : (toStage.labelAlign ?? 'center');
+        const labelScale = selected ? 1 : .75;
+        const halfWidth = labelSizes[index].width * labelScale / 2 + 8;
+        const halfHeight = Math.max(22, labelSizes[index].height * labelScale / 2 + 8);
+        x = clamp(x, Math.max(30 - markerOffsetX, 16 + halfWidth - labelOffsetX), Math.min(window.innerWidth - 30 - markerOffsetX, window.innerWidth - 16 - halfWidth - labelOffsetX));
+        y = clamp(y, Math.max(108 - markerOffsetY, 94 + halfHeight - labelOffsetY), Math.min(window.innerHeight - 160 - markerOffsetY, window.innerHeight - 150 - halfHeight - labelOffsetY));
         const crossing = Math.sin(Math.PI * itemMix);
         const labelOpacity = 1 - 0.88 * crossing * crossing * crossing * crossing;
 
@@ -295,6 +310,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
 
     const handleResize = () => {
       chronologyProjection = null;
+      labelSizes = [];
       projectionNodes.clear();
       scheduleRender();
     };
@@ -325,6 +341,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
     window.addEventListener('resize', handleResize, { passive: true });
     window.visualViewport?.addEventListener('resize', handleResize, { passive: true });
     compactQuery.addEventListener?.('change', handleResize);
+    document.fonts.ready.then(handleResize);
 
     return () => {
       unsubscribe();

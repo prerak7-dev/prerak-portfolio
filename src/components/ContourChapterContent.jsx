@@ -36,7 +36,7 @@ export function ContourCores({ isActive, onContinue }) {
   const ref = useRef(null);
   useContourContentLayout(ref, 'cores', isActive);
   const focus = useFocusStep(cores.length);
-  return <div ref={ref} className={`contour-content contour-cores ${isActive ? 'is-present' : ''}`}>
+  return <div ref={ref} data-lenis-prevent className={`contour-content contour-cores ${isActive ? 'is-present' : ''}`}>
     <header><p className="contour-eyebrow">Cores</p><h2>Three cores.<br />One connected practice.</h2></header>
     <article key={focus.index} className={`contour-focus ${focus.leaving ? 'is-leaving' : ''}`}>
       <h3>{cores[focus.index][0]}</h3><p>{cores[focus.index][1]}</p>
@@ -91,7 +91,7 @@ export function ContourCaseStudies({ isActive, displayedProjectIndex, selectedPr
   const ref = useRef(null);
   useContourContentLayout(ref, 'projects', isActive);
   const project = spatialPortfolio.projects[displayedProjectIndex];
-  return <div ref={ref} className={`contour-content contour-projects ${isActive ? 'is-present' : ''} ${sequencePhase === 'exiting' ? 'is-departing' : ''}`}>
+  return <div ref={ref} data-lenis-prevent className={`contour-content contour-projects ${isActive ? 'is-present' : ''} ${sequencePhase === 'exiting' ? 'is-departing' : ''}`}>
     <header><h2>Case Studies</h2></header>
     <nav className="contour-project-tabs" aria-label="Projects">
       {spatialPortfolio.projects.map((item,index) => <button key={item.architectureKey} aria-pressed={selectedProjectIndex===index} onClick={()=>onProjectChange(index)}>{['Pipeline','Plugin','Telemetry'][index]}</button>)}

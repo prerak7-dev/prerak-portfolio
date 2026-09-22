@@ -1,4 +1,6 @@
 import { THEME_CONTOUR_TRANSITION_DURATION_MS } from '../utils/cinematicTiming.js';
+import { homeCompositionStyles } from './homeCompositionStyles.js';
+import { textMaterialStyles } from './textMaterialStyles.js';
 
 export const spatialStyles = `
   @font-face {
@@ -7912,4 +7914,6 @@ export const spatialStyles = `
   @media (max-width: 760px) {
     .theme-switcher .appearance-toggle { margin-left: 6px; }
   }
+  ${homeCompositionStyles}
+  ${textMaterialStyles}
 `;

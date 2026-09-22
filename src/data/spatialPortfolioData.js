@@ -21,7 +21,7 @@ export const spatialChapters = [
     navLabel: 'Home',
     eyebrow: 'The threshold',
     title: 'Systems built for the worlds behind the screen.',
-    guide: 'A gate beneath a planet. Subtle. Notice the little circle at its heart? Even enormous mysteries tend to have a small way in.',
+    guide: 'You remembered a key? Keep it in your pocket, then. I have known this threshold a very long time. It was never built to keep anyone out.',
   },
   {
     id: 'cores',
@@ -29,7 +29,7 @@ export const spatialChapters = [
     navLabel: 'Cores',
     eyebrow: 'Engineering centers',
     title: 'Three cores. One connected practice.',
-    guide: 'Three suns, and not one willing to set first. Watch the horizon hold them apart. Some ancient agreements are written in light rather than words.',
+    guide: 'They divided the flame so no one could wield it alone. A sound precaution. Leaving the pieces within whispering distance was, perhaps, less wise.',
   },
   {
     id: 'projects',
@@ -37,7 +37,7 @@ export const spatialChapters = [
     navLabel: 'Case Studies',
     eyebrow: 'Engineering systems',
     title: 'Proof attached to every claim.',
-    guide: 'That bright rim looks like an ending. Follow it a little farther. The sky has a habit of leaving its doors sideways.',
+    guide: 'A borrowed dawn, returned before nightfall. Those were the terms. The borrower has since misplaced several centuries. I suspect the debt has not forgotten him.',
   },
   {
     id: 'professional',
@@ -45,7 +45,7 @@ export const spatialChapters = [
     navLabel: 'Experience',
     eyebrow: 'Professional record',
     title: 'Production work, traced through time.',
-    guide: 'Keep an eye on the curve above us. The little wandering lights seem to know it by heart. I would ask for directions, but they look terribly busy being celestial.',
+    guide: 'I once waited here for a man who remembered tomorrow. He arrived yesterday. We have been missing each other ever since.',
   },
   {
     id: 'education',
@@ -53,7 +53,7 @@ export const spatialChapters = [
     navLabel: 'Education',
     eyebrow: 'Learning record',
     title: 'A foundation that keeps moving.',
-    guide: 'Recognise that curve? Good. A familiar sky is not always the same sky. Sometimes the trick is to stay still long enough to notice what moved.',
+    guide: 'He left a question on the back of my map. I wore the paper thin looking for an answer. Only then did I notice whose handwriting it was.',
   },
   {
     id: 'personal',
@@ -61,7 +61,7 @@ export const spatialChapters = [
     navLabel: 'Field Notes',
     eyebrow: 'Outside the system',
     title: 'Photography, writing, and journeys in progress.',
-    guide: 'There is a thin trail of light along the edge of this world. No footprints, naturally. Whoever passed through had the unfair advantage of not needing feet.',
+    guide: 'There was a name in the margin once. Rain took the ink, but not the promise. I still leave that line unwritten.',
   },
   {
     id: 'contact',
@@ -69,7 +69,7 @@ export const spatialChapters = [
     navLabel: 'Contact',
     eyebrow: 'The next transmission',
     title: 'Build the next system together.',
-    guide: 'Look up. The last curve shelters a little more darkness than it explains. We could call that the end. The sky, rather inconveniently, has left room for another beginning.',
+    guide: 'Ah. That key in your pocket. I wondered when it would grow warm. Keep it a little longer; someone has been waiting on the other side of this story.',
   },
 ];
 

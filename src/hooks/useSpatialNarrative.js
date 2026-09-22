@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { publishSpatialMotion } from '../state/spatialMotionStore.js';
+import { getThemeContourTransition } from '../state/themeContourTransitionStore.js';
 import {
   CHAPTER_NAVIGATION_BASE_DURATION_MS,
   CHAPTER_NAVIGATION_DURATION_PER_CHAPTER_MS,
@@ -61,12 +62,28 @@ export function useSpatialNarrative(chapterCount) {
 
   useEffect(() => {
     let disposed = false;
+    let metricsInitialized = false;
     const scroller = createCinematicScroller();
     scrollerRef.current = scroller;
 
     const updateMetrics = () => {
-      maxScrollRef.current = getMaxScroll();
+      const previousMax = maxScrollRef.current;
+      const nextMax = getMaxScroll();
+      const transition = getThemeContourTransition();
+      const navigating = transition.active && transition.kind === 'chapter' && Number.isInteger(transition.targetChapterIndex);
+      const progress = navigating
+        ? transition.targetChapterIndex / Math.max(1, chapterCount - 1)
+        : clamp(previousFrameRef.current.scrollY / previousMax, 0, 1);
+      maxScrollRef.current = nextMax;
       scroller.resize();
+      // The track is viewport-sized. Preserve the narrative position on rotation,
+      // rather than retaining a pixel offset that now belongs between chapters.
+      if (metricsInitialized && Math.abs(nextMax - previousMax) > 1) {
+        const scrollY = progress * nextMax;
+        scroller.scrollTo(scrollY, { immediate: true, force: true });
+        previousFrameRef.current.scrollY = scrollY;
+      }
+      metricsInitialized = true;
     };
 
     const publishFrame = (timestamp) => {
