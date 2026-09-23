@@ -6,17 +6,12 @@ import { subscribeThemeContourTransition } from '../state/themeContourTransition
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { setCachedStyleProperty, toggleCachedClass } from '../utils/motionPerformance.js';
 import { NAV_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
+import { interpolateRailLayout, separateRailItems } from '../utils/chapterRailLayout.js';
 
 const DEG_TO_RAD = Math.PI / 180;
-const ITEM_STAGGER = 0.024;
 
 function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
-}
-
-function smootherStep(value) {
-  const progress = clamp(value);
-  return progress * progress * progress * (progress * (progress * 6 - 15) + 10);
 }
 
 function lerp(start, end, progress) {
@@ -123,47 +118,6 @@ function projectStagePoint(stage, index, itemCount, projection) {
     : projectPathPoint(stage.points, index, itemCount, projection);
 }
 
-function getStageMotion(stage, index, labelSize, selected) {
-  const magnitude = Math.hypot(stage.labelDirection.x, stage.labelDirection.y) || 1;
-  const inward = {
-    x: stage.labelDirection.x / magnitude,
-    y: stage.labelDirection.y / magnitude,
-  };
-  const outward = { x: -inward.x, y: -inward.y };
-  const tangent = { x: -inward.y, y: inward.x };
-  const orbitPolarity = index % 2 === 0 ? 1 : -1;
-  const orbitAmplitude = 4.8 + (index % 3) * 0.9;
-  const orbitLift = 2.2 + (index % 2) * 0.7;
-  const markerDistance = stage.markerDistance ?? 22;
-  const scale = selected ? 1 : .75;
-  const labelRadius = (Math.abs(inward.x) * labelSize.width + Math.abs(inward.y) * labelSize.height) * scale / 2;
-  const markerRadius = selected ? 24.5 : 10.5;
-  const labelDistance = labelRadius + markerRadius + 10 - markerDistance;
-
-  return {
-    label: {
-      x: inward.x * labelDistance,
-      y: inward.y * labelDistance,
-    },
-    marker: {
-      x: outward.x * markerDistance,
-      y: outward.y * markerDistance,
-    },
-    orbitForward: {
-      x: tangent.x * orbitAmplitude * orbitPolarity,
-      y: tangent.y * orbitAmplitude * orbitPolarity,
-    },
-    orbitBack: {
-      x: tangent.x * orbitAmplitude * -0.82 * orbitPolarity,
-      y: tangent.y * orbitAmplitude * -0.82 * orbitPolarity,
-    },
-    orbitLift: {
-      x: outward.x * orbitLift,
-      y: outward.y * orbitLift,
-    },
-  };
-}
-
 function getStageTransition(scenePosition) {
   const position = clamp(Number.isFinite(scenePosition) ? scenePosition : 0, 0, 6);
   const reveals = getCinematicSceneReveals(position);
@@ -187,6 +141,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
     let chronologyProjection = null;
     let navigation = null;
     let renderedItems = [];
+    const stageLayouts = new Map();
     const compactQuery = window.matchMedia(NAV_COMPACT_QUERY);
     let labelSizes = [];
     const projectionNodes = new Map();
@@ -225,82 +180,50 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
       const transition = navigation
         ? { fromIndex: navigation.target, toIndex: navigation.target, mix: navigation.progress }
         : getStageTransition(scenePosition);
-      const fromStageSource = CHAPTER_RAIL_STAGES[transition.fromIndex];
-      const toStageSource = CHAPTER_RAIL_STAGES[transition.toIndex];
-      const fromProjection = readStageProjection(fromStageSource, fallback);
-      const toProjection = transition.toIndex === transition.fromIndex
-        ? fromProjection
-        : readStageProjection(toStageSource, fallback);
-      const fromStage = resolveStage(fromStageSource, fromProjection);
-      const toStage = resolveStage(toStageSource, toProjection);
-      const staggerSpan = Math.max(0.5, 1 - ITEM_STAGGER * (itemCount - 1));
-      const points = [];
-
-      itemRefs.current.slice(0, itemCount).forEach((item, index) => {
-        if (!item) return;
-        const itemMix = !navigation && transition.fromIndex === transition.toIndex
-          ? 0
-          : smootherStep((transition.mix - ITEM_STAGGER * index) / staggerSpan);
-        const fromPoint = navigation?.items[index]?.point
-          ?? projectStagePoint(fromStage, index, itemCount, fromProjection);
-        const toPoint = projectStagePoint(toStage, index, itemCount, toProjection);
-        const selected = item.getAttribute('aria-selected') === 'true';
-        const fromMotion = navigation?.items[index]?.motion ?? getStageMotion(fromStage, index, labelSizes[index], selected);
-        const toMotion = getStageMotion(toStage, index, labelSizes[index], selected);
-        let x = lerp(fromPoint.x, toPoint.x, itemMix);
-        let y = lerp(fromPoint.y, toPoint.y, itemMix);
-        let labelOffsetX = lerp(fromMotion.label.x, toMotion.label.x, itemMix);
-        let labelOffsetY = lerp(fromMotion.label.y, toMotion.label.y, itemMix);
-        const markerOffsetX = lerp(fromMotion.marker.x, toMotion.marker.x, itemMix);
-        const markerOffsetY = lerp(fromMotion.marker.y, toMotion.marker.y, itemMix);
-        const orbitForwardX = lerp(fromMotion.orbitForward.x, toMotion.orbitForward.x, itemMix);
-        const orbitForwardY = lerp(fromMotion.orbitForward.y, toMotion.orbitForward.y, itemMix);
-        const orbitBackX = lerp(fromMotion.orbitBack.x, toMotion.orbitBack.x, itemMix);
-        const orbitBackY = lerp(fromMotion.orbitBack.y, toMotion.orbitBack.y, itemMix);
-        const orbitLiftX = lerp(fromMotion.orbitLift.x, toMotion.orbitLift.x, itemMix);
-        const orbitLiftY = lerp(fromMotion.orbitLift.y, toMotion.orbitLift.y, itemMix);
-        const labelAlign = itemMix < 0.5
-          ? (navigation?.items[index]?.labelAlign ?? fromStage.labelAlign ?? 'center')
-          : (toStage.labelAlign ?? 'center');
-        const labelScale = selected ? 1 : .75;
-        const halfWidth = labelSizes[index].width * labelScale / 2 + 8;
-        const halfHeight = Math.max(22, labelSizes[index].height * labelScale / 2 + 8);
-        // Keep the anchor on the painted contour; only tuck its label on screen.
-        labelOffsetX = clamp(x + labelOffsetX, 16 + halfWidth, window.innerWidth - 16 - halfWidth) - x;
-        labelOffsetY = clamp(y + labelOffsetY, 82 + halfHeight, window.innerHeight - 90 - halfHeight) - y;
-
-        points[index] = { x, y };
-        renderedItems[index] = {
-          point: { x, y }, labelAlign,
-          motion: {
-            label: { x: labelOffsetX, y: labelOffsetY },
-            marker: { x: markerOffsetX, y: markerOffsetY },
-            orbitForward: { x: orbitForwardX, y: orbitForwardY },
-            orbitBack: { x: orbitBackX, y: orbitBackY },
-            orbitLift: { x: orbitLiftX, y: orbitLiftY },
-          },
-        };
+      rail.dataset.motionProgress = transition.mix.toFixed(4);
+      rail.dataset.motionSource = navigation ? 'chapter' : 'scroll';
+      const bounds = { left: 16, right: innerWidth - 16, top: 82, bottom: innerHeight - 78 };
+      const layout = stageIndex => {
+        if (!stageLayouts.has(stageIndex)) {
+          const source = CHAPTER_RAIL_STAGES[stageIndex];
+          const projection = readStageProjection(source, fallback);
+          const stage = resolveStage(source, projection);
+          const fitsRow = labelSizes.reduce((sum, size) => sum + size.width + 66, -6) <= bounds.right - bounds.left;
+          const axis = (stageIndex === 1 || stageIndex === 6) && fitsRow ? 'x' : 'y';
+          const routes = new Map();
+          for (let i = 0; i < itemCount; i++) for (let j = i + 1; j < itemCount; j++) routes.set(`${i}:${j}`, { axis, sign: -1 });
+          const anchors = labelSizes.map((size, index) => {
+            const point = projectStagePoint(stage, index, itemCount, projection);
+            return { x: point.x - 26, y: point.y - 22, width: size.width + 60, height: 44 };
+          });
+          if (axis === 'x') {
+            const top = Math.min(...anchors.map(point => point.y));
+            const bottom = Math.max(...anchors.map(point => point.y + point.height));
+            const shift = Math.max(0, bounds.top - top) + Math.min(0, bounds.bottom - bottom);
+            anchors.forEach(point => { point.y += shift; });
+          }
+          stageLayouts.set(stageIndex, separateRailItems(anchors, bounds, 6, routes));
+        }
+        return stageLayouts.get(stageIndex);
+      };
+      const from = navigation?.items.length === itemCount ? navigation.items : layout(transition.fromIndex);
+      const to = layout(transition.toIndex);
+      const buttons = interpolateRailLayout(from, to, transition.mix, bounds);
+      const moving = transition.mix > 0 && transition.mix < 1;
+      if (rail.dataset.moving !== String(moving)) rail.dataset.moving = String(moving);
+      renderedItems = buttons;
+      buttons.forEach(({ x, y, width }, index) => {
+        const item = itemRefs.current[index];
         setCachedStyleProperty(item, '--chapter-tab-x', `${x.toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-tab-y', `${y.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-label-offset-x', `${labelOffsetX.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-label-offset-y', `${labelOffsetY.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-marker-offset-x', `${markerOffsetX.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-marker-offset-y', `${markerOffsetY.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-orbit-forward-x', `${orbitForwardX.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-orbit-forward-y', `${orbitForwardY.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-orbit-back-x', `${orbitBackX.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-orbit-back-y', `${orbitBackY.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-orbit-lift-x', `${orbitLiftX.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-orbit-lift-y', `${orbitLiftY.toFixed(2)}px`);
-        setCachedStyleProperty(item, '--chapter-label-align', labelAlign);
+        setCachedStyleProperty(item, '--chapter-tab-width', `${width}px`);
         setCachedStyleProperty(item, '--chapter-label-opacity', '1');
-        setCachedStyleProperty(item, '--chapter-orbit-progress', itemMix.toFixed(4));
       });
 
-      const finalPoint = points[itemCount - 1];
+      const finalPoint = renderedItems[itemCount - 1];
       if (finalPoint) {
-        setCachedStyleProperty(rail, '--chapter-collapse-x', `${finalPoint.x.toFixed(2)}px`);
-        setCachedStyleProperty(rail, '--chapter-collapse-y', `${(finalPoint.y + 54).toFixed(2)}px`);
+        setCachedStyleProperty(rail, '--chapter-collapse-x', `${(finalPoint.x + 26).toFixed(2)}px`);
+        setCachedStyleProperty(rail, '--chapter-collapse-y', `${(finalPoint.y + 76).toFixed(2)}px`);
       }
     };
 
@@ -311,6 +234,8 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
     const handleResize = () => {
       chronologyProjection = null;
       labelSizes = [];
+      stageLayouts.clear();
+      renderedItems = [];
       projectionNodes.clear();
       scheduleRender();
     };
@@ -331,7 +256,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
             progress: 0,
           };
         }
-        navigation.progress = transition.progress;
+        navigation.progress = transition.linearProgress;
       } else {
         navigation = null;
       }

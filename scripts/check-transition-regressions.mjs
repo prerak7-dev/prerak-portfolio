@@ -17,7 +17,7 @@ await page.addInitScript(() => {
   const encode = HTMLCanvasElement.prototype.toDataURL;
   HTMLCanvasElement.prototype.toDataURL = function(...args) { window.transitionAudit.encodes++; return encode.apply(this, args); };
 });
-const settled = () => page.waitForFunction(() => document.querySelector('.archive-viewport')?.classList.contains('chapter-settled') && !document.querySelector('.text-contour-ghosts'));
+const settled = () => page.waitForFunction(() => document.querySelector('.archive-viewport')?.classList.contains('chapter-settled') && document.querySelector('.archive-viewport').dataset.chapterCopyPhase === 'idle' && !document.querySelector('.text-contour-ghosts'));
 async function chapter(label, id) {
   const tab = page.getByRole('tab', { name: label, exact: true });
   await tab.focus();
@@ -55,11 +55,11 @@ try {
   const intervals = audit.frames.slice(1).map((time, i) => time - audit.frames[i]).sort((a,b) => a-b);
   console.log(JSON.stringify({ encodes: audit.encodes, frames: intervals.length, p50: intervals[Math.floor(intervals.length*.5)], p95: intervals[Math.floor(intervals.length*.95)], max: intervals.at(-1), glyphShift: Math.max(...alignment) }));
 
-  await page.getByRole('tab', { name: 'Cores', exact: true }).locator('strong').click();
-  await page.waitForSelector('.text-contour-ghosts');
+  await page.getByRole('tab', { name: 'Cores', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('.archive-viewport').dataset.chapterCopyPhase === 'exiting');
   const railMotion = await page.evaluate(async () => {
     const samples = [];
-    while (document.querySelector('.text-contour-ghosts')) {
+    while (!document.querySelector('.archive-viewport').classList.contains('chapter-settled')) {
       const node = document.querySelector('.chapter-rail-list > button');
       samples.push([parseFloat(node.style.getPropertyValue('--chapter-tab-x')), parseFloat(node.style.getPropertyValue('--chapter-tab-y'))]);
       await new Promise(requestAnimationFrame);
@@ -101,7 +101,8 @@ try {
     if (await collapse.count()) { await collapse.click(); await page.waitForFunction(() => !document.querySelector('.text-contour-ghosts')); }
     await page.waitForTimeout(200);
     assert.equal(await page.locator('.home-beat-controls').count(), 0);
-    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions', '.intro-status']) assert(await page.locator(selector).isVisible(), `${selector} missing on ${width}`);
+    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions']) assert(await page.locator(selector).isVisible(), `${selector} missing on ${width}`);
+    assert.equal(await page.locator('.intro-status').count(), 0);
     const order = await page.locator('.intro-copy-stage > *').evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return [r.top,r.bottom]; }));
     for (let i=1;i<order.length;i++) assert(order[i][0] >= order[i-1][1], `Home copy overlaps at ${width}`);
     await page.screenshot({ path: `${output}/home-${width}.png` });
@@ -124,17 +125,25 @@ try {
     window.maskAudit = { renderer, host };
   });
   const pixels = [];
-  for (const progress of [0,.28,1]) {
+  for (const progress of [0,.5,1]) {
     await maskPage.evaluate(progress => window.maskAudit.renderer.draw(progress), progress);
     await maskPage.waitForTimeout(80);
     const bytes = await maskPage.screenshot({ path: `${output}/mask-${progress}.png` });
     const {data,info} = await sharp(bytes).removeAlpha().raw().toBuffer({resolveWithObject:true});
-    const counts = {clear:0,opaque:0,edge:0};
-    for(let i=0;i<data.length;i+=info.channels) { if(data[i] < 3) counts.clear++; else if(data[i]>252) counts.opaque++; else counts.edge++; }
+    const counts = {clear:0,opaque:0,edge:0,quadrants:[0,0,0,0]};
+    for(let i=0;i<data.length;i+=info.channels) {
+      if(data[i] < 3) counts.clear++;
+      else if(data[i]>252) {
+        counts.opaque++;
+        const pixel = i / info.channels;
+        counts.quadrants[(pixel % info.width >= info.width/2 ? 1 : 0) + (Math.floor(pixel / info.width) >= info.height/2 ? 2 : 0)]++;
+      } else counts.edge++;
+    }
     pixels.push(counts);
   }
   assert.equal(pixels[0].opaque + pixels[0].edge,0);
   assert(pixels[1].clear && pixels[1].opaque && pixels[1].edge, JSON.stringify(pixels));
+  assert(pixels[1].quadrants.every(count => count > 100), 'Contour blooms must reveal in multiple regions, not a directional wipe');
   assert.equal(pixels[2].clear + pixels[2].edge,0);
   await maskPage.close();
   const animations = await page.locator('.archive-scene.active .material-text, .archive-identity .material-text').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).animationName));

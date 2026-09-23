@@ -21,6 +21,7 @@ import { getGatewayTransition } from './state/gatewayTransitionStore.js';
 import { startThemeContourTransition } from './state/themeContourTransitionStore.js';
 import { spatialStyles } from './styles/spatialStyles.js';
 import { BOOT_CONTOUR_TRANSITION_DURATION_MS } from './utils/cinematicTiming.js';
+import { warmChapterTextField } from './utils/textContourRenderer.js';
 import { loadCinematicGeometryField } from './utils/cinematicGeometryField.js';
 import { preloadAssetManifest, preloadImageUrls, preloadImageUrl } from './utils/preloadAssets.js';
 
@@ -438,9 +439,15 @@ export default function App() {
       const [fromImage, toImage, geometryImage] = await Promise.all([
         preloadImageUrl(resolveAsset(getCinematicSceneAsset(theme, sceneIndex, gatewayFrameIndex, { compact }))),
         preloadImageUrl(resolveAsset(getCinematicSceneAsset(theme, targetSceneIndex, 0, { compact }))),
-        preloadImageUrl(resolveAsset(getCinematicGeometryAsset(theme, sceneIndex, gatewayFrameIndex))),
+        preloadImageUrl(resolveAsset(getCinematicGeometryAsset(theme, sceneIndex, gatewayFrameIndex))).then(image => {
+          if (image) warmChapterTextField(image, theme, sceneIndex);
+          return image;
+        }),
         // A jump to Cores must also settle the underlying gate renderer.
         preloadImageUrl(resolveAsset(getCinematicSceneAsset(theme, 0, index === 0 ? 0 : GATEWAY_FRAME_COUNT - 1, { compact }))),
+        preloadImageUrl(resolveAsset(getCinematicGeometryAsset(theme, targetSceneIndex, 0))).then(image => {
+          if (image) warmChapterTextField(image, theme, targetSceneIndex);
+        }),
       ]);
       if (!fromImage || !toImage || !geometryImage) {
         goToChapter(index, 'auto');

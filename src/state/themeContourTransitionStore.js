@@ -21,6 +21,7 @@ const transitionState = {
   kind: 'theme',
   gatewayFrameIndex: 0,
   progress: 0,
+  linearProgress: 0,
   fromImage: null,
   toImage: null,
   geometryImage: null,
@@ -38,6 +39,7 @@ function finishTransition(token) {
   if (transitionState.token !== token) return;
   transitionState.active = false;
   transitionState.progress = 1;
+  transitionState.linearProgress = 1;
   transitionState.fromImage = null;
   transitionState.toImage = null;
   transitionState.geometryImage = null;
@@ -89,6 +91,7 @@ export function startThemeContourTransition({
     kind,
     gatewayFrameIndex,
     progress: 0,
+    linearProgress: 0,
     fromImage,
     toImage,
     geometryImage,
@@ -128,6 +131,7 @@ export function startThemeContourTransition({
     if (transitionState.token !== token) return;
     if (!startTime) startTime = timestamp;
     const rawProgress = Math.min(1, Math.max(0, (timestamp - startTime) / duration));
+    transitionState.linearProgress = rawProgress;
     if (!themeApplied && rawProgress >= applyProgress) {
       settleThemeCommit();
     }

@@ -16,6 +16,7 @@ import { useChapterRailChoreography } from '../hooks/useChapterRailChoreography.
 import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
 import { useHomeCompositionLayout } from '../hooks/useHomeCompositionLayout.js';
 import { useTextMaterials } from '../hooks/useTextMaterials.js';
+import { useChapterTextTransition } from '../hooks/useChapterTextTransition.js';
 import { HOME_COMPACT_QUERY, NAV_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
 import { changeTextContent } from '../utils/changeTextContent.js';
 import { ContourCores, ContourCaseStudies } from './ContourChapterContent.jsx';
@@ -50,7 +51,6 @@ const CORE_PILLARS = Object.freeze([
 ]);
 const SCENE_RENDER_RADIUS = 0.86;
 const INTRO_GATE_SETTLE_MS = 1320;
-const LORE_TEXT_REVEAL_DELAY_MS = 620;
 const INTRO_NAME_EXIT_START = 0.035;
 const INTRO_NAME_EXIT_STAGGER = 0.125;
 const INTRO_NAME_EXIT_RANGE = 0.11;
@@ -69,7 +69,6 @@ const INTRO_NARRATION_PARTS = Object.freeze([
   'Wonderer,',
   'Story Teller',
   'Download resume',
-  '...OR dare to waste a part of your precious life to know this awesome guy and SCROLL',
 ]);
 const INTRO_NARRATION_ENTER_SPEEDS = Object.freeze([56, 54, 54, 60, 34, 34, 34, 38, 23]);
 const INTRO_NARRATION_ENTER_PAUSES = Object.freeze([520, 620, 680, 1150, 620, 430, 980, 760, 0]);
@@ -584,7 +583,7 @@ function SpatialHud({ theme, onThemeChange, onThemeChosen }) {
 
 function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }) {
   const [collapsed, setCollapsed] = useState(true);
-  const [textAnimationReady, setTextAnimationReady] = useState(false);
+  const textAnimationReady = introGuideReady;
   const [pointerReading, setPointerReading] = useState(false);
   const [focusReading, setFocusReading] = useState(false);
   const chapterId = spatialChapters[activeIndex]?.id || 'intro';
@@ -604,20 +603,13 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
     return () => window.clearTimeout(timer);
   }, [avatarState.src]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!introGuideReady) {
       setCollapsed(true);
-      setTextAnimationReady(false);
       return undefined;
     }
 
     setCollapsed(window.matchMedia(HOME_COMPACT_QUERY).matches);
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const timer = window.setTimeout(
-      () => setTextAnimationReady(true),
-      reducedMotion ? 0 : LORE_TEXT_REVEAL_DELAY_MS,
-    );
-    return () => window.clearTimeout(timer);
   }, [introGuideReady, activeIndex]);
 
   useEffect(() => {
@@ -838,7 +830,7 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
   useEffect(() => { if (isActive) onGuideReady(); }, [isActive, onGuideReady]);
 
   return (
-    <div ref={compositionRef} data-compact={compact} className={`intro-chapter-content home-composition is-copy-complete is-resume-visible is-resume-complete is-status-visible ${isActive ? 'is-active' : ''}`}>
+    <div ref={compositionRef} data-compact={compact} className={`intro-chapter-content home-composition is-copy-complete is-resume-visible is-resume-complete ${isActive ? 'is-active' : ''}`}>
       <div className="intro-copy-stage" data-lenis-prevent>
         <div className="intro-manifesto">
           {copy.slice(0, 4).map((phrase, index) => (
@@ -851,7 +843,6 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
         <div className="intro-actions">
           <a className="tracer-action" data-tracer-prop="action" href={profile.resume} download><span>{copy[7]}</span></a>
         </div>
-        <div className="intro-status"><span>{copy[8]} <span aria-hidden="true">&#8595;</span></span></div>
       </div>
       <div className="intro-gate-entry">
         <div className="intro-gate-scroll-shell">
@@ -1352,7 +1343,8 @@ export function SpatialExperience({
   const sceneRefs = useRef([]);
   const viewportRef = useRef(null);
   useTextMaterials(viewportRef);
-  const displayedContentIndex = activeIndex;
+  const chapterCopy = useChapterTextTransition(viewportRef, activeIndex, experienceVisible, theme);
+  const displayedContentIndex = chapterCopy.index;
   const chapterIsSettled = experienceVisible && cinematicReadiness.settled && !chapterNavigationActive;
   const contentIsVisible = experienceVisible;
   const projectsActive = contentIsVisible && displayedContentIndex === 2;
@@ -1430,7 +1422,7 @@ export function SpatialExperience({
   }), []);
 
   return (
-    <div ref={viewportRef} data-chapter={spatialChapters[activeIndex]?.id} className={`archive-viewport theme-${theme} rail-${railCollapsed ? 'collapsed' : 'expanded'} ${experienceVisible ? 'experience-visible' : 'experience-concealed'} ${chapterIsSettled ? 'chapter-settled' : 'chapter-transitioning'}`} style={environmentStyle}>
+    <div ref={viewportRef} data-chapter={spatialChapters[activeIndex]?.id} data-chapter-copy-phase={chapterCopy.phase} data-chapter-copy-initial={chapterCopy.initial} className={`archive-viewport theme-${theme} rail-${railCollapsed ? 'collapsed' : 'expanded'} ${experienceVisible ? 'experience-visible' : 'experience-concealed'} ${chapterIsSettled ? 'chapter-settled' : 'chapter-transitioning'}`} style={environmentStyle}>
       <CinematicEnvironment
         theme={theme}
         onReady={onEnvironmentReady}
@@ -1456,7 +1448,7 @@ export function SpatialExperience({
             className={`archive-scene scene-${spatialChapters[index].id} ${index === activeIndex ? 'near' : ''} ${contentIsVisible && index === displayedContentIndex ? 'active content-ready' : ''}`}
             style={sceneStyle(index, index === 0 ? 0 : -1)}
             aria-hidden={!contentIsVisible || index !== displayedContentIndex}
-            {...(!chapterIsSettled || index !== displayedContentIndex ? { inert: '' } : {})}
+            {...(!chapterIsSettled || chapterCopy.phase !== 'idle' || index !== displayedContentIndex ? { inert: '' } : {})}
           >
             {scene}
           </section>

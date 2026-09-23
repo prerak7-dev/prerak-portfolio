@@ -149,7 +149,7 @@ function drawCachedGeometryStreamlines({
     projection.top - (localOffset?.top || 0),
   );
   context.scale(projection.width, projection.height);
-  context.globalCompositeOperation = 'lighter';
+  context.globalCompositeOperation = palette.compositeOperation || 'source-over';
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
@@ -182,7 +182,7 @@ function drawCachedGeometryStreamlines({
         * pulse
         * (0.52 + streamline.depth * 0.48)
         * alphaScale
-        * cinematicEmphasis,
+        * cinematicEmphasis * (palette.opacityScale || 1),
       0,
       0.94,
     );
@@ -190,7 +190,13 @@ function drawCachedGeometryStreamlines({
       * (0.72 + streamline.depth * 0.46)
       * depthScale
       * widthScale;
-    const lineWidth = lineWidthPixels / userScale;
+    const lineWidth = Math.max(1.3, lineWidthPixels) / userScale;
+
+    if (palette.underlay) {
+      context.strokeStyle = rgba(palette.underlay, alpha * .42);
+      context.lineWidth = lineWidth + 1.5 / userScale;
+      context.stroke(trailPath);
+    }
 
     if (quality > 0.72 && index % 4 === 0) {
       context.strokeStyle = rgba(color, alpha * 0.082);
@@ -198,7 +204,7 @@ function drawCachedGeometryStreamlines({
       context.stroke(trailPath);
     }
 
-    context.strokeStyle = rgba(color, alpha * 0.72);
+    context.strokeStyle = rgba(color, alpha);
     context.lineWidth = lineWidth;
     context.stroke(trailPath);
 
@@ -403,7 +409,7 @@ export function drawGeometryStreamlines({
   );
   const depthScale = clamp(Math.min(projection.width / 1600, projection.height / 900), 0.68, 1.32);
   context.save();
-  context.globalCompositeOperation = 'lighter';
+  context.globalCompositeOperation = palette.compositeOperation || 'source-over';
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
@@ -447,11 +453,17 @@ export function drawGeometryStreamlines({
       * pulse
       * (0.52 + streamline.depth * 0.48)
       * alphaScale
-      * cinematicEmphasis, 0, 0.94);
-    const lineWidth = streamline.width
+      * cinematicEmphasis * (palette.opacityScale || 1), 0, 0.94);
+    const lineWidth = Math.max(1.3, streamline.width
       * (0.72 + streamline.depth * 0.46)
       * depthScale
-      * widthScale;
+      * widthScale);
+
+    if (palette.underlay) {
+      context.strokeStyle = rgba(palette.underlay, alpha * .42);
+      context.lineWidth = lineWidth + 1.5;
+      strokeSmoothPath(context, points);
+    }
 
     if (quality > 0.72 && index % 4 === 0) {
       context.strokeStyle = rgba(color, alpha * 0.085);
@@ -476,7 +488,7 @@ export function drawGeometryStreamlines({
       gradient.addColorStop(1, rgba(color, alpha));
       context.strokeStyle = gradient;
     } else {
-      context.strokeStyle = rgba(color, alpha * 0.7);
+      context.strokeStyle = rgba(color, alpha);
     }
     context.lineWidth = lineWidth;
     context.shadowBlur = 0;
@@ -529,7 +541,7 @@ export function drawGeometryContourPassage({
   const roleDirection = role === 'from' ? 1 : -1;
 
   context.save();
-  context.globalCompositeOperation = 'lighter';
+  context.globalCompositeOperation = palette.compositeOperation || 'source-over';
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
@@ -586,9 +598,9 @@ export function drawGeometryContourPassage({
         * transitionPulse
         * power
         * flicker
-        * (0.72 + streamline.depth * 0.42),
+        * (0.72 + streamline.depth * 0.42) * (palette.opacityScale || 1),
       0,
-      0.54,
+      0.84,
     );
     const lineWidth = (0.48 + streamline.width * 0.58)
       * (0.78 + streamline.depth * 0.42)
@@ -602,8 +614,8 @@ export function drawGeometryContourPassage({
       strokeSmoothPath(context, points);
     }
 
-    context.strokeStyle = rgba(color, alpha * 0.16);
-    context.lineWidth = lineWidth * 1.34;
+    context.strokeStyle = rgba(palette.underlay || color, alpha * 0.64);
+    context.lineWidth = lineWidth + 1.5;
     context.shadowBlur = 0;
     strokeSmoothPath(context, points);
 

@@ -1,7 +1,7 @@
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 export const HOME_COMPACT_QUERY = '(max-width: 1100px), (max-height: 700px)';
-export const NAV_COMPACT_QUERY = '(max-width: 760px), (max-width: 900px) and (max-height: 500px)';
+export const NAV_COMPACT_QUERY = '(max-width: 760px), (max-height: 500px)';
 
 // Landmarks shared by the eight authored Home paintings, in source-image space.
 export function getHomeCompositionLayout(projection, width, height, headerBottom = 80) {

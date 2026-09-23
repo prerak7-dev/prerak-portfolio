@@ -1,14 +1,18 @@
 import { getCinematicAtmosphereTransition } from './cinematicSceneTimeline.js';
-import { getSeason } from './themeAppearance.js';
+import { getSeason, isLightAppearance } from './themeAppearance.js';
 
 const freezeColors = (colors) => Object.freeze(colors.map((color) => Object.freeze(color)));
 
-function exposeForAdditiveLight(color) {
-  const peak = Math.max(...color);
-  const target = peak < 90 ? 174 : peak < 140 ? 188 : peak < 188 ? 204 : peak;
-  const exposure = peak > 0 ? target / peak : 1;
-  return color.map((channel) => Math.min(255, Math.round(channel * exposure)));
-}
+export const TRACER_APPEARANCE_COLORS = Object.freeze({
+  default: freezeColors([[255, 225, 163], [176, 231, 238], [249, 245, 227], [218, 203, 255]]),
+  fall: freezeColors([[255, 208, 139], [255, 174, 160], [166, 229, 225], [255, 241, 210]]),
+  spring: freezeColors([[172, 247, 209], [255, 186, 220], [246, 233, 157], [190, 224, 255]]),
+  winter: freezeColors([[180, 228, 255], [215, 202, 255], [170, 243, 233], [248, 241, 226]]),
+  'default-light': freezeColors([[57, 47, 35], [27, 75, 83], [69, 48, 90], [70, 65, 43]]),
+  'fall-light': freezeColors([[123, 40, 40], [111, 59, 8], [28, 74, 77], [74, 37, 92]]),
+  'spring-light': freezeColors([[24, 78, 61], [109, 34, 71], [68, 66, 23], [35, 60, 95]]),
+  'winter-light': freezeColors([[28, 66, 109], [67, 40, 103], [22, 77, 87], [78, 44, 65]]),
+});
 
 function scenePalette(seed, drift, rail, tabs, wayfinder) {
   return Object.freeze({
@@ -78,16 +82,20 @@ export function getSwarmScenePalette(theme, sceneIndex, variant) {
   const themeKey = getSeason(theme);
   const themePalettes = SWARM_SCENE_PALETTES[themeKey];
   const safeIndex = Math.min(SWARM_SCENE_KEYS.length - 1, Math.max(0, Math.round(sceneIndex || 0)));
-  const cacheKey = `${themeKey}:${safeIndex}:${variant}`;
+  const light = isLightAppearance(theme);
+  const appearance = `${themeKey}${light ? '-light' : ''}`;
+  const cacheKey = `${appearance}:${safeIndex}:${variant}`;
   if (resolvedPaletteCache.has(cacheKey)) return resolvedPaletteCache.get(cacheKey);
   const scene = themePalettes[SWARM_SCENE_KEYS[safeIndex]] || themePalettes.intro;
   const sampledColors = scene[variant] || scene.tabs;
   const palette = Object.freeze({
     seed: scene.seed,
     drift: scene.drift,
-    // Canvas uses additive compositing, so lift radiance while preserving each
-    // sampled RGB ratio. The emitted light retains the source scene's hue.
-    colors: freezeColors(sampledColors.map(exposeForAdditiveLight)),
+    colors: freezeColors(TRACER_APPEARANCE_COLORS[appearance].map((color, index) =>
+      color.map((channel, axis) => Math.round(lerp(channel, sampledColors[index % sampledColors.length][axis], .08))))),
+    underlay: Object.freeze(light ? [255, 255, 248] : [8, 12, 18]),
+    compositeOperation: 'source-over',
+    opacityScale: light ? 1.85 : 1.65,
   });
   resolvedPaletteCache.set(cacheKey, palette);
   return palette;
@@ -98,7 +106,7 @@ export function getSwarmScenePaletteBlend(theme, scenePosition, variant) {
   const { fromIndex, toIndex } = transition;
   const mix = Math.round(transition.mix * 256) / 256;
   const themeKey = getSeason(theme);
-  const cacheKey = `${themeKey}:${fromIndex}:${toIndex}:${variant}:${mix}`;
+  const cacheKey = `${themeKey}:${isLightAppearance(theme)}:${fromIndex}:${toIndex}:${variant}:${mix}`;
   if (blendedPaletteCache.has(cacheKey)) return blendedPaletteCache.get(cacheKey);
   const from = getSwarmScenePalette(theme, fromIndex, variant);
   const to = getSwarmScenePalette(theme, toIndex, variant);
@@ -110,6 +118,9 @@ export function getSwarmScenePaletteBlend(theme, scenePosition, variant) {
     fromIndex,
     toIndex,
     mix,
+    underlay: from.underlay,
+    compositeOperation: from.compositeOperation,
+    opacityScale: from.opacityScale,
     colors: freezeColors(Array.from({ length: colorCount }, (_, index) => (
       from.colors[index].map((channel, channelIndex) => (
         Math.round(lerp(channel, to.colors[index][channelIndex], mix))

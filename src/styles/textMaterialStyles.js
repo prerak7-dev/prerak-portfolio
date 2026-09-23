@@ -63,6 +63,13 @@ export const textMaterialStyles = `
   .archive-app .archive-viewport .archive-scene { transform: none !important; opacity: 1; transition: none !important; }
   .archive-app .archive-viewport .archive-scene[aria-hidden="true"] { display: none; }
   .archive-app .archive-viewport .archive-scene[aria-hidden="false"] { visibility: visible; }
+  .archive-app .archive-viewport:not([data-chapter-copy-ready]) :is(.archive-scene-stack, .lore-parchment) {
+    opacity: 0 !important;
+  }
+  .archive-app .archive-viewport[data-chapter-copy-initial="true"]:not([data-chapter-copy-ready])
+    :is(.archive-header, .chapter-rail strong, .archive-progress, .theme-icon-tooltip) {
+    opacity: 0 !important;
+  }
   .archive-app .archive-viewport :is(.archive-header, .chapter-rail, .spatial-lore-guide, .archive-progress,
     .intro-copy-stage, .intro-actions, .intro-status, .intro-gate-entry, .intro-gate-scroll-shell,
     .contour-content, .contour-focus, .chapter-heading, .timeline-focus-card, .personal-feature, .lore-parchment) {
@@ -77,6 +84,9 @@ export const textMaterialStyles = `
   .archive-app .archive-viewport .lore-caret { display: none; }
   .text-contour-ghosts { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; }
   .text-contour-ghosts * { pointer-events: none !important; }
+  .archive-app .archive-viewport :is(.cinematic-atmosphere-field, .boundary-filament-field, .scene-prop-tracer-field, .wayfinder-cosmic-field, .lore-avatar-contour-field) {
+    mix-blend-mode: normal; filter: none;
+  }
   .archive-viewport .contour-content { overflow: hidden; }
   .archive-viewport .contour-reading-list {
     position: relative; min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain;

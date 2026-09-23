@@ -1,5 +1,7 @@
 import { useLayoutEffect } from 'react';
-import { TEXT_RELIEF_SELECTOR, TEXT_TARGET_SELECTOR } from '../data/textMaterials.js';
+import { TEXT_RELIEF_SELECTOR } from '../data/textMaterials.js';
+import { findTextTargets } from '../utils/textTargets.js';
+import { claimTextMask, releaseTextMask } from '../utils/textMaskOwnership.js';
 import { getTracerSceneField } from '../data/tracerSceneFields.js';
 import { subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
@@ -8,7 +10,6 @@ import { getCinematicGeometryAsset } from '../data/cinematicAssets.js';
 import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
 
 const SCENE_IMAGES = ['.gateway-sequence-preloads img', '.cores-plate img', '.systems-plate img', '.chronology-plate img', '.field-plate img', '.surface-plate img'];
-const MASK_PROPERTIES = ['mask-image', 'mask-size', 'mask-position', 'mask-repeat', 'mask-origin', 'mask-clip'];
 const APPEARANCE_PROPERTIES = ['display', 'box-sizing', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-transform', 'text-align', 'text-indent', 'white-space', 'word-spacing', 'word-break', 'overflow-wrap', 'color', '-webkit-text-fill-color', '-webkit-text-stroke', 'text-shadow', 'background-image', 'background-size', 'background-position', 'background-blend-mode', 'background-clip', '-webkit-background-clip', 'filter', 'padding', 'margin', 'vertical-align', 'text-decoration', 'gap', 'align-items', 'justify-content'];
 APPEARANCE_PROPERTIES.push('opacity', 'text-wrap-mode', 'text-wrap-style', 'flex-direction', 'flex-wrap', 'align-self', 'flex-grow', 'flex-shrink', 'flex-basis');
 APPEARANCE_PROPERTIES.push('background-color', 'border', 'border-radius', 'appearance', 'outline', 'box-shadow');
@@ -74,22 +75,12 @@ export function useTextMaterials(ref) {
     let localRequest = 0;
     const ghosts = new Map();
     const savedMasks = new Map();
+    const maskOwner = Symbol('theme-content');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const scan = () => {
       scanFrame = 0;
-      const candidates = [...root.querySelectorAll(TEXT_TARGET_SELECTOR)].filter(node =>
-        node.textContent.trim() && !node.matches('.theme-switcher button, .lore-toggle')
-        && !node.querySelector('img, canvas, svg, button, h1, h2, h3, p')
-        && !(node.matches('span') && node.querySelector('strong, small'))
-        && !node.closest('.cinematic-environment, .spatial-world, [aria-hidden="true"] svg'));
-      const eligible = new Set(candidates);
-      targets = candidates.filter(node => {
-        for (let parent = node.parentElement; parent && parent !== root; parent = parent.parentElement) {
-          if (eligible.has(parent)) return false;
-        }
-        return true;
-      });
+      targets = findTextTargets(root);
       targets.forEach(node => {
         if (!node.classList.contains('material-text')) node.classList.add('material-text');
         node.dataset.textMaterial = node.matches(TEXT_RELIEF_SELECTOR) ? 'relief' : 'ink';
@@ -107,9 +98,7 @@ export function useTextMaterials(ref) {
 
     const restore = () => {
       layer?.remove(); layer = null;
-      savedMasks.forEach((properties, node) => properties.forEach(([name, value, priority]) => {
-        if (value) node.style.setProperty(name, value, priority); else node.style.removeProperty(name);
-      }));
+      savedMasks.forEach((_, node) => releaseTextMask(node, maskOwner));
       savedMasks.clear();
       ghosts.clear();
       delete root.dataset.textDissolving;
@@ -120,6 +109,7 @@ export function useTextMaterials(ref) {
       layer.setAttribute('aria-hidden', 'true');
       layer.inert = true;
       for (const node of targets) {
+        if (node.hasAttribute('data-chapter-text-mask')) continue;
         if (localScope && !node.closest(localScope)) continue;
         if (transition.kind === 'chapter' && node.closest('.chapter-rail')) continue;
         const bounds = visibleBounds(node, root);
@@ -148,20 +138,17 @@ export function useTextMaterials(ref) {
       renderer.configure(state.geometryImage, projection, getTracerSceneField(state.fromTheme, state.sceneIndex), width, height);
     };
     function applyLiveMask() {
-      const measurements = targets.filter(node => !savedMasks.has(node) && visible(node, root)
+      const measurements = targets.filter(node => !savedMasks.has(node) && !node.hasAttribute('data-chapter-text-mask') && visible(node, root)
         && (!localScope || node.closest(localScope))
         && !(transition.kind === 'chapter' && node.closest('.chapter-rail')))
         .map(node => ({ node, rect: node.getBoundingClientRect(), ...layoutBox(node) }));
       for (const { node, rect, width, height } of measurements) {
         if (!rect.width || !rect.height) continue;
-        if (!savedMasks.has(node)) savedMasks.set(node, MASK_PROPERTIES.map(name => [name, node.style.getPropertyValue(name), node.style.getPropertyPriority(name)]));
+        savedMasks.set(node, true);
         const sx = rect.width / (width || rect.width);
         const sy = rect.height / (height || rect.height);
         node.closest('.contour-focus')?.setAttribute('data-contour-revealed', 'true');
-        node.style.setProperty('mask-image', renderer.mask(rect, 'incoming', sx, sy), 'important');
-        node.style.setProperty('mask-repeat', 'no-repeat');
-        node.style.setProperty('mask-origin', 'border-box');
-        node.style.setProperty('mask-clip', 'no-clip');
+        claimTextMask(node, maskOwner, renderer.mask(rect, 'incoming', sx, sy));
       }
     }
     const paint = state => {
@@ -172,7 +159,7 @@ export function useTextMaterials(ref) {
       if (localScope && !state.active) return;
       if (state.active) { cancelAnimationFrame(localFrame); localScope = null; localRequest++; }
       transition = state;
-      if (!state.active || reduced.matches || !state.geometryImage || state.fromTheme === 'boot') { restore(); return; }
+      if (!state.active || state.kind === 'chapter' || reduced.matches || !state.geometryImage || state.fromTheme === 'boot') { restore(); return; }
       if (failedToken === state.token) return;
       try {
         if (token !== state.token) {

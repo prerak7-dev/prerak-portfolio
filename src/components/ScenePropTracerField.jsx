@@ -262,7 +262,7 @@ function drawRecord(context, record, palette, pointer, power, quality, cycle) {
     const color = palette.colors[agent.colorIndex % palette.colors.length];
     const widthPulse = 0.82 + Math.sin(cycle * agent.widthHarmonic + agent.widthPhase) * 0.18;
     const width = agent.width * widthPulse;
-    const opacity = agent.alpha * power * record.opacity;
+    const opacity = Math.min(.94, agent.alpha * power * record.opacity * (palette.opacityScale || 1));
 
     if (agent.bloom && quality > 0.7) {
       context.strokeStyle = rgba(color, opacity * 0.14);
@@ -424,7 +424,7 @@ export const ScenePropTracerField = memo(function ScenePropTracerField({
       const normalizedIntensity = clamp((intensityRef.current - 0.35) / 1.35);
       const power = 0.72 + normalizedIntensity * 0.46;
       context.clearRect(0, 0, width, height);
-      context.globalCompositeOperation = 'lighter';
+      context.globalCompositeOperation = palette.compositeOperation || 'source-over';
       context.lineCap = 'round';
       context.lineJoin = 'round';
 

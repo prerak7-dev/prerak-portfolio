@@ -1,7 +1,14 @@
 import * as THREE from 'three';
 import { CONTOUR_HANDOFF_GLSL, CONTOUR_NOISE_GLSL } from './contourDissolveShader.js';
+import { getTracerSceneField } from '../data/tracerSceneFields.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+const bakedFields = new Map();
+let warmer;
+const fieldKey = (image, projection, source, width, height) => JSON.stringify([
+  image.currentSrc || image.src, source.seed, width, height,
+  projection.left, projection.top, projection.width, projection.height,
+]);
 const smooth = value => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
 
 function svgElement(name, attributes, parent) {
@@ -40,7 +47,22 @@ export function createTextContourRenderer() {
         vec2 local = (viewportPixel - uProjection.xy) / uProjection.zw;
         vec4 geometry = texture2D(uGeometry, vec2(clamp(local.x, 0., 1.), 1. - clamp(local.y, 0., 1.)));
         ${CONTOUR_HANDOFF_GLSL}
-        float order = clamp(contourOrder - contourLift - (bristle - .5) * .022, 0., 1.);
+        // Wet blooms spread along the scene's painted tangents from many origins.
+        vec2 bloomSpace = viewportPixel / 76.0 + flow * (broadWash - .5) * .42;
+        vec2 cell = floor(bloomSpace);
+        float bloomDistance = 2.0;
+        for (int y = -1; y <= 1; y++) {
+          for (int x = -1; x <= 1; x++) {
+            vec2 neighbor = cell + vec2(float(x), float(y));
+            vec2 seed = neighbor + .18 + .64 * vec2(hash21(neighbor + uSource * 17.), hash21(neighbor + 43.7));
+            vec2 delta = bloomSpace - seed;
+            vec2 contourDelta = vec2(dot(delta, flow) * .8, dot(delta, crossFlow) * 1.18);
+            bloomDistance = min(bloomDistance, length(contourDelta));
+          }
+        }
+        float order = clamp(bloomDistance * .94 + (1. - pigment) * .13
+          + (brushLoad - .5) * .16 + (bristle - .5) * .055
+          + (contourOrder - contourLift) * .12, 0., 1.);
         gl_FragColor = vec4(1., 1., 1., .08 + order * .84);
       }
     `,
@@ -66,6 +88,10 @@ export function createTextContourRenderer() {
   let texture;
   return {
     configure(image, projection, sourceField, width, height) {
+      const key = fieldKey(image, projection, sourceField, width, height);
+      viewport = { width, height };
+      defs.querySelectorAll('mask, pattern').forEach(node => node.remove());
+      if (bakedFields.has(key)) { field = bakedFields.get(key); return; }
       texture?.dispose();
       texture = new THREE.Texture(image);
       texture.minFilter = THREE.LinearFilter;
@@ -84,8 +110,8 @@ export function createTextContourRenderer() {
       u.uProgress.value = .5;
       renderer.render(scene, camera);
       field = canvas.toDataURL();
-      viewport = { width, height };
-      defs.querySelectorAll('mask, pattern').forEach(node => node.remove());
+      bakedFields.set(key, field);
+      if (bakedFields.size > 16) bakedFields.delete(bakedFields.keys().next().value);
     },
     draw(progress) {
       const front = -.08 + smooth((progress - .015) / .97) * 1.16;
@@ -96,10 +122,12 @@ export function createTextContourRenderer() {
     mask(rect, direction = 'incoming', scaleX = 1, scaleY = 1) {
       const id = `${prefix}-mask-${++maskIndex}`;
       const mask = svgElement('mask', { id, maskUnits: 'userSpaceOnUse', x: -4, y: -4, width: rect.width / scaleX + 8, height: rect.height / scaleY + 8, 'mask-type': 'alpha' }, defs);
-      const pattern = svgElement('pattern', { id: `${id}-field`, patternUnits: 'userSpaceOnUse', x: -rect.left / scaleX, y: -rect.top / scaleY, width: viewport.width / scaleX, height: viewport.height / scaleY }, defs);
+      const width = viewport.width / scaleX;
+      const height = viewport.height / scaleY;
+      const pattern = svgElement('pattern', { id: `${id}-field`, patternUnits: 'userSpaceOnUse', x: -rect.left / scaleX, y: -rect.top / scaleY, width, height }, defs);
       svgElement('image', {
         href: field, x: 0, y: 0,
-        width: viewport.width / scaleX, height: viewport.height / scaleY,
+        width, height,
         preserveAspectRatio: 'none',
       }, pattern);
       svgElement('rect', { x: -4, y: -4, width: rect.width / scaleX + 8, height: rect.height / scaleY + 8, fill: `url(#${id}-field)`, filter: `url(#${prefix}-${direction}-filter)` }, mask);
@@ -110,4 +138,19 @@ export function createTextContourRenderer() {
       texture?.dispose(); material.dispose(); geometry.dispose(); renderer.dispose(); renderer.forceContextLoss();
     },
   };
+}
+
+export function warmChapterTextField(image, theme, sceneIndex) {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const cover = Math.max(width, height * 16 / 9);
+  const projection = { left: (width - cover) / 2, top: (height - cover * 9 / 16) / 2, width: cover, height: cover * 9 / 16 };
+  const source = getTracerSceneField(theme, sceneIndex);
+  if (bakedFields.has(fieldKey(image, projection, source, width, height))) return;
+  try {
+    warmer ??= createTextContourRenderer();
+    warmer.configure(image, projection, source, width, height);
+  } catch {
+    warmer?.dispose(); warmer = null;
+  }
 }

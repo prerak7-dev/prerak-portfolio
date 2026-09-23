@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
-import { getSeason } from '../data/themeAppearance.js';
+import { getSwarmScenePalette } from '../data/swarmScenePalettes.js';
 
 const SAMPLE_SIZE = 288;
 const CONTOUR_POINTS = 240;
@@ -17,24 +17,6 @@ const TRACER_PROFILE = Object.freeze({
   driftMs: 3400,
 });
 
-const THEME_PALETTES = {
-  default: {
-    core: [242, 239, 223],
-    glow: [190, 188, 180],
-  },
-  fall: {
-    core: [255, 207, 135],
-    glow: [213, 88, 52],
-  },
-  spring: {
-    core: [255, 225, 233],
-    glow: [192, 124, 148],
-  },
-  winter: {
-    core: [243, 252, 255],
-    glow: [210, 220, 222],
-  },
-};
 
 function alphaAt(pixels, width, height, x, y) {
   const px = Math.max(0, Math.min(width - 1, Math.round(x)));
@@ -207,7 +189,8 @@ export const LoreAvatarContourField = memo(function LoreAvatarContourField({ the
     const image = figure.querySelector('.lore-avatar-image.is-current');
     if (!image) return undefined;
 
-    const palette = THEME_PALETTES[getSeason(theme)];
+    const appearance = getSwarmScenePalette(theme, 0, 'wayfinder');
+    const palette = { core: appearance.colors[0], glow: appearance.colors[1] };
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let contour = [];
     let timer = 0;
@@ -254,13 +237,14 @@ export const LoreAvatarContourField = memo(function LoreAvatarContourField({ the
 
       context.clearRect(0, 0, cssWidth, cssHeight);
       context.save();
-      context.globalCompositeOperation = 'lighter';
+      context.globalCompositeOperation = 'source-over';
       context.lineCap = 'round';
       context.lineJoin = 'round';
-      strokeContour(context, contour, palette.glow, 0.065, 0.58, 4);
+      strokeContour(context, contour, appearance.underlay, 0.48, 2.5, 0);
+      strokeContour(context, contour, palette.glow, 0.4, 1.1, 0);
 
       if (reducedMotion) {
-        strokeContour(context, contour, palette.core, 0.22, 0.52, 2);
+        strokeContour(context, contour, palette.core, 0.7, 1.2, 0);
       } else {
         const drift = Math.sin(steppedTime / TRACER_PROFILE.driftMs) * 0.014;
         const phase = wrap(

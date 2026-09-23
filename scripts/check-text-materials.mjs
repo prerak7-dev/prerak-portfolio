@@ -15,12 +15,12 @@ function monitor(page) {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text().slice(0, 500)); });
 }
 async function settled(page) {
-  await page.waitForFunction(() => document.querySelector('.archive-viewport')?.classList.contains('chapter-settled'));
+  await page.waitForFunction(() => document.querySelector('.archive-viewport')?.classList.contains('chapter-settled') && document.querySelector('.archive-viewport').dataset.chapterCopyPhase === 'idle');
   await page.waitForTimeout(700);
 }
 async function chapter(page, label) {
   const button = page.getByRole('tab', { name: label, exact: true });
-  await button.locator('strong').click();
+  await button.click();
   await page.waitForFunction(label => [...document.querySelectorAll('.chapter-rail [role="tab"]')].some(node => node.getAttribute('aria-label') === label && node.getAttribute('aria-selected') === 'true'), label);
   await settled(page);
 }
@@ -84,7 +84,8 @@ try {
     await settled(page);
     const collapse = page.getByRole('button', { name: 'Collapse lore guide' });
     if (await collapse.count()) await collapse.click();
-    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions', '.intro-status']) assert(await page.locator(selector).isVisible());
+    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions']) assert(await page.locator(selector).isVisible());
+    assert.equal(await page.locator('.intro-status').count(), 0);
     assert.equal(await page.locator('.home-beat-controls').count(), 0);
     await page.screenshot({ path: `${output}/home-${width}.png` });
     await page.getByRole('button', { name: 'Expand lore guide' }).click();

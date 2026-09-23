@@ -1,15 +1,38 @@
 export const homeCompositionStyles = `
   .archive-viewport .archive-header { z-index: 40; pointer-events: none; }
   .archive-header :is(button, a) { pointer-events: auto; }
-  .archive-app .archive-viewport .chapter-rail .chapter-rail-list button:not(.active) strong { scale: .75; }
+  .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong { scale: 1 !important; }
   .archive-app .lore-parchment p { font-size: 24.225px; line-height: 1.45; }
   .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list strong {
     width: max-content; max-width: 156px; padding: 10px 0; white-space: nowrap;
     pointer-events: auto; cursor: pointer;
   }
   .archive-viewport .chapter-rail.is-orbit-rail .chapter-celestial-marker { pointer-events: auto; cursor: pointer; }
-  .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button { pointer-events: none; }
+  .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button { pointer-events: auto; }
   .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed .chapter-rail-list :is(strong, .chapter-celestial-marker) { pointer-events: none; }
+  @media (min-width: 761px) and (min-height: 501px) {
+  .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-rail-list button {
+    width: var(--chapter-tab-width, 160px) !important;
+    height: 44px !important; min-height: 44px !important;
+    display: flex !important; align-items: center; justify-content: flex-start;
+    gap: 8px; padding: 0 6px !important;
+    transform: translate3d(var(--chapter-tab-x, 0px), var(--chapter-tab-y, 0px), 0) !important;
+    transition: none !important;
+  }
+  .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-celestial-marker {
+    position: relative !important; inset: auto !important;
+    width: 40px !important; height: 40px !important; flex: 0 0 40px;
+    scale: 1 !important; transform: none !important; animation: none !important; transition: none !important;
+  }
+  .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-rail-list strong {
+    position: relative !important; inset: auto !important; flex: none;
+    width: max-content; max-width: none; padding: 0;
+    font-size: 16px; line-height: 1.2; text-align: left; white-space: nowrap;
+    transform: none !important; animation: none !important;
+  }
+  }
+  .archive-app .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button > * { pointer-events: none; }
+  .archive-app .archive-viewport .chapter-rail.is-orbit-ready.is-collapsed .chapter-rail-list button { pointer-events: none; }
 
   .archive-viewport .home-composition .intro-copy-stage {
     inset: 0; width: 100%; height: 100%; display: block; pointer-events: none;
@@ -35,12 +58,6 @@ export const homeCompositionStyles = `
     left: var(--home-water-left); top: var(--home-water-top); width: 170px;
   }
   .archive-viewport .home-composition .intro-actions a { pointer-events: auto; padding: 8px 0; min-height: 44px; font-size: 17px; }
-  .archive-viewport .home-composition .intro-status {
-    left: calc(var(--home-water-left) + 186px); top: var(--home-water-top);
-    width: calc(var(--home-water-width) - 186px); min-height: 0;
-  }
-  .archive-viewport .home-composition .intro-copy-stage .intro-status { font-size: 16px; line-height: 1.3; }
-  .archive-viewport .home-composition .intro-status span { font: inherit; }
   .archive-viewport .home-composition .intro-gate-entry { left: var(--home-gate-left); top: var(--home-gate-top); }
   .home-beat-controls { display: none; }
 
@@ -53,7 +70,7 @@ export const homeCompositionStyles = `
     .archive-viewport .archive-header-actions { flex: none; padding: 0; gap: 8px; }
     .archive-viewport .archive-header-actions a { min-height: 44px; padding: 0 4px; font-size: 15px; }
   }
-  @media (max-width: 760px), (max-width: 900px) and (max-height: 500px) {
+  @media (max-width: 760px), (max-height: 500px) {
     .archive-viewport .chapter-rail.is-orbit-rail,
     .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed {
       position: absolute !important; inset: 70px 8px auto !important;
@@ -78,10 +95,11 @@ export const homeCompositionStyles = `
       height: 48px !important; min-height: 48px !important; flex: none; display: flex !important;
       align-items: center; justify-content: center; gap: 3px; padding: 0 7px !important;
       opacity: 1; pointer-events: auto; transform: none !important; background: transparent !important;
+      transition: none !important;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-celestial-marker {
       position: relative !important; inset: auto !important; flex: none; width: 32px !important;
-      transform: none !important; animation: none !important;
+      height: 32px !important; scale: 1 !important; transform: none !important; animation: none !important;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list strong.scenic-text {
       position: relative !important; inset: auto !important; width: max-content; padding: 0;
