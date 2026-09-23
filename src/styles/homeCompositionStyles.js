@@ -52,6 +52,8 @@ export const homeCompositionStyles = `
     .archive-viewport .archive-identity small { display: none; }
     .archive-viewport .archive-header-actions { flex: none; padding: 0; gap: 8px; }
     .archive-viewport .archive-header-actions a { min-height: 44px; padding: 0 4px; font-size: 15px; }
+  }
+  @media (max-width: 760px), (max-width: 900px) and (max-height: 500px) {
     .archive-viewport .chapter-rail.is-orbit-rail,
     .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed {
       position: absolute !important; inset: 70px 8px auto !important;
@@ -92,16 +94,22 @@ export const homeCompositionStyles = `
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-scroll-arrow.previous { left: 0; }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-scroll-arrow.next { right: 0; }
-    .archive-viewport .home-composition .intro-copy-stage > * {
-      left: var(--home-sky-left); top: var(--home-sky-top); width: var(--home-sky-width);
-      height: auto; max-height: var(--home-sky-height); display: none;
+  }
+  @media (max-width: 1100px), (max-height: 700px) {
+    .archive-viewport .home-composition .intro-copy-stage {
+      inset: 76px 20px 190px; width: auto; height: auto; display: flex;
+      flex-direction: column; justify-content: flex-start; gap: 16px;
+      overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+      pointer-events: auto;
     }
-    .archive-viewport .home-composition[data-beat="0"] .intro-manifesto { display: flex; flex-wrap: wrap; gap: 0 5px; }
+    .archive-viewport .home-composition .intro-copy-stage > * {
+      position: relative; inset: auto; width: 100%; height: auto;
+      max-height: none; display: block; flex: none;
+    }
+    .archive-viewport .home-composition .intro-manifesto { display: flex; flex-wrap: wrap; gap: 0 6px; }
     .archive-viewport .home-composition .intro-manifesto-line { transform: none; font-size: 16px; }
-    .archive-viewport .home-composition[data-beat="1"] .intro-role-orbit { display: grid; }
-    .archive-viewport .home-composition[data-beat="2"] .intro-actions { display: flex; }
-    .archive-viewport .home-composition[data-beat="3"] .intro-status { display: block; }
-    .archive-viewport .home-composition .intro-copy-stage .intro-role { font-size: var(--home-role-size, 24px); line-height: 1.08; }
+    .archive-viewport .home-composition .intro-role-orbit { display: grid; }
+    .archive-viewport .home-composition .intro-copy-stage .intro-role { font-size: 24px; line-height: 1.08; }
     .archive-viewport .home-composition .intro-copy-stage .intro-status { font-size: 16px; line-height: 1.3; }
     .archive-viewport .home-composition .intro-actions a { font-size: 18px; }
     .archive-viewport .home-composition .intro-gate-entry {

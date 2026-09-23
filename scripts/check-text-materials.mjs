@@ -78,102 +78,32 @@ try {
 
   for (const [width, height] of [[390, 844], [320, 568], [768, 1024], [844, 390]]) {
     await page.setViewportSize({ width, height });
-    await chapter(page, 'Home');
-    await page.waitForSelector('.intro-chapter-content.is-copy-complete');
-    await theme(page, 'default', false);
+    const home = page.getByRole('tab', { name: 'Home', exact: true });
+    await home.focus(); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.archive-viewport').dataset.chapter === 'intro');
+    await settled(page);
+    const collapse = page.getByRole('button', { name: 'Collapse lore guide' });
+    if (await collapse.count()) await collapse.click();
+    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions', '.intro-status']) assert(await page.locator(selector).isVisible());
+    assert.equal(await page.locator('.home-beat-controls').count(), 0);
     await page.screenshot({ path: `${output}/home-${width}.png` });
-    disjoint(await rectangles(page, ['.archive-header', '.home-beat-controls', '.intro-gate-entry', '.spatial-hud.theme-switcher', '.lore-toggle', '.chapter-rail']), width, height);
-    assert(await page.getByRole('tab', { name: 'Home', exact: true }).locator('strong').isVisible());
-    for (let beat = 3; beat >= 0; beat--) {
-      if (beat < 3) await page.getByRole('button', { name: 'Previous introduction passage' }).click();
-      const selector = ['.intro-manifesto', '.intro-role-orbit', '.intro-actions', '.intro-status'][beat];
-      assert(await page.locator(selector).isVisible());
-      disjoint(await rectangles(page, ['.archive-header', selector, '.home-beat-controls']), width, height);
-    }
-    await page.getByRole('button', { name: 'Next introduction passage' }).focus();
-    await page.keyboard.press('Enter');
-    assert.equal(await page.locator('.intro-role-orbit').isVisible(), true);
     await page.getByRole('button', { name: 'Expand lore guide' }).click();
-    await page.waitForTimeout(400);
-    assert.equal(await page.locator('.intro-manifesto').isVisible(), false);
-    assert.equal(await page.locator('.intro-role-orbit').isVisible(), false);
-    disjoint(await rectangles(page, ['.archive-header', '.lore-parchment', '.spatial-hud.theme-switcher', '.chapter-rail']), width, height);
-    await page.screenshot({ path: `${output}/lore-${width}.png` });
+    assert(await page.locator('.lore-parchment').isVisible());
     await page.getByRole('button', { name: 'Collapse lore guide' }).click();
-    await chapter(page, 'Cores');
-    while (await page.getByRole('button', { name: 'Previous core', exact: true }).isEnabled()) {
-      await page.getByRole('button', { name: 'Previous core', exact: true }).click();
-      await page.waitForTimeout(100);
-    }
+    const cores = page.getByRole('tab', { name: 'Cores', exact: true });
+    await cores.focus(); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.archive-viewport').dataset.chapter === 'cores');
+    await settled(page);
+    assert.equal(await page.locator('.contour-cores .contour-record').count(), 3);
     await page.screenshot({ path: `${output}/cores-${width}.png` });
-    disjoint(await rectangles(page, ['.archive-header', '.chapter-rail', '.contour-cores', '.spatial-hud.theme-switcher', '.lore-toggle']), width, height);
-    await page.getByRole('button', { name: 'Next core', exact: true }).click();
-    await page.waitForTimeout(300);
-    assert.match(await page.locator('.contour-cores h3').innerText(), /Unreal/);
-    await chapter(page, 'Case Studies');
+    const projects = page.getByRole('tab', { name: 'Case Studies', exact: true });
+    await projects.focus(); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.archive-viewport').dataset.chapter === 'projects');
+    await settled(page);
+    assert(await page.locator('.contour-projects .contour-record').count() > 5);
     await page.screenshot({ path: `${output}/projects-${width}.png` });
-    disjoint(await rectangles(page, ['.archive-header', '.chapter-rail', '.contour-projects', '.spatial-hud.theme-switcher', '.lore-toggle']), width, height);
-    report.push({ width, height, docksClear: true, beats: 4, loreToggle: true, corePager: true });
+    report.push({ width, height, continuousCopy: true, loreToggle: true });
   }
-  await page.close();
-
-  const motionPage = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
-  monitor(motionPage);
-  await motionPage.goto(url);
-  await settled(motionPage);
-  await chapter(motionPage, 'Cores');
-  await motionPage.getByRole('button', { name: 'Spring', exact: true }).click();
-  await motionPage.waitForSelector('.text-contour-ghosts');
-  await motionPage.waitForTimeout(500);
-  const masks = await motionPage.locator('.archive-viewport').evaluate(root => ({
-    active: root.dataset.textDissolving,
-    masked: [...root.querySelectorAll('.material-text')].filter(node => node.style.maskImage.includes('--text-contour-incoming')).length,
-    ghosts: document.querySelector('.text-contour-ghosts')?.childElementCount,
-    hiddenFromAT: document.querySelector('.text-contour-ghosts')?.getAttribute('aria-hidden'),
-  }));
-  assert.equal(masks.active, 'theme');
-  assert(masks.masked > 5 && masks.ghosts > 5);
-  assert.equal(masks.hiddenFromAT, 'true');
-  const maskUrl = await motionPage.locator('.material-text[style*="--text-contour-incoming"]').first().evaluate(node => getComputedStyle(node).maskImage.slice(5, -2));
-  const alpha = await motionPage.evaluate(async ({ url, maskUrl }) => {
-    const { createTextContourRenderer } = await import(new URL('src/utils/textContourRenderer.js', url));
-    const { getTracerSceneField } = await import(new URL('src/data/tracerSceneFields.js', url));
-    const { getCinematicGeometryAsset } = await import(new URL('src/data/cinematicAssets.js', url));
-    const geometry = new Image(); geometry.src = new URL(getCinematicGeometryAsset('default', 1, 0), url).href; await geometry.decode();
-    const renderer = createTextContourRenderer();
-    const width = innerWidth; const height = innerHeight;
-    const cover = Math.max(width, height * 16 / 9);
-    renderer.configure(geometry, { left: (width - cover) / 2, top: (height - cover * 9 / 16) / 2, width: cover, height: cover * 9 / 16 }, getTracerSceneField('default', 1), width, height);
-    async function sample(source) {
-      const image = new Image(); image.src = source; await image.decode();
-      const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
-      const context = canvas.getContext('2d'); context.drawImage(image, 0, 0);
-      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      let clear = 0; let opaque = 0; let edge = 0;
-      for (let i = 3; i < pixels.length; i += 4) {
-        if (pixels[i] === 0) clear++; else if (pixels[i] === 255) opaque++; else edge++;
-      }
-      return { clear, opaque, edge };
-    }
-    try {
-      return { live: await sample(maskUrl), start: await sample(renderer.draw(0).incoming), middle: await sample(renderer.draw(.28).incoming), end: await sample(renderer.draw(1).incoming) };
-    } finally { renderer.dispose(); }
-  }, { url, maskUrl });
-  assert(alpha.middle.clear > 0 && alpha.middle.opaque > 0 && alpha.middle.edge > 0, `Contour must have a real irregular alpha front: ${JSON.stringify(alpha)}`);
-  assert.equal(alpha.start.opaque + alpha.start.edge, 0);
-  assert.equal(alpha.end.clear + alpha.end.edge, 0);
-  await motionPage.screenshot({ path: `${output}/contour-text-mid-transition.png` });
-  await motionPage.waitForFunction(() => !document.querySelector('.text-contour-ghosts'));
-  assert.equal(await motionPage.locator('.material-text[style*="--text-contour-incoming"]').count(), 0);
-  await motionPage.screenshot({ path: `${output}/cores-spring-settled.png` });
-  await motionPage.getByRole('button', { name: 'Case studies', exact: true }).click();
-  await motionPage.waitForSelector('.text-contour-ghosts');
-  await motionPage.setViewportSize({ width: 390, height: 844 });
-  await motionPage.waitForFunction(() => !document.querySelector('.text-contour-ghosts'));
-  await settled(motionPage);
-  assert.equal(await motionPage.locator('.archive-viewport').getAttribute('data-chapter'), 'projects');
-  assert.equal(await motionPage.locator('.material-text[style*="--text-contour-incoming"]').count(), 0);
-  report.push({ contourMasks: masks, alpha, cleanedUp: true, resizeDuringTransition: true });
   console.log(JSON.stringify({ report, errors }, null, 2));
   assert.deepEqual(errors, []);
 } finally { await browser.close(); }

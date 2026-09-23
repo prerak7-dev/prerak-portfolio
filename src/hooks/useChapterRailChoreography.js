@@ -5,6 +5,7 @@ import { subscribeSpatialMotion } from '../state/spatialMotionStore.js';
 import { subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { setCachedStyleProperty, toggleCachedClass } from '../utils/motionPerformance.js';
+import { NAV_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const ITEM_STAGGER = 0.024;
@@ -186,7 +187,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
     let chronologyProjection = null;
     let navigation = null;
     let renderedItems = [];
-    const compactQuery = window.matchMedia('(max-width: 1100px), (max-height: 700px)');
+    const compactQuery = window.matchMedia(NAV_COMPACT_QUERY);
     let labelSizes = [];
     const projectionNodes = new Map();
 
@@ -248,8 +249,8 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
         const toMotion = getStageMotion(toStage, index, labelSizes[index], selected);
         let x = lerp(fromPoint.x, toPoint.x, itemMix);
         let y = lerp(fromPoint.y, toPoint.y, itemMix);
-        const labelOffsetX = lerp(fromMotion.label.x, toMotion.label.x, itemMix);
-        const labelOffsetY = lerp(fromMotion.label.y, toMotion.label.y, itemMix);
+        let labelOffsetX = lerp(fromMotion.label.x, toMotion.label.x, itemMix);
+        let labelOffsetY = lerp(fromMotion.label.y, toMotion.label.y, itemMix);
         const markerOffsetX = lerp(fromMotion.marker.x, toMotion.marker.x, itemMix);
         const markerOffsetY = lerp(fromMotion.marker.y, toMotion.marker.y, itemMix);
         const orbitForwardX = lerp(fromMotion.orbitForward.x, toMotion.orbitForward.x, itemMix);
@@ -264,10 +265,9 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
         const labelScale = selected ? 1 : .75;
         const halfWidth = labelSizes[index].width * labelScale / 2 + 8;
         const halfHeight = Math.max(22, labelSizes[index].height * labelScale / 2 + 8);
-        x = clamp(x, Math.max(30 - markerOffsetX, 16 + halfWidth - labelOffsetX), Math.min(window.innerWidth - 30 - markerOffsetX, window.innerWidth - 16 - halfWidth - labelOffsetX));
-        y = clamp(y, Math.max(108 - markerOffsetY, 94 + halfHeight - labelOffsetY), Math.min(window.innerHeight - 160 - markerOffsetY, window.innerHeight - 150 - halfHeight - labelOffsetY));
-        const crossing = Math.sin(Math.PI * itemMix);
-        const labelOpacity = 1 - 0.88 * crossing * crossing * crossing * crossing;
+        // Keep the anchor on the painted contour; only tuck its label on screen.
+        labelOffsetX = clamp(x + labelOffsetX, 16 + halfWidth, window.innerWidth - 16 - halfWidth) - x;
+        labelOffsetY = clamp(y + labelOffsetY, 82 + halfHeight, window.innerHeight - 90 - halfHeight) - y;
 
         points[index] = { x, y };
         renderedItems[index] = {
@@ -293,7 +293,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
         setCachedStyleProperty(item, '--chapter-orbit-lift-x', `${orbitLiftX.toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-orbit-lift-y', `${orbitLiftY.toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-label-align', labelAlign);
-        setCachedStyleProperty(item, '--chapter-label-opacity', labelOpacity.toFixed(4));
+        setCachedStyleProperty(item, '--chapter-label-opacity', '1');
         setCachedStyleProperty(item, '--chapter-orbit-progress', itemMix.toFixed(4));
       });
 

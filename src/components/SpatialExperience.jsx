@@ -16,7 +16,8 @@ import { useChapterRailChoreography } from '../hooks/useChapterRailChoreography.
 import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
 import { useHomeCompositionLayout } from '../hooks/useHomeCompositionLayout.js';
 import { useTextMaterials } from '../hooks/useTextMaterials.js';
-import { HOME_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
+import { HOME_COMPACT_QUERY, NAV_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
+import { changeTextContent } from '../utils/changeTextContent.js';
 import { ContourCores, ContourCaseStudies } from './ContourChapterContent.jsx';
 import {
   getGatewayTransition,
@@ -419,7 +420,7 @@ function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onS
   });
 
   useEffect(() => {
-    if (!window.matchMedia(HOME_COMPACT_QUERY).matches) return undefined;
+    if (!window.matchMedia(NAV_COMPACT_QUERY).matches) return undefined;
     const frame = window.requestAnimationFrame(() => {
       const list = listRef.current;
       const activeTab = list?.querySelector('[role="tab"][aria-selected="true"]');
@@ -617,7 +618,7 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
       reducedMotion ? 0 : LORE_TEXT_REVEAL_DELAY_MS,
     );
     return () => window.clearTimeout(timer);
-  }, [introGuideReady, activeIndex, theme]);
+  }, [introGuideReady, activeIndex]);
 
   useEffect(() => {
     const compact = window.matchMedia(HOME_COMPACT_QUERY);
@@ -631,13 +632,13 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
     : themePromptCompleted || activeIndex !== 0
       ? spatialChapters[activeIndex]?.guide || spatialChapters[0].guide
       : 'Choose a season. An old friend left me four accounts of this night; not one agrees with the others. I have my suspicions about the friend.';
-  const typed = useTypewriter(message, 14, textAnimationReady);
+  const typed = message;
   useEffect(() => {
     if (collapsed || !textAnimationReady || !message || typed !== message
       || pointerReading || focusReading) return undefined;
     // Start reading time after the final character, and pause for interaction.
     const readingMs = Math.max(9000, message.trim().split(/\s+/).length * 400 + 2500);
-    const timer = window.setTimeout(() => setCollapsed(true), readingMs);
+    const timer = window.setTimeout(() => changeTextContent(() => setCollapsed(true), '.archive-scene-stack, .lore-parchment'), readingMs);
     return () => window.clearTimeout(timer);
   }, [collapsed, textAnimationReady, message, typed, pointerReading, focusReading]);
   const guideState = !introGuideReady ? 'is-awaiting' : textAnimationReady ? 'is-ready' : 'is-opening';
@@ -654,14 +655,14 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
           <LoreAvatarContourField theme={theme} imageSrc={currentAvatar} />
         </div>
       </div>
-      <div className="lore-parchment tracer-slab" data-lenis-prevent data-tracer-prop="lore" aria-hidden={collapsed}><p>{typed}{textAnimationReady && <span className="lore-caret" aria-hidden="true" />}</p></div>
+      <div className="lore-parchment tracer-slab" data-lenis-prevent data-tracer-prop="lore" aria-hidden={collapsed}><p>{typed}</p></div>
       <button
         type="button"
         className="lore-toggle"
         aria-label={!introGuideReady ? 'Lore guide waiting for introduction' : collapsed ? 'Expand lore guide' : 'Collapse lore guide'}
         aria-expanded={!collapsed}
         disabled={!introGuideReady}
-        onClick={() => setCollapsed((value) => !value)}
+        onClick={() => changeTextContent(() => setCollapsed((value) => !value), '.archive-scene-stack, .lore-parchment')}
       >
         <TrianglePointer direction={collapsed ? 'left' : 'right'} />
       </button>
@@ -833,151 +834,26 @@ function IntroGateName({ isActive, name }) {
 function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
   const compositionRef = useRef(null);
   const compact = useHomeCompositionLayout(compositionRef);
-  const [selectedBeat, setSelectedBeat] = useState(null);
-  const copyStageRef = useRef(null);
-  const gateEntryRef = useRef(null);
-  const nameMotionRef = useRef({
-    copyX: '',
-    copyY: '',
-    gateOpacity: -1,
-    gateScale: -1,
-    gateCounterX: '',
-    gateCounterY: '',
-  });
   const copy = INTRO_NARRATION_PARTS;
-  const {
-    activeSegment,
-    isAnimating,
-    isComplete,
-    segments,
-  } = useNarratedTypewriterSequence(copy, {
-    enabled: isActive,
-    enterDelay: 1900,
-    enterSpeeds: INTRO_NARRATION_ENTER_SPEEDS,
-    enterPauses: INTRO_NARRATION_ENTER_PAUSES,
-    exitDelay: 80,
-    exitSpeeds: INTRO_NARRATION_EXIT_SPEEDS,
-    exitPauses: INTRO_NARRATION_EXIT_PAUSES,
-  });
-  const resumeVisible = segments[7].length > 0;
-  const resumeComplete = segments[7].length === copy[7].length;
-  const statusVisible = segments[8].length > 0;
-  const statusComplete = segments[8].length === copy[8].length;
-  const narrativeBeat = activeSegment < 4 ? 0 : activeSegment < 7 ? 1 : activeSegment === 7 ? 2 : 3;
-  const beat = selectedBeat ?? narrativeBeat;
-  useEffect(() => { if (!isActive) setSelectedBeat(null); }, [isActive]);
-  const availableBeat = isComplete ? 3 : narrativeBeat;
-  const scrollCueStart = copy[8].lastIndexOf('SCROLL');
-  const statusLead = segments[8].slice(0, scrollCueStart);
-  const statusCue = segments[8].slice(scrollCueStart);
-  const caret = (index) => (
-    isAnimating && activeSegment === index
-      ? <span className="intro-caret" aria-hidden="true" />
-      : null
-  );
-
-  useEffect(() => {
-    if (!isActive || !isComplete) return undefined;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const timer = window.setTimeout(onGuideReady, reducedMotion ? 0 : INTRO_GATE_SETTLE_MS);
-    return () => window.clearTimeout(timer);
-  }, [isActive, isComplete, onGuideReady]);
-
-  useLayoutEffect(() => subscribeSpatialMotion(({ progress, scenePosition }) => {
-    const copyNode = copyStageRef.current;
-    const gateEntryNode = gateEntryRef.current;
-
-    const rawIntroPosition = Math.max(
-      0,
-      Math.min(1, progress * Math.max(1, spatialChapters.length - 1)),
-    );
-    const runtime = nameMotionRef.current;
-
-    const sceneShiftX = Math.max(-70, Math.min(70, -scenePosition * 85));
-    const sceneShiftY = Math.max(-90, Math.min(90, -scenePosition * 115));
-
-    if (copyNode) {
-      const copyExit = smoothUnit((rawIntroPosition - INTRO_COPY_EXIT_START) / INTRO_COPY_EXIT_RANGE);
-      const travelVw = window.innerWidth <= 760 ? 108 : 48;
-      const copyX = `calc(${(-sceneShiftX).toFixed(3)}px - ${(copyExit * travelVw).toFixed(3)}vw)`;
-      const copyY = `${(-sceneShiftY).toFixed(3)}px`;
-      if (copyX !== runtime.copyX) {
-        runtime.copyX = copyX;
-        copyNode.style.setProperty('--intro-copy-exit-x', copyX);
-      }
-      if (copyY !== runtime.copyY) {
-        runtime.copyY = copyY;
-        copyNode.style.setProperty('--intro-copy-exit-y', copyY);
-      }
-    }
-
-    if (gateEntryNode) {
-      const gateExit = smoothUnit((rawIntroPosition - INTRO_GATE_EXIT_START) / INTRO_GATE_EXIT_RANGE);
-      const gateOpacity = Math.pow(1 - gateExit, 1.15);
-      const gateScale = 1 + gateExit * 0.28;
-      if (Math.abs(gateOpacity - runtime.gateOpacity) > 0.001) {
-        runtime.gateOpacity = gateOpacity;
-        gateEntryNode.style.setProperty('--intro-gate-scroll-opacity', gateOpacity.toFixed(4));
-      }
-      if (Math.abs(gateScale - runtime.gateScale) > 0.001) {
-        runtime.gateScale = gateScale;
-        gateEntryNode.style.setProperty('--intro-gate-scroll-scale', gateScale.toFixed(4));
-      }
-      const gateCounterX = `${(-sceneShiftX).toFixed(3)}px`;
-      const gateCounterY = `${(-sceneShiftY).toFixed(3)}px`;
-      if (gateCounterX !== runtime.gateCounterX) {
-        runtime.gateCounterX = gateCounterX;
-        gateEntryNode.style.setProperty('--intro-gate-counter-x', gateCounterX);
-      }
-      if (gateCounterY !== runtime.gateCounterY) {
-        runtime.gateCounterY = gateCounterY;
-        gateEntryNode.style.setProperty('--intro-gate-counter-y', gateCounterY);
-      }
-      setCachedInlineStyle(gateEntryNode, 'pointerEvents', gateExit > 0.08 ? 'none' : 'auto');
-    }
-  }), []);
+  useEffect(() => { if (isActive) onGuideReady(); }, [isActive, onGuideReady]);
 
   return (
-    <div ref={compositionRef} data-compact={compact} data-beat={beat} className={`intro-chapter-content home-composition ${isActive ? 'is-active' : ''} ${isComplete ? 'is-copy-complete' : ''} ${resumeVisible ? 'is-resume-visible' : ''} ${resumeComplete ? 'is-resume-complete' : ''} ${statusVisible ? 'is-status-visible' : ''}`} aria-live="off">
-      <div ref={copyStageRef} className="intro-copy-stage">
-        <div className="intro-manifesto" aria-label={copy.slice(0, 4).join(' ')}>
+    <div ref={compositionRef} data-compact={compact} className={`intro-chapter-content home-composition is-copy-complete is-resume-visible is-resume-complete is-status-visible ${isActive ? 'is-active' : ''}`}>
+      <div className="intro-copy-stage" data-lenis-prevent>
+        <div className="intro-manifesto">
           {copy.slice(0, 4).map((phrase, index) => (
-            <p
-              className={`intro-coordinate intro-manifesto-line ${segments[index] ? 'has-copy' : ''}`}
-              key={phrase}
-              style={{ '--manifesto-index': index }}
-            >
-              <span>{segments[index]}{caret(index)}</span>
-            </p>
+            <p className="intro-coordinate intro-manifesto-line has-copy" key={phrase} style={{ '--manifesto-index': index }}><span>{phrase}</span></p>
           ))}
         </div>
-        <div className="intro-role-orbit" aria-label={`${copy[4]} ${copy[5]} ${copy[6]}`}>
-          <p className="intro-role intro-role-engineer"><ScenicText>{segments[4]}{caret(4)}</ScenicText></p>
-          <p className="intro-role intro-role-wonderer"><ScenicText>{segments[5]}{caret(5)}</ScenicText></p>
-          <p className="intro-role intro-role-storyteller"><ScenicText>{segments[6]}{caret(6)}</ScenicText></p>
+        <div className="intro-role-orbit">
+          {copy.slice(4, 7).map(phrase => <p className="intro-role" key={phrase}><ScenicText>{phrase}</ScenicText></p>)}
         </div>
         <div className="intro-actions">
-          <a
-            aria-disabled={!resumeComplete}
-            aria-label={copy[7]}
-            className="tracer-action"
-            data-tracer-prop="action"
-            href={profile.resume}
-            download
-            onClick={(event) => { if (!resumeComplete) event.preventDefault(); }}
-            tabIndex={resumeComplete ? 0 : -1}
-          ><span>{segments[7]}{caret(7)}</span></a>
+          <a className="tracer-action" data-tracer-prop="action" href={profile.resume} download><span>{copy[7]}</span></a>
         </div>
-        <div className="intro-status" aria-label={`${copy[8]} down`}>
-          <span>{statusLead}{statusCue && <span className="intro-scroll-cue">{statusCue}{statusComplete && <span className="intro-scroll-arrow" aria-hidden="true">&#8595;</span>}</span>}{caret(8)}</span>
-        </div>
+        <div className="intro-status"><span>{copy[8]} <span aria-hidden="true">&#8595;</span></span></div>
       </div>
-      {compact && <div className="home-beat-controls" aria-label="Home introduction">
-        <button type="button" aria-label="Previous introduction passage" disabled={beat === 0} onClick={() => setSelectedBeat(Math.max(0, beat - 1))}><ChevronLeft aria-hidden="true" /></button>
-        <span aria-live="polite">{beat + 1} / 4</span>
-        <button type="button" aria-label="Next introduction passage" disabled={beat >= availableBeat} onClick={() => setSelectedBeat(Math.min(availableBeat, beat + 1))}><ChevronRight aria-hidden="true" /></button>
-      </div>}
-      <div ref={gateEntryRef} className="intro-gate-entry">
+      <div className="intro-gate-entry">
         <div className="intro-gate-scroll-shell">
           <button className="intro-gate-cta tracer-action" data-tracer-prop="action" type="button" onClick={onEnter}><span>Enter the archive</span></button>
         </div>
@@ -985,7 +861,6 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
     </div>
   );
 }
-
 function CoresChapter({ isActive, onContinue }) {
   const chapter = spatialChapters[1];
   const heading = useTypewriterSequence(
@@ -1477,9 +1352,9 @@ export function SpatialExperience({
   const sceneRefs = useRef([]);
   const viewportRef = useRef(null);
   useTextMaterials(viewportRef);
-  const displayedContentIndex = chapterNavigationActive ? activeIndex : cinematicReadiness.readyIndex;
+  const displayedContentIndex = activeIndex;
   const chapterIsSettled = experienceVisible && cinematicReadiness.settled && !chapterNavigationActive;
-  const contentIsVisible = chapterIsSettled || (experienceVisible && chapterNavigationActive);
+  const contentIsVisible = experienceVisible;
   const projectsActive = contentIsVisible && displayedContentIndex === 2;
   const projectsInteractive = projectsActive && chapterIsSettled && activeIndex === 2;
 

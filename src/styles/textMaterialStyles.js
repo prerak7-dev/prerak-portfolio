@@ -53,16 +53,42 @@ export const textMaterialStyles = `
     text-shadow: 0 .6px .5px var(--type-shade), 0 0 2px var(--type-halo) !important;
   }
   .archive-app .archive-viewport .chapter-rail .chapter-rail-list button.active strong.material-text { color: var(--type-accent) !important; }
-  .archive-viewport[data-text-dissolving] .contour-content { transition: none; }
-  .archive-viewport .contour-focus[data-contour-revealed="true"]:not(.is-leaving) { animation: none; }
-  .archive-app .material-text.scenic-text { animation-name: none; }
-  @media (min-width: 1101px) and (min-height: 701px) {
-    .archive-app .archive-viewport .chapter-rail.is-orbit-rail .material-text.scenic-text {
-      animation-name: chapterLabelOrbit;
-    }
+  .archive-app .archive-viewport .material-text,
+  .archive-app .archive-viewport .material-text *,
+  .archive-app .archive-viewport .scenic-text {
+    animation: none !important; transition: none !important;
   }
+  .archive-app .archive-identity > span { display: grid; align-content: center; }
+  .archive-app .archive-identity strong { display: block; }
+  .archive-app .archive-viewport .archive-scene { transform: none !important; opacity: 1; transition: none !important; }
+  .archive-app .archive-viewport .archive-scene[aria-hidden="true"] { display: none; }
+  .archive-app .archive-viewport .archive-scene[aria-hidden="false"] { visibility: visible; }
+  .archive-app .archive-viewport :is(.archive-header, .chapter-rail, .spatial-lore-guide, .archive-progress,
+    .intro-copy-stage, .intro-actions, .intro-status, .intro-gate-entry, .intro-gate-scroll-shell,
+    .contour-content, .contour-focus, .chapter-heading, .timeline-focus-card, .personal-feature, .lore-parchment) {
+    animation: none !important; transition: none !important; translate: none !important;
+  }
+  .archive-app .archive-viewport :is(.intro-copy-stage, .intro-actions, .intro-status, .contour-content, .contour-focus, .lore-parchment) {
+    transform: none !important;
+  }
+  .archive-app .archive-viewport .intro-gate-scroll-shell { opacity: 1; transform: none; }
+  .archive-app .archive-viewport .intro-caret,
+  .archive-app .archive-viewport .case-type-caret,
+  .archive-app .archive-viewport .lore-caret { display: none; }
   .text-contour-ghosts { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; }
   .text-contour-ghosts * { pointer-events: none !important; }
+  .archive-viewport .contour-content { overflow: hidden; }
+  .archive-viewport .contour-reading-list {
+    position: relative; min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin; padding: 2px 8px 6px 2px;
+  }
+  .archive-viewport .contour-record { margin: 0 0 24px; }
+  .archive-viewport .contour-record:last-child { margin-bottom: 0; }
+  .archive-viewport .contour-record h3 { margin-bottom: 8px; }
+  @media (max-height: 500px) and (min-width: 600px) {
+    .archive-viewport .contour-cores .contour-reading-list { grid-column: 2; grid-row: 1; }
+    .archive-viewport .contour-projects .contour-reading-list { grid-column: 2; grid-row: 1 / 3; }
+  }
   @media (forced-colors: active) {
     .archive-app .archive-viewport .material-text,
     .archive-app .archive-viewport .material-text * {

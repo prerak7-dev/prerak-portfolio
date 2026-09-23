@@ -12,7 +12,7 @@ export const TEXT_MATERIALS = Object.freeze({
 
 export const TEXT_TARGET_SELECTOR = [
   'h1', 'h2', 'h3', 'h4', 'p', 'strong', 'small', 'em', 'dt', 'dd', 'code',
-  'button', 'a', 'li', '.intro-status', '.chapter-heading > span',
+  'button', 'a', 'li', 'button > span:not([aria-hidden="true"])', 'a > span', '.intro-status', '.chapter-heading > span',
   '.timeline-focus-card > span', '.personal-collection-copy > span',
   '.focus-pager > span', '.home-beat-controls > span', '.timeline-axis > span',
 ].join(',');
