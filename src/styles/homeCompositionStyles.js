@@ -1,3 +1,5 @@
+import { HOME_COMPACT_QUERY, NAV_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
+
 export const homeCompositionStyles = `
   .archive-viewport .archive-header { z-index: 40; pointer-events: none; }
   .archive-header :is(button, a) { pointer-events: auto; }
@@ -10,7 +12,7 @@ export const homeCompositionStyles = `
   .archive-viewport .chapter-rail.is-orbit-rail .chapter-celestial-marker { pointer-events: auto; cursor: pointer; }
   .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button { pointer-events: auto; }
   .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed .chapter-rail-list :is(strong, .chapter-celestial-marker) { pointer-events: none; }
-  @media (min-width: 761px) and (min-height: 501px) {
+  @media (min-width: 1101px) and (min-height: 501px) and (pointer: fine) {
   .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-rail-list button {
     width: var(--chapter-tab-width, 160px) !important;
     height: 44px !important; min-height: 44px !important;
@@ -61,7 +63,7 @@ export const homeCompositionStyles = `
   .archive-viewport .home-composition .intro-gate-entry { left: var(--home-gate-left); top: var(--home-gate-top); }
   .home-beat-controls { display: none; }
 
-  @media (max-width: 1100px), (max-height: 700px) {
+  @media ${HOME_COMPACT_QUERY} {
     .archive-viewport .archive-header { top: 10px; left: 12px; right: 12px; height: 52px; gap: 12px; }
     .archive-viewport .archive-identity { flex: 1; gap: 8px; padding: 0; }
     .archive-viewport .archive-identity .profile-avatar { flex: none; width: 36px; height: 36px; }
@@ -70,7 +72,7 @@ export const homeCompositionStyles = `
     .archive-viewport .archive-header-actions { flex: none; padding: 0; gap: 8px; }
     .archive-viewport .archive-header-actions a { min-height: 44px; padding: 0 4px; font-size: 15px; }
   }
-  @media (max-width: 760px), (max-height: 500px) {
+  @media ${NAV_COMPACT_QUERY} {
     .archive-viewport .chapter-rail.is-orbit-rail,
     .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed {
       position: absolute !important; inset: 70px 8px auto !important;
@@ -113,7 +115,7 @@ export const homeCompositionStyles = `
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-scroll-arrow.previous { left: 0; }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-scroll-arrow.next { right: 0; }
   }
-  @media (max-width: 1100px), (max-height: 700px) {
+  @media ${HOME_COMPACT_QUERY} {
     .archive-viewport .home-composition .intro-copy-stage {
       inset: 76px 20px 190px; width: auto; height: auto; display: flex;
       flex-direction: column; justify-content: flex-start; gap: 16px;

@@ -19,7 +19,7 @@ export function useHomeCompositionLayout(ref) {
       const header = document.querySelector('.archive-header');
       const coverWidth = Math.max(width, height * 1672 / 941);
       const projection = readSceneImageProjection(image, { left: (width - coverWidth) / 2, top: (height - coverWidth * 941 / 1672) / 2, width: coverWidth, height: coverWidth * 941 / 1672 }, width);
-      const layout = getHomeCompositionLayout(projection, width, height, header?.getBoundingClientRect().bottom ?? 80);
+      const layout = getHomeCompositionLayout(projection, width, height, header?.getBoundingClientRect().bottom ?? 80, window.matchMedia(HOME_COMPACT_QUERY).matches);
       for (const area of ['sky', 'water', 'gate']) {
         for (const [key, value] of Object.entries(layout[area])) {
           setCachedStyleProperty(node, `--home-${area}-${key}`, `${value.toFixed(2)}px`);

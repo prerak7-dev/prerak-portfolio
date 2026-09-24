@@ -1,13 +1,12 @@
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-export const HOME_COMPACT_QUERY = '(max-width: 1100px), (max-height: 700px)';
-export const NAV_COMPACT_QUERY = '(max-width: 760px), (max-height: 500px)';
+export const HOME_COMPACT_QUERY = '(max-width: 1100px), (max-height: 700px), (pointer: coarse)';
+export const NAV_COMPACT_QUERY = '(max-width: 1100px), (max-height: 500px), (pointer: coarse)';
 
 // Landmarks shared by the eight authored Home paintings, in source-image space.
-export function getHomeCompositionLayout(projection, width, height, headerBottom = 80) {
+export function getHomeCompositionLayout(projection, width, height, headerBottom = 80, compact = width <= 1100 || height <= 700) {
   const x = value => projection.left + value * projection.width;
   const y = value => projection.top + value * projection.height;
-  const compact = width <= 1100 || height <= 700;
   const landscape = compact && width / height > 1.45;
   const top = headerBottom + (compact ? 10 : 22);
   const gateTop = y(.258);

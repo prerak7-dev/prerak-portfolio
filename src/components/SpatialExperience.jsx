@@ -419,15 +419,31 @@ function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onS
   });
 
   useEffect(() => {
-    if (!window.matchMedia(NAV_COMPACT_QUERY).matches) return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      const list = listRef.current;
-      const activeTab = list?.querySelector('[role="tab"][aria-selected="true"]');
-      if (!list || !activeTab) return;
-      const target = activeTab.offsetLeft - (list.clientWidth - activeTab.offsetWidth) / 2;
-      list.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
-    });
-    return () => window.cancelAnimationFrame(frame);
+    const compact = window.matchMedia(NAV_COMPACT_QUERY);
+    let frame = 0;
+    const recenter = (behavior = 'auto') => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        if (!compact.matches) return;
+        const list = listRef.current;
+        const activeTab = list?.querySelector('[role="tab"][aria-selected="true"]');
+        if (!list || !activeTab) return;
+        const target = activeTab.offsetLeft - (list.clientWidth - activeTab.offsetWidth) / 2;
+        list.scrollTo({ left: Math.max(0, target), behavior });
+      });
+    };
+    const resize = () => recenter();
+    const observer = new ResizeObserver(resize);
+    if (listRef.current) observer.observe(listRef.current);
+    compact.addEventListener('change', resize);
+    window.addEventListener('resize', resize, { passive: true });
+    recenter(window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      compact.removeEventListener('change', resize);
+      window.removeEventListener('resize', resize);
+    };
   }, [activeIndex]);
 
   const scrollTabs = (direction) => {

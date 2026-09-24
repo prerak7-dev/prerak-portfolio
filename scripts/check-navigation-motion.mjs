@@ -1,14 +1,35 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { mkdir } from 'node:fs/promises';
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE || 'C:/Users/prera/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json');
 const { chromium } = require('playwright');
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const width = Number(process.argv[2] || process.env.VIEWPORT_WIDTH || 1440);
+const height = Number(process.argv[3] || process.env.VIEWPORT_HEIGHT || 900);
+const page = await browser.newPage({ viewport: { width, height } });
+const output = 'tmp/navigation-contour';
+await mkdir(output, { recursive: true });
 const report = [];
 try {
   await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:4187/prerak-portfolio/');
   await page.waitForFunction(() => document.querySelector('.archive-viewport')?.dataset.chapterCopyPhase === 'idle');
-  for (const label of ['Cores', 'Case Studies', 'Experience', 'Education', 'Field Notes', 'Contact', 'Home']) {
+  const drift = await page.evaluate(async () => {
+    const image = document.querySelector('.gateway-sequence-preloads img');
+    const tab = document.querySelector('.chapter-rail-list > button');
+    const before = tab.getBoundingClientRect();
+    const imageBefore = image.getBoundingClientRect();
+    const previous = image.style.translate;
+    image.style.translate = '-24px 0px';
+    await new Promise(resolve => setTimeout(resolve, 180));
+    const after = tab.getBoundingClientRect();
+    const imageAfter = image.getBoundingClientRect();
+    image.style.translate = previous;
+    return { tabX: after.x - before.x, imageX: imageAfter.x - imageBefore.x };
+  });
+  assert(Math.abs(drift.tabX - drift.imageX) < 3 && drift.tabX < -15, `Rail detached from live contour: ${JSON.stringify(drift)}`);
+  console.log(JSON.stringify({ viewport: [width, height], followsLiveContour: drift }));
+  await page.waitForTimeout(200);
+  for (const label of process.argv.includes('--wheel-only') ? [] : ['Cores', 'Case Studies', 'Experience', 'Education', 'Field Notes', 'Contact', 'Home']) {
     await page.evaluate(() => {
       window.railFrames = [];
       const sample = time => {
@@ -21,11 +42,26 @@ try {
       };
       window.railFrame = requestAnimationFrame(sample);
     });
-    await page.getByRole('tab', { name: label, exact: true }).click();
+    // Satellites intentionally follow the drifting painting, so don't wait for
+    // Playwright's two-frame stationary-element heuristic before clicking.
+    await page.getByRole('tab', { name: label, exact: true }).click({ force: true });
     await page.waitForFunction(() => document.querySelector('.archive-viewport').classList.contains('chapter-transitioning'));
+    await page.waitForFunction(() => {
+      const rail = document.querySelector('.chapter-rail');
+      return rail.dataset.motionSource === 'chapter' && Number(rail.dataset.motionProgress) > .45;
+    });
+    await page.screenshot({ path: `${output}/${width}-${label.replaceAll(' ', '-')}-midpoint.png` });
     await page.waitForFunction(() => document.querySelector('.archive-viewport').classList.contains('chapter-settled') && document.querySelector('.archive-viewport').dataset.chapterCopyPhase === 'idle');
     await page.waitForFunction(() => document.querySelector('.chapter-rail').dataset.moving === 'false', null, { timeout: 8000 });
     const frames = await page.evaluate(() => { cancelAnimationFrame(window.railFrame); return window.railFrames; });
+    if (label === 'Cores') {
+      for (const interval of [[.28, .38], [.58, .68]]) {
+        const a = frames.find(frame => frame.source === 'chapter' && Number(frame.progress) >= interval[0]);
+        const b = frames.find(frame => frame.source === 'chapter' && Number(frame.progress) >= interval[1]);
+        assert(a && b, 'Missing contour choreography samples');
+        for (const axis of ['x', 'y']) assert(a.points.reduce((sum, point, i) => sum + Math.abs(point[axis] - b.points[i][axis]), 0) > 5, `${axis} paused in a transit lane`);
+      }
+    }
     let maxSpeed = 0;
     let maxStep = 0;
     let worst;
@@ -34,6 +70,7 @@ try {
       const previous = frames[f - 1];
       for (let i = 0; i < current.points.length; i++) {
         const a = current.points[i];
+        assert(a.x >= 15.5 && a.x + a.width <= width - 15.5 && a.y >= 81.5 && a.y + a.height <= height - 77.5, `${label}: tab left the usable viewport ${JSON.stringify({ i, progress: current.progress, rect: a })}`);
         const p = previous.points[i];
         const step = Math.hypot(a.x - p.x, a.y - p.y);
         let start = f - 1;
@@ -53,5 +90,30 @@ try {
     if (maxStep >= 45) console.log(JSON.stringify(worst));
     assert(maxStep < 45, `${label}: navigation jumped ${maxStep}px between adjacent frames`);
     assert(maxSpeed < 1600, `${label}: discontinuous navigation (${maxSpeed}px/s)`);
+  }
+  // Scroll the background, not Home's intentionally independent copy scroller.
+  await page.mouse.move(width - 4, height * .6);
+  for (const delta of [height * 3, -height * 3]) {
+    await page.evaluate(() => {
+      window.scrollRailSamples = [];
+      const sample = () => {
+        const rail = document.querySelector('.chapter-rail');
+        const tab = rail.querySelectorAll('button[role="tab"]')[3].getBoundingClientRect();
+        window.scrollRailSamples.push({ x: tab.x, y: tab.y, progress: Number(rail.dataset.motionProgress), source: rail.dataset.motionSource });
+        window.scrollRailFrame = requestAnimationFrame(sample);
+      };
+      window.scrollRailFrame = requestAnimationFrame(sample);
+    });
+    for (let step = 0; step < 10; step++) {
+      await page.mouse.wheel(0, delta / 10);
+      await page.waitForTimeout(60);
+    }
+    await page.waitForTimeout(2600);
+    const samples = await page.evaluate(() => { cancelAnimationFrame(window.scrollRailFrame); return window.scrollRailSamples; });
+    const moving = samples.filter(sample => sample.progress > .02 && sample.progress < .98);
+    console.log(JSON.stringify({ wheel: delta > 0 ? 'forward' : 'reverse', movingFrames: moving.length, distinctPositions: new Set(moving.map(sample => `${Math.round(sample.x)},${Math.round(sample.y)}`)).size }));
+    assert(moving.length > 12 && moving.every(sample => sample.source === 'scroll'), 'Wheel navigation skipped contour choreography');
+    assert(new Set(moving.map(sample => `${Math.round(sample.x)},${Math.round(sample.y)}`)).size > 12, 'Wheel navigation snapped between destinations');
+    console.log(JSON.stringify({ wheel: delta > 0 ? 'forward' : 'reverse', contourFrames: moving.length }));
   }
 } finally { await browser.close(); }

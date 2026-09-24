@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { interpolateRailLayout, separateRailItems, railItemsOverlap } from './chapterRailLayout.js';
+import { createRailJourney, interpolateRailLayout, separateRailItems, railItemsOverlap } from './chapterRailLayout.js';
 
 test('rail packing keeps complete targets separate inside the viewport', () => {
   for (const [width, height] of [[1440, 900], [1366, 650], [768, 1024], [1024, 500]]) {
@@ -20,7 +20,7 @@ test('rail packing keeps complete targets separate inside the viewport', () => {
   }
 });
 
-test('lane journeys remain disjoint and settle exactly on their curves in both directions', () => {
+test('contour morphs remain disjoint and settle exactly on their curves in both directions', () => {
   for (const [width, height] of [[1440,900], [1366,650], [768,1024]]) {
     const bounds = { left:16, right:width-16, top:82, bottom:height-78 };
     const sizes = [110,113,174,157,153,164,135];
@@ -35,11 +35,33 @@ test('lane journeys remain disjoint and settle exactly on their curves in both d
       })), bounds, 6, routes);
     }));
     for (const from of layouts) for (const to of layouts) {
+      const journey = createRailJourney(from, to, bounds);
       for (let frame=0;frame<=120;frame++) {
-        const items=interpolateRailLayout(from,to,frame/120,bounds);
-        for(let i=0;i<7;i++) for(let j=i+1;j<7;j++) assert(!railItemsOverlap(items[i],items[j],5.8), `${width}: frame ${frame}, ${i}/${j}`);
+        for (const items of [interpolateRailLayout(from,to,frame/120,bounds), journey(frame/120)]) {
+          for (const item of items) {
+            assert(item.x >= bounds.left - .1 && item.x + item.width <= bounds.right + .1, `${width}: contour outside horizontal bounds at ${frame}`);
+            assert(item.y >= bounds.top - .1 && item.y + item.height <= bounds.bottom + .1, `${height}: contour outside vertical bounds`);
+          }
+          for(let i=0;i<7;i++) for(let j=i+1;j<7;j++) assert(!railItemsOverlap(items[i],items[j],5.8), `${width}: frame ${frame}, ${i}/${j}`);
+        }
       }
       assert.deepEqual(interpolateRailLayout(from,to,1,bounds),to);
+      assert.deepEqual(journey(1), to);
     }
+  }
+});
+
+test('the rail bends throughout the handoff without a straight transit-lane plateau', () => {
+  const bounds = { left: 16, right: 1424, top: 82, bottom: 822 };
+  const from = Array.from({ length: 7 }, (_, i) => ({ x: 900 + i * i * 5, y: 100 + i * 65, width: 130, height: 44 }));
+  const to = from.map((item, i) => ({ ...item, x: 180 + i * 170, y: 670 + Math.sin(i * .7) * 30 }));
+  for (const t of [.25, .4, .5, .6, .75]) {
+    const a = interpolateRailLayout(from, to, t, bounds);
+    const b = interpolateRailLayout(from, to, t + .01, bounds);
+    for (const axis of ['x', 'y']) {
+      assert(a.reduce((sum, point, i) => sum + Math.abs(point[axis] - b[i][axis]), 0) > 1, `${axis} froze during the contour morph at ${t}`);
+    }
+    const reverse = interpolateRailLayout(to, from, 1 - t, bounds);
+    a.forEach((point, i) => assert(Math.hypot(point.x - reverse[i].x, point.y - reverse[i].y) < .001));
   }
 });
