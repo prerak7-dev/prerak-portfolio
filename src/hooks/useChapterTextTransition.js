@@ -5,6 +5,7 @@ import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
 import { createTextContourRenderer } from '../utils/textContourRenderer.js';
 import { findTextTargets } from '../utils/textTargets.js';
 import { claimTextMask, releaseTextMask } from '../utils/textMaskOwnership.js';
+import { beginTracerContourTransition, maskTracerContourTransition, finishTracerContourTransition } from '../utils/tracerContourTransition.js';
 
 const COPY_SCOPE = '.archive-scene-stack, .lore-parchment';
 const SCENE_INDICES = [0, 1, 2, 3, 3, 4, 5];
@@ -16,6 +17,7 @@ export function useChapterTextTransition(ref, activeIndex, enabled, theme) {
   const latest = useRef({ activeIndex, theme });
   latest.current = { activeIndex, theme };
   const rendererRef = useRef(null);
+  const tracerOwner = useRef(Symbol('chapter-tracers'));
 
   useLayoutEffect(() => {
     if (enabled && copy.phase === 'idle' && activeIndex !== copy.index) {
@@ -47,6 +49,7 @@ export function useChapterTextTransition(ref, activeIndex, enabled, theme) {
         delete root.dataset.chapterCopyReady;
         setCopy({ index: latest.current.activeIndex, phase: 'entering', initial: false });
       } else {
+        finishTracerContourTransition(root, tracerOwner.current);
         root.dataset.chapterCopyReady = 'true';
         setCopy(current => ({ ...current, phase: 'idle', initial: false }));
       }
@@ -75,6 +78,7 @@ export function useChapterTextTransition(ref, activeIndex, enabled, theme) {
       }, getTracerSceneField(latest.current.theme, SCENE_INDICES[copy.index]), width, height);
       rendererRef.current.draw(progress);
       maskTargets();
+      maskTracerContourTransition(root, tracerOwner.current, rendererRef.current);
     };
     const resize = () => {
       if (!resource || disposed) return;
@@ -86,6 +90,7 @@ export function useChapterTextTransition(ref, activeIndex, enabled, theme) {
     observer.observe(root, { childList: true, subtree: true, characterData: true });
     const start = async () => {
       if (reduced.matches) { finish(); return; }
+      beginTracerContourTransition(root, tracerOwner.current, copy.phase === 'exiting' ? 'outgoing' : 'incoming');
       try {
         resource = await loadCinematicGeometryField(getCinematicGeometryAsset(latest.current.theme, SCENE_INDICES[copy.index], 0));
         if (disposed) return;
@@ -121,6 +126,12 @@ export function useChapterTextTransition(ref, activeIndex, enabled, theme) {
     };
   }, [ref, enabled, copy.index, copy.phase, copy.initial]);
 
-  useLayoutEffect(() => () => { rendererRef.current?.dispose(); rendererRef.current = null; }, []);
+  useLayoutEffect(() => {
+    const root = ref.current;
+    return () => {
+      finishTracerContourTransition(root, tracerOwner.current);
+      rendererRef.current?.dispose(); rendererRef.current = null;
+    };
+  }, [ref]);
   return copy;
 }

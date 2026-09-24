@@ -23,7 +23,7 @@ export const homeCompositionStyles = `
   }
   .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-celestial-marker {
     position: relative !important; inset: auto !important;
-    width: 40px !important; height: 40px !important; flex: 0 0 40px;
+    width: 24px !important; height: 24px !important; flex: 0 0 24px;
     scale: 1 !important; transform: none !important; animation: none !important; transition: none !important;
   }
   .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-rail-list strong {
@@ -100,8 +100,8 @@ export const homeCompositionStyles = `
       transition: none !important;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-celestial-marker {
-      position: relative !important; inset: auto !important; flex: none; width: 32px !important;
-      height: 32px !important; scale: 1 !important; transform: none !important; animation: none !important;
+      position: relative !important; inset: auto !important; flex: none; width: 19.2px !important;
+      height: 19.2px !important; scale: 1 !important; transform: none !important; animation: none !important;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list strong.scenic-text {
       position: relative !important; inset: auto !important; width: max-content; padding: 0;

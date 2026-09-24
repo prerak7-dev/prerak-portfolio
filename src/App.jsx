@@ -381,6 +381,8 @@ export default function App() {
         getChapterCelestialAsset(nextTheme),
         getLoreAvatarState(nextTheme, spatialChapters[activeIndex]?.id).src,
       ], 2),
+      // Decode the incoming tracer paths before their contour starts revealing.
+      loadCinematicGeometryField(getCinematicGeometryAsset(nextTheme, sceneIndex, gatewayFrameIndex)).catch(() => null),
     ]).then(([fromImage, toImage, geometryImage]) => {
       if (themeRequestRef.current !== requestId) return;
       document.documentElement.classList.remove('theme-assets-preparing');
@@ -445,9 +447,10 @@ export default function App() {
         }),
         // A jump to Cores must also settle the underlying gate renderer.
         preloadImageUrl(resolveAsset(getCinematicSceneAsset(theme, 0, index === 0 ? 0 : GATEWAY_FRAME_COUNT - 1, { compact }))),
-        preloadImageUrl(resolveAsset(getCinematicGeometryAsset(theme, targetSceneIndex, 0))).then(image => {
-          if (image) warmChapterTextField(image, theme, targetSceneIndex);
+        loadCinematicGeometryField(getCinematicGeometryAsset(theme, targetSceneIndex, 0)).then(field => {
+          if (field) warmChapterTextField(field.image, theme, targetSceneIndex);
         }),
+        preloadImageUrl(getLoreAvatarState(theme, spatialChapters[index]?.id).src),
       ]);
       if (!fromImage || !toImage || !geometryImage) {
         goToChapter(index, 'auto');

@@ -183,13 +183,13 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
         const source = CHAPTER_RAIL_STAGES[stageIndex];
         const projection = readStageProjection(source, fallback);
         const stage = resolveStage(source, projection);
-        const fitsRow = labelSizes.reduce((sum, size) => sum + size.width + 66, -6) <= bounds.right - bounds.left;
+        const fitsRow = labelSizes.reduce((sum, size) => sum + size.width + 50, -6) <= bounds.right - bounds.left;
         const axis = (stageIndex === 1 || stageIndex === 6) && fitsRow ? 'x' : 'y';
         const routes = new Map();
         for (let i = 0; i < itemCount; i++) for (let j = i + 1; j < itemCount; j++) routes.set(`${i}:${j}`, { axis, sign: -1 });
         const anchors = labelSizes.map((size, index) => {
           const point = projectStagePoint(stage, index, itemCount, projection);
-          return { x: point.x - 26, y: point.y - 22, width: size.width + 60, height: 44 };
+          return { x: point.x - 18, y: point.y - 22, width: size.width + 44, height: 44 };
         });
         if (axis === 'x') {
           const top = Math.min(...anchors.map(point => point.y));
@@ -229,7 +229,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
 
       const finalPoint = renderedItems[itemCount - 1];
       if (finalPoint) {
-        setCachedStyleProperty(rail, '--chapter-collapse-x', `${(finalPoint.x + 26).toFixed(2)}px`);
+        setCachedStyleProperty(rail, '--chapter-collapse-x', `${(finalPoint.x + 18).toFixed(2)}px`);
         setCachedStyleProperty(rail, '--chapter-collapse-y', `${(finalPoint.y + 76).toFixed(2)}px`);
       }
       // The painted plate keeps drifting after scroll settles. Read its live

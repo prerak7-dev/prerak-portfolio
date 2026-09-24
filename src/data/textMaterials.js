@@ -1,4 +1,4 @@
-// Cut-paper faces, pigment at the cut edge, and a restrained impression for prose.
+// The established palette is shared by dry-brush headings and fine reading ink.
 export const TEXT_MATERIALS = Object.freeze({
   default: { name: 'Silver graphite', face: '#fcfaf2', fold: '#bfc6c9', edge: '#89989f', ink: '#eeeee9', accent: '#e4ca8d', light: '#ffffff', shade: '#080d12', halo: '#080b10', grain: '310px', angle: '158deg' },
   'default-light': { name: 'Graphite impression', face: '#626970', fold: '#253139', edge: '#344047', ink: '#27333b', accent: '#765923', light: '#ffffff', shade: '#bbc0c1', halo: '#f4f4ef', grain: '310px', angle: '158deg' },
@@ -17,4 +17,4 @@ export const TEXT_TARGET_SELECTOR = [
   '.focus-pager > span', '.home-beat-controls > span', '.timeline-axis > span',
 ].join(',');
 
-export const TEXT_RELIEF_SELECTOR = 'h1, h2, h3, h4, .intro-role, .archive-identity strong, .field-note-placeholder strong';
+export const TEXT_DISPLAY_SELECTOR = 'h1, h2, h3, h4, .intro-role, .archive-identity strong, .field-note-placeholder strong';

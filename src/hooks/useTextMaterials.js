@@ -1,5 +1,5 @@
 import { useLayoutEffect } from 'react';
-import { TEXT_RELIEF_SELECTOR } from '../data/textMaterials.js';
+import { TEXT_DISPLAY_SELECTOR } from '../data/textMaterials.js';
 import { findTextTargets } from '../utils/textTargets.js';
 import { claimTextMask, releaseTextMask } from '../utils/textMaskOwnership.js';
 import { getTracerSceneField } from '../data/tracerSceneFields.js';
@@ -8,9 +8,10 @@ import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js'
 import { createTextContourRenderer } from '../utils/textContourRenderer.js';
 import { getCinematicGeometryAsset } from '../data/cinematicAssets.js';
 import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
+import { beginTracerContourTransition, maskTracerContourTransition, finishTracerContourTransition } from '../utils/tracerContourTransition.js';
 
 const SCENE_IMAGES = ['.gateway-sequence-preloads img', '.cores-plate img', '.systems-plate img', '.chronology-plate img', '.field-plate img', '.surface-plate img'];
-const APPEARANCE_PROPERTIES = ['display', 'box-sizing', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-transform', 'text-align', 'text-indent', 'white-space', 'word-spacing', 'word-break', 'overflow-wrap', 'color', '-webkit-text-fill-color', '-webkit-text-stroke', 'text-shadow', 'background-image', 'background-size', 'background-position', 'background-blend-mode', 'background-clip', '-webkit-background-clip', 'filter', 'padding', 'margin', 'vertical-align', 'text-decoration', 'gap', 'align-items', 'justify-content'];
+const APPEARANCE_PROPERTIES = ['display', 'box-sizing', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-transform', 'text-align', 'text-indent', 'white-space', 'word-spacing', 'word-break', 'overflow-wrap', 'color', '-webkit-text-fill-color', '-webkit-text-stroke', 'text-shadow', 'background-image', 'background-size', 'background-position', 'background-repeat', 'background-blend-mode', 'background-clip', '-webkit-background-clip', 'filter', 'padding', 'margin', 'vertical-align', 'text-decoration', 'gap', 'align-items', 'justify-content'];
 APPEARANCE_PROPERTIES.push('opacity', 'text-wrap-mode', 'text-wrap-style', 'flex-direction', 'flex-wrap', 'align-self', 'flex-grow', 'flex-shrink', 'flex-basis');
 APPEARANCE_PROPERTIES.push('background-color', 'border', 'border-radius', 'appearance', 'outline', 'box-shadow');
 
@@ -83,7 +84,7 @@ export function useTextMaterials(ref) {
       targets = findTextTargets(root);
       targets.forEach(node => {
         if (!node.classList.contains('material-text')) node.classList.add('material-text');
-        node.dataset.textMaterial = node.matches(TEXT_RELIEF_SELECTOR) ? 'relief' : 'ink';
+        node.dataset.textMaterial = node.matches(TEXT_DISPLAY_SELECTOR) ? 'display-ink' : 'ink';
       });
       if (layer && transition?.active) applyLiveMask();
     };
@@ -97,6 +98,7 @@ export function useTextMaterials(ref) {
     appearanceObserver.observe(root, { attributes: true, attributeFilter: ['class'] });
 
     const restore = () => {
+      finishTracerContourTransition(root, maskOwner);
       layer?.remove(); layer = null;
       savedMasks.forEach((_, node) => releaseTextMask(node, maskOwner));
       savedMasks.clear();
@@ -159,13 +161,22 @@ export function useTextMaterials(ref) {
       if (localScope && !state.active) return;
       if (state.active) { cancelAnimationFrame(localFrame); localScope = null; localRequest++; }
       transition = state;
-      if (!state.active || state.kind === 'chapter' || reduced.matches || !state.geometryImage || state.fromTheme === 'boot') { restore(); return; }
+      if (!state.active || reduced.matches || !state.geometryImage || state.fromTheme === 'boot') { restore(); return; }
+      if (state.kind === 'chapter') {
+        if (token !== state.token) {
+          restore(); token = state.token;
+          beginTracerContourTransition(root, maskOwner, 'hold');
+        }
+        return;
+      }
       if (failedToken === state.token) return;
       try {
         if (token !== state.token) {
           restore(); token = state.token; scan();
           renderer ??= createTextContourRenderer();
           configure(state); snapshot(); applyLiveMask();
+          beginTracerContourTransition(root, maskOwner, 'crossfade');
+          maskTracerContourTransition(root, maskOwner, renderer);
         }
         paint(state);
       } catch {

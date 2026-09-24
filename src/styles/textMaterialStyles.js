@@ -7,52 +7,66 @@ export const textMaterialStyles = `
     }
   `).join('\n')}
 
-  .archive-app .archive-viewport .material-text,
-  .archive-app .archive-viewport .material-text :is(span, strong, em, small, a, p) {
-    color: var(--type-ink) !important;
-    -webkit-text-fill-color: currentColor !important;
-    text-shadow: 0 .5px .4px var(--type-shade), 0 0 2px var(--type-halo) !important;
-    letter-spacing: 0;
-    font-synthesis: none;
-  }
   .archive-app .archive-viewport .material-text {
+    --type-ink-color: var(--type-ink);
+    --type-pigment-cover: 56%;
+    --type-ink-load: 90%;
+    --type-fiber-scale: 1;
     -webkit-mask-image: none;
     mask-image: none;
   }
-  .archive-app .archive-viewport .material-text[data-text-material="relief"],
-  .archive-app .archive-viewport .material-text[data-text-material="relief"] > .scenic-text {
-    color: var(--type-face) !important;
-    -webkit-text-fill-color: transparent !important;
-    background-image: url('${import.meta.env.BASE_URL}cinematic/ui/watercolor-paper-fiber-overlay-v1.webp'),
-      linear-gradient(var(--type-angle), var(--type-face) 8%, var(--type-face) 35%, var(--type-fold) 52%, var(--type-face) 76%);
-    background-size: var(--type-grain) auto, 100% 100%;
-    background-blend-mode: soft-light, normal;
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-stroke: .2px var(--type-edge);
-    text-shadow: none !important;
-    filter: drop-shadow(0 -.5px .2px var(--type-light))
-      drop-shadow(.6px 1px .2px var(--type-edge))
-      drop-shadow(1px 2.4px 1.3px var(--type-shade));
+  .archive-app .archive-viewport .material-text[data-text-material="display-ink"] {
+    --type-ink-color: var(--type-face);
+    --type-pigment-cover: 0%;
+    --type-ink-load: 60%;
+    --type-fiber-scale: 1.6;
   }
-  .archive-app .archive-viewport .material-text[data-text-material="relief"]:has(> .scenic-text) {
-    background: none;
-    filter: none;
+  .archive-app .archive-viewport .material-text,
+  .archive-app .archive-viewport .material-text :is(span, strong, em, small, a, p) {
+    color: var(--type-ink-color) !important;
+    -webkit-text-fill-color: currentColor !important;
     -webkit-text-stroke: 0;
+    text-shadow: none !important;
+    filter: none !important;
+    letter-spacing: 0;
+    font-synthesis: none;
   }
-  .archive-app .archive-viewport .material-text :is(svg, .intro-caret, .lore-caret) { -webkit-text-fill-color: currentColor !important; }
   .archive-app .archive-viewport :is(.contour-eyebrow, [aria-pressed="true"], .chapter-rail-list .active strong).material-text {
-    color: var(--type-accent) !important;
-    text-shadow: 0 1px .5px var(--type-shade), 0 0 2px var(--type-halo) !important;
-  }
-  .archive-app .archive-viewport .lore-parchment .material-text {
-    text-shadow: 0 .6px .7px var(--type-shade), 0 0 3px var(--type-halo) !important;
+    --type-ink-color: var(--type-accent);
   }
   .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong.material-text {
-    color: var(--type-ink) !important;
-    text-shadow: 0 .6px .5px var(--type-shade), 0 0 2px var(--type-halo) !important;
+    --type-ink-color: var(--type-ink);
   }
-  .archive-app .archive-viewport .chapter-rail .chapter-rail-list button.active strong.material-text { color: var(--type-accent) !important; }
+  .archive-app .archive-viewport .chapter-rail .chapter-rail-list button.active strong.material-text {
+    --type-ink-color: var(--type-accent);
+  }
+  /* Static pigment layers leave the alpha mask exclusively to contour dissolves. */
+  @supports ((background-clip: text) or (-webkit-background-clip: text)) and (color: color-mix(in srgb, white, transparent)) {
+    .archive-app .archive-viewport .material-text,
+    .archive-app .archive-viewport .material-text :is(span, strong, em, small, a, p) {
+      -webkit-text-fill-color: transparent !important;
+      background-color: transparent;
+      background-image:
+        linear-gradient(color-mix(in srgb, currentColor var(--type-pigment-cover), transparent), color-mix(in srgb, currentColor var(--type-pigment-cover), transparent)),
+        url('${import.meta.env.BASE_URL}cinematic/ui/watercolor-paper-fiber-overlay-v1.webp'),
+        radial-gradient(ellipse at 18% 32%, currentColor 0%, transparent 52%),
+        radial-gradient(ellipse at 82% 74%, currentColor 0%, transparent 46%),
+        linear-gradient(var(--type-angle), currentColor 4%, color-mix(in srgb, currentColor var(--type-ink-load), transparent) 29%, currentColor 47%, color-mix(in srgb, currentColor var(--type-ink-load), transparent) 68%, currentColor 93%);
+      background-size: 100% 100%, calc(var(--type-grain) * var(--type-fiber-scale)) auto, 73% 100%, 89% 100%, 100% 100%;
+      background-position: 0 0, 0 0, 0 0, 100% 0, 0 0;
+      background-repeat: no-repeat, repeat, no-repeat, no-repeat, no-repeat;
+      background-blend-mode: normal, multiply, normal, normal, normal;
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+    .archive-app .archive-viewport .material-text:has(> .scenic-text) {
+      background: none;
+      text-shadow: none !important;
+    }
+  }
+  .archive-app .archive-viewport .material-text :is(svg, .intro-caret, .lore-caret) {
+    -webkit-text-fill-color: currentColor !important;
+  }
   .archive-app .archive-viewport .material-text,
   .archive-app .archive-viewport .material-text *,
   .archive-app .archive-viewport .scenic-text {
@@ -101,6 +115,7 @@ export const textMaterialStyles = `
   }
   @media (forced-colors: active) {
     .archive-app .archive-viewport .material-text,
+    .archive-app .archive-viewport .material-text :is(span, strong, em, small, a, p),
     .archive-app .archive-viewport .material-text * {
       background: none !important; -webkit-text-fill-color: CanvasText !important;
       color: CanvasText !important; filter: none !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;

@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE || 'C:/Users/prera/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json');
 const { chromium } = require('playwright');
+const sharp = require('sharp');
 const url = process.env.PREVIEW_URL || 'http://127.0.0.1:4187/prerak-portfolio/';
 const output = 'tmp/text-materials';
 await mkdir(output, { recursive: true });
@@ -66,15 +67,49 @@ try {
       face: getComputedStyle(node).getPropertyValue('--type-face'),
       font: getComputedStyle(node).fontFamily,
       material: node.dataset.textMaterial,
+      paint: (() => {
+        const style = getComputedStyle(node.querySelector('.scenic-text') || node);
+        return { color: style.color, fill: style.webkitTextFillColor, image: style.backgroundImage, clip: style.backgroundClip, filter: style.filter, shadow: style.textShadow, animation: style.animationName };
+      })(),
     }));
-    assert.equal(tokens.material, 'relief');
+    assert.equal(tokens.material, 'display-ink');
     assert(tokens.ink && tokens.face);
+    const face = tokens.face.trim().slice(1).match(/../g).map(hex => parseInt(hex, 16));
+    assert.equal(tokens.paint.color, `rgb(${face.join(', ')})`, 'Original heading palette changed');
+    assert.equal(tokens.paint.fill, 'rgba(0, 0, 0, 0)');
+    assert(tokens.paint.image.includes('watercolor-paper-fiber-overlay-v1.webp'));
+    assert(tokens.paint.clip.split(', ').every(value => value === 'text'));
+    assert.equal(tokens.paint.filter, 'none', 'Ink must not have raised bevel filters');
+    assert.equal(tokens.paint.shadow, 'none', 'A text shadow would cover the ink pigment');
+    assert.equal(tokens.paint.animation, 'none');
+    if (season === 'default') {
+      const heading = page.locator('.intro-role > .scenic-text').first();
+      const textured = await heading.screenshot();
+      const previous = await heading.evaluate(node => {
+        const value = node.getAttribute('style');
+        node.style.backgroundImage = 'linear-gradient(currentColor, currentColor)';
+        return value;
+      });
+      const flat = await heading.screenshot();
+      await heading.evaluate((node, previous) => {
+        if (previous === null) node.removeAttribute('style');
+        else node.setAttribute('style', previous);
+      }, previous);
+      const inkPixels = await sharp(textured).removeAlpha().raw().toBuffer();
+      const flatPixels = await sharp(flat).removeAlpha().raw().toBuffer();
+      let texturedPixels = 0;
+      for (let i = 0; i < inkPixels.length; i += 3) {
+        if (Math.abs(inkPixels[i] - flatPixels[i]) > 5) texturedPixels++;
+      }
+      assert(texturedPixels > 30, `Ink grain did not render: ${texturedPixels} changed pixels`);
+      report.push({ light, texturedPixels });
+    }
     materials.push(tokens);
     await page.screenshot({ path: `${output}/${season}${light ? '-light' : ''}-1440.png` });
   }
   assert.equal(new Set(materials.map(value => value.face)).size, 8);
   assert.equal(new Set(materials.map(value => value.font)).size, 1);
-  report.push({ eightMaterials: true, originalFontRetained: true });
+  report.push({ eightMaterials: true, originalFontRetained: true, originalHeadingColors: true, flatInk: true });
 
   for (const [width, height] of [[390, 844], [320, 568], [768, 1024], [844, 390]]) {
     await page.setViewportSize({ width, height });
@@ -105,6 +140,16 @@ try {
     await page.screenshot({ path: `${output}/projects-${width}.png` });
     report.push({ width, height, continuousCopy: true, loreToggle: true });
   }
+  await page.emulateMedia({ forcedColors: 'active' });
+  const accessible = await page.locator('.archive-identity strong, .intro-role > .scenic-text').evaluateAll(nodes => nodes.map(node => {
+    const style = getComputedStyle(node);
+    return { fill: style.webkitTextFillColor, background: style.backgroundImage };
+  }));
+  assert(accessible.length >= 4);
+  accessible.forEach(style => {
+    assert.notEqual(style.fill, 'rgba(0, 0, 0, 0)');
+    assert.equal(style.background, 'none');
+  });
   console.log(JSON.stringify({ report, errors }, null, 2));
   assert.deepEqual(errors, []);
 } finally { await browser.close(); }

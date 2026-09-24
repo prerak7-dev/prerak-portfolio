@@ -7264,7 +7264,7 @@ export const spatialStyles = `
   }
 
   .archive-app .chapter-rail-list button strong {
-    font-family: var(--font-navigation) !important;
+    font-family: var(--font-display) !important;
     font-weight: 400;
   }
 
