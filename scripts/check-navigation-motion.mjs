@@ -37,7 +37,8 @@ try {
           const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height };
         });
         const rail = document.querySelector('.chapter-rail');
-        window.railFrames.push({ time, points, progress: rail.dataset.motionProgress, source: rail.dataset.motionSource });
+        const flights = document.getAnimations().filter(animation => animation.id === 'chapter-rail-flight');
+        window.railFrames.push({ time, points, progress: rail.dataset.motionProgress, source: rail.dataset.motionSource, flights: flights.length });
         window.railFrame = requestAnimationFrame(sample);
       };
       window.railFrame = requestAnimationFrame(sample);
@@ -54,6 +55,8 @@ try {
     await page.waitForFunction(() => document.querySelector('.archive-viewport').classList.contains('chapter-settled') && document.querySelector('.archive-viewport').dataset.chapterCopyPhase === 'idle');
     await page.waitForFunction(() => document.querySelector('.chapter-rail').dataset.moving === 'false', null, { timeout: 8000 });
     const frames = await page.evaluate(() => { cancelAnimationFrame(window.railFrame); return window.railFrames; });
+    assert(frames.some(frame => frame.flights === 7), `${label}: flight not delegated to the compositor`);
+    assert.equal(await page.evaluate(() => document.getAnimations().filter(animation => animation.id === 'chapter-rail-flight').length), 0, 'Flight animation leaked after arrival');
     if (label === 'Cores') {
       for (const interval of [[.28, .38], [.58, .68]]) {
         const a = frames.find(frame => frame.source === 'chapter' && Number(frame.progress) >= interval[0]);
@@ -80,7 +83,8 @@ try {
           maxSpeed = Math.max(maxSpeed, Math.hypot(a.x - origin.x, a.y - origin.y) / (current.time - frames[start].time) * 1000);
         }
         if (current.time - previous.time < 25 && step > maxStep) { maxStep = step; worst = { i, current, previous }; }
-        for (const b of current.points.slice(i + 1)) {
+        // Overlap is allowed while travelling, but never at a settled destination.
+        for (const b of current.source === 'scroll' ? current.points.slice(i + 1) : []) {
           assert(!(a.x < b.x + b.width - .5 && b.x < a.x + a.width - .5 && a.y < b.y + b.height - .5 && b.y < a.y + a.height - .5), `${label}: overlapping targets`);
         }
       }

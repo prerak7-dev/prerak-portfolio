@@ -6672,7 +6672,7 @@ export const spatialStyles = `
         calc(var(--chapter-tab-x, 62vw) - 50%),
         calc(var(--chapter-tab-y, 20vh) - 50%),
         0
-      ) !important;
+      );
       transition:
         color 360ms ease,
         opacity 520ms cubic-bezier(.16, .76, .22, 1) !important;
@@ -6696,7 +6696,7 @@ export const spatialStyles = `
         calc(var(--chapter-tab-x, 62vw) - 50%),
         calc(var(--chapter-tab-y, 20vh) - 50%),
         0
-      ) !important;
+      );
     }
 
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button::before,

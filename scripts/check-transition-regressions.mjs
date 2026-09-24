@@ -61,7 +61,8 @@ try {
     const samples = [];
     while (!document.querySelector('.archive-viewport').classList.contains('chapter-settled')) {
       const node = document.querySelector('.chapter-rail-list > button');
-      samples.push([parseFloat(node.style.getPropertyValue('--chapter-tab-x')), parseFloat(node.style.getPropertyValue('--chapter-tab-y'))]);
+      const rect = node.getBoundingClientRect();
+      samples.push([rect.x, rect.y]);
       await new Promise(requestAnimationFrame);
     }
     return samples;

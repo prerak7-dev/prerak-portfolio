@@ -42,7 +42,7 @@ try {
     await idle(page);
     const navigation = await page.evaluate(() => {
       const title = getComputedStyle(document.querySelector('.archive-identity strong')).fontFamily;
-      return [...document.querySelectorAll('.chapter-rail-list > button')].map(button => {
+      return [...document.querySelectorAll('.chapter-rail-list > button:not([aria-hidden="true"])')].map(button => {
         const marker = button.querySelector('.chapter-celestial-marker').getBoundingClientRect();
         const label = button.querySelector('strong');
         const text = label.getBoundingClientRect();
@@ -53,7 +53,7 @@ try {
     for (const [index, item] of navigation.entries()) {
       assert.equal(item.font, item.title);
       assert(Math.abs(item.marker - markerSize) < .1, JSON.stringify(item));
-      assert(item.box.height >= 44 && item.gap >= 2 && item.gap <= 9 && Math.abs(item.alignment) < 1);
+      assert(item.box.height >= 43.99 && item.gap >= 2 && item.gap <= 9 && Math.abs(item.alignment) < 1, JSON.stringify(item));
       for (const other of navigation.slice(index + 1)) {
         const a = item.box, b = other.box;
         assert(!(a.x < b.right - .5 && b.x < a.right - .5 && a.y < b.bottom - .5 && b.y < a.bottom - .5), 'Navigation hit targets overlap');

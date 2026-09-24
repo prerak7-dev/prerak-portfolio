@@ -2,15 +2,15 @@ const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 // Source-image landmarks: gate edge, three-sun horizon, and the planet limb.
 // Project these through the same cover transform as the painted background.
-export function getContourContentBounds(chapter, projection, width, height, compact = width <= 1100 || height <= 700) {
+export function getContourContentBounds(chapter, projection, width, height, compact = width <= 1100 || height <= 700, landscape = width > height && (width <= 1100 || height <= 500)) {
   const margin = compact ? 22 : 44;
-  const top = compact ? (chapter === 'intro' ? Math.max(200, height * .34) : 136) : 112;
-  const landscape = compact && width >= 600 && height <= 500;
+  const top = compact ? (landscape ? 82 : chapter === 'intro' ? Math.max(200, height * .34) : 136) : 112;
   const bottom = Math.max(top + 96, height - (compact ? (chapter === 'intro' ? 230 : landscape ? 98 : 124) : 178));
   const x = value => projection.left + value * projection.width;
   const y = value => projection.top + value * projection.height;
   let left = margin;
   let right = width - margin;
+  if (landscape) right = width * .58;
   let edge = bottom;
   if (!compact) {
     if (chapter === 'intro') right = clamp(x(.365) - 24, margin + 240, width * .4);

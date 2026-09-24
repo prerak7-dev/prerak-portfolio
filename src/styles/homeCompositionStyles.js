@@ -1,4 +1,4 @@
-import { HOME_COMPACT_QUERY, NAV_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
+import { HOME_COMPACT_QUERY, NAV_COMPACT_QUERY, NAV_LANDSCAPE_QUERY } from '../utils/homeCompositionLayout.js';
 
 export const homeCompositionStyles = `
   .archive-viewport .archive-header { z-index: 40; pointer-events: none; }
@@ -12,14 +12,38 @@ export const homeCompositionStyles = `
   .archive-viewport .chapter-rail.is-orbit-rail .chapter-celestial-marker { pointer-events: auto; cursor: pointer; }
   .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button { pointer-events: auto; }
   .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed .chapter-rail-list :is(strong, .chapter-celestial-marker) { pointer-events: none; }
-  @media (min-width: 1101px) and (min-height: 501px) and (pointer: fine) {
+  @media (orientation: landscape), (min-width: 1101px) and (pointer: fine) {
+  .archive-app .archive-viewport .chapter-rail[data-layout="contour"] {
+    position: fixed !important; inset: 0 !important; width: 100% !important; height: 100% !important;
+    padding: 0; transform: none !important; pointer-events: none;
+  }
+  .archive-app .archive-viewport .chapter-rail[data-layout="contour"] .chapter-rail-list {
+    position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important;
+    display: block !important; overflow: visible !important; transform: none !important; pointer-events: none;
+  }
   .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-rail-list button {
+    position: absolute !important; inset: 0 auto auto 0 !important;
     width: var(--chapter-tab-width, 160px) !important;
     height: 44px !important; min-height: 44px !important;
     display: flex !important; align-items: center; justify-content: flex-start;
     gap: 8px; padding: 0 6px !important;
-    transform: translate3d(var(--chapter-tab-x, 0px), var(--chapter-tab-y, 0px), 0) !important;
+    transform: translate3d(var(--chapter-tab-x, 0px), var(--chapter-tab-y, 0px), 0);
+    translate: var(--chapter-drift-x, 0px) var(--chapter-drift-y, 0px);
     transition: none !important;
+  }
+  @media ${NAV_LANDSCAPE_QUERY} {
+    .archive-app .archive-viewport .chapter-rail.is-orbit-ready[data-layout="contour"] .chapter-celestial-marker {
+      width: 19.2px !important; height: 19.2px !important; flex-basis: 19.2px;
+    }
+    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-rail-list { opacity: 1; }
+    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-rail-list button:not([aria-hidden="true"]) { opacity: 1; pointer-events: auto; touch-action: none; }
+    .archive-app .archive-viewport .chapter-rail[data-layout="contour"] .chapter-collapse { display: none; }
+    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-scroll-arrow {
+      display: grid; place-items: center; position: absolute; top: var(--mobile-nav-top, 70px);
+      width: 44px; height: 44px; padding: 0; pointer-events: auto; z-index: 5;
+    }
+    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-scroll-arrow.previous { left: auto; right: 56px; }
+    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-scroll-arrow.next { left: auto; right: 12px; }
   }
   .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-celestial-marker {
     position: relative !important; inset: auto !important;
@@ -64,7 +88,8 @@ export const homeCompositionStyles = `
   .home-beat-controls { display: none; }
 
   @media ${HOME_COMPACT_QUERY} {
-    .archive-viewport .archive-header { top: 10px; left: 12px; right: 12px; height: 52px; gap: 12px; }
+    .archive-viewport { --mobile-header-top: max(10px, env(safe-area-inset-top)); --mobile-nav-top: calc(var(--mobile-header-top) + 60px); --mobile-dock-bottom: calc(18px + env(safe-area-inset-bottom)); }
+    .archive-viewport .archive-header { position: fixed; top: var(--mobile-header-top); left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); height: 52px; gap: 12px; }
     .archive-viewport .archive-identity { flex: 1; gap: 8px; padding: 0; }
     .archive-viewport .archive-identity .profile-avatar { flex: none; width: 36px; height: 36px; }
     .archive-viewport .archive-identity strong { font-size: 18px; line-height: 1.1; }
@@ -75,13 +100,10 @@ export const homeCompositionStyles = `
   @media ${NAV_COMPACT_QUERY} {
     .archive-viewport .chapter-rail.is-orbit-rail,
     .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed {
-      position: absolute !important; inset: 70px 8px auto !important;
+      position: fixed !important; inset: var(--mobile-nav-top) 8px auto !important;
       width: calc(100% - 16px) !important; height: 52px !important;
       display: block !important;
       opacity: 1; z-index: 30; pointer-events: auto; padding: 0 34px; transform: none !important;
-    }
-    .archive-viewport[data-chapter="intro"] .chapter-rail.is-orbit-rail {
-      inset: auto 8px max(8px, env(safe-area-inset-bottom)) !important;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-collapse { display: none; }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list,
@@ -89,6 +111,7 @@ export const homeCompositionStyles = `
       position: static !important; inset: auto !important; display: flex !important; align-items: center;
       width: 100% !important; height: 52px !important; overflow-x: auto !important; overflow-y: hidden !important;
       scrollbar-width: none; gap: 4px; opacity: 1; transform: none !important; pointer-events: auto;
+      overscroll-behavior-x: contain; touch-action: pan-x; scroll-padding-inline: 8px;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button,
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button.active,
@@ -137,8 +160,10 @@ export const homeCompositionStyles = `
       width: 158px; transform: none !important;
     }
     .archive-viewport .home-composition .intro-gate-cta { width: 158px; min-width: 0; min-height: 44px; padding: 4px 6px; font-size: 16px; }
-    .archive-viewport .spatial-hud.theme-switcher { bottom: calc(18px + env(safe-area-inset-bottom)); left: 10px; padding: 9px 11px; }
-    .archive-viewport[data-chapter="intro"] .spatial-hud.theme-switcher { bottom: calc(66px + env(safe-area-inset-bottom)); }
+    .archive-viewport .spatial-hud.theme-switcher {
+      position: fixed; inset: auto auto var(--mobile-dock-bottom) max(10px, env(safe-area-inset-left));
+      padding: 9px 11px; transform: none !important; translate: none; animation: none; transition: none;
+    }
     .archive-viewport .archive-progress { display: none; }
     .archive-viewport .theme-switcher .theme-icon-row { gap: 0; }
     .archive-viewport .theme-switcher .theme-icon-row button { width: 44px; height: 44px; min-width: 44px; }
@@ -158,30 +183,25 @@ export const homeCompositionStyles = `
     .archive-app .archive-viewport .spatial-lore-guide,
     .archive-app .archive-viewport .spatial-lore-guide.is-collapsed {
       position: fixed; inset: 0 !important; width: 100%; height: 100%; min-height: 0;
-      padding: 0; scale: 1; transform: none; animation: none; pointer-events: none;
+      padding: 0; scale: 1; transform: none !important; translate: none; animation: none; pointer-events: none;
     }
     .archive-app .archive-viewport .spatial-lore-guide .lore-medallion {
-      position: absolute; left: auto; right: 12px; top: auto; bottom: calc(18px + env(safe-area-inset-bottom));
+      position: absolute; left: auto; right: max(12px, env(safe-area-inset-right)); top: auto; bottom: var(--mobile-dock-bottom);
       width: 64px; height: 64px; transform: none;
     }
     .archive-app .archive-viewport .spatial-lore-guide .lore-toggle {
-      position: absolute; inset: auto 12px calc(18px + env(safe-area-inset-bottom)) auto;
+      position: absolute; inset: auto max(12px, env(safe-area-inset-right)) var(--mobile-dock-bottom) auto;
       width: 64px; height: 64px; transform: none; pointer-events: auto;
     }
     .archive-app .archive-viewport .spatial-lore-guide .lore-toggle .triangle-pointer { position: absolute; left: 0; top: 26px; }
-    .archive-app .archive-viewport[data-chapter="intro"] .spatial-lore-guide :is(.lore-medallion, .lore-toggle) { bottom: calc(66px + env(safe-area-inset-bottom)); }
     .archive-app .archive-viewport .spatial-lore-guide .lore-parchment {
-      position: absolute; left: 20px; right: 20px; top: 142px; bottom: auto;
-      width: auto; max-height: calc(100dvh - 272px); min-height: 0; height: auto;
+      position: absolute; left: auto; right: max(20px, env(safe-area-inset-right)); top: calc(var(--mobile-header-top) + 72px); bottom: calc(var(--mobile-dock-bottom) + 82px);
+      width: min(440px, calc(100% - 40px)); max-height: none; min-height: 0; height: auto;
       display: block;
       padding: 6px 8px 12px; overflow: auto; overscroll-behavior: contain;
       scrollbar-width: thin; transform: none; clip-path: none;
     }
     .archive-app .archive-viewport .spatial-lore-guide .lore-parchment p { font-size: 19.38px; line-height: 1.45; }
-    .archive-app .archive-viewport[data-chapter="intro"] .spatial-lore-guide .lore-parchment {
-      left: var(--home-sky-left, 20px); right: auto; top: var(--home-sky-top, 72px);
-      width: var(--home-sky-width, calc(100% - 40px)); max-height: var(--home-sky-height, 130px);
-    }
     .archive-app .archive-viewport:has(.spatial-lore-guide:not(.is-collapsed)) .archive-scene-stack {
       opacity: 0; visibility: hidden; pointer-events: none;
     }
@@ -196,6 +216,14 @@ export const homeCompositionStyles = `
     .archive-viewport .contour-content p { font-size: 19px; }
     .archive-viewport .case-focus-modes button { width: 44px; }
     .archive-viewport .case-focus-modes button span { display: none; }
+  }
+  @media ${NAV_COMPACT_QUERY} {
+    .archive-viewport .home-composition .intro-copy-stage { top: calc(var(--mobile-nav-top) + 64px); bottom: calc(var(--mobile-dock-bottom) + 90px); }
+    .archive-app .archive-viewport .spatial-lore-guide .lore-parchment { top: calc(var(--mobile-nav-top) + 64px); }
+  }
+  @media ${NAV_LANDSCAPE_QUERY} {
+    .archive-viewport .home-composition .intro-copy-stage { top: calc(var(--mobile-header-top) + 72px); right: calc(38% + 16px); bottom: calc(var(--mobile-dock-bottom) + 138px); }
+    .archive-viewport .home-composition .intro-gate-entry { left: 20px; right: auto; bottom: calc(var(--mobile-dock-bottom) + 78px); }
   }
   @media (max-height: 700px) {
     .archive-viewport .contour-content { gap: 4px; }
@@ -212,7 +240,7 @@ export const homeCompositionStyles = `
     .archive-viewport .archive-header-actions a { font-size: 13px; }
   }
   @media (max-height: 500px) and (min-width: 600px) {
-    .archive-viewport .contour-content { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: 1fr 44px; column-gap: 18px; }
+    .archive-viewport .contour-content { display: flex; flex-direction: column; gap: 12px; }
     .archive-viewport .contour-content .contour-focus { justify-content: flex-start; padding: 0; }
     .archive-viewport .contour-content .contour-eyebrow { margin-bottom: 4px; font-size: 13px; }
     .archive-viewport .contour-content p { font-size: 16px; line-height: 1.25; }

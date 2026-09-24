@@ -20,7 +20,7 @@ test('rail packing keeps complete targets separate inside the viewport', () => {
   }
 });
 
-test('contour morphs remain disjoint and settle exactly on their curves in both directions', () => {
+test('flights stay within the viewport and arrive with continuous velocity and acceleration', () => {
   for (const [width, height] of [[1440,900], [1366,650], [768,1024]]) {
     const bounds = { left:16, right:width-16, top:82, bottom:height-78 };
     const sizes = [110,113,174,157,153,164,135];
@@ -36,19 +36,58 @@ test('contour morphs remain disjoint and settle exactly on their curves in both 
     }));
     for (const from of layouts) for (const to of layouts) {
       const journey = createRailJourney(from, to, bounds);
+      const frames = [];
       for (let frame=0;frame<=120;frame++) {
-        for (const items of [interpolateRailLayout(from,to,frame/120,bounds), journey(frame/120)]) {
-          for (const item of items) {
-            assert(item.x >= bounds.left - .1 && item.x + item.width <= bounds.right + .1, `${width}: contour outside horizontal bounds at ${frame}`);
-            assert(item.y >= bounds.top - .1 && item.y + item.height <= bounds.bottom + .1, `${height}: contour outside vertical bounds`);
-          }
-          for(let i=0;i<7;i++) for(let j=i+1;j<7;j++) assert(!railItemsOverlap(items[i],items[j],5.8), `${width}: frame ${frame}, ${i}/${j}`);
+        const items = journey(frame/120);
+        frames.push(items);
+        for (const item of items) {
+          assert(item.x >= bounds.left - .1 && item.x + item.width <= bounds.right + .1, `${width}: contour outside horizontal bounds at ${frame}`);
+          assert(item.y >= bounds.top - .1 && item.y + item.height <= bounds.bottom + .1, `${height}: contour outside vertical bounds`);
         }
       }
+      from.forEach((point, i) => {
+        const distance = Math.hypot(to[i].x - point.x, to[i].y - point.y);
+        const steps = frames.slice(1).map((items, f) => ({ x: items[i].x - frames[f][i].x, y: items[i].y - frames[f][i].y }));
+        assert(steps.reduce((sum, step) => sum + Math.hypot(step.x, step.y), 0) <= distance * 1.4 + .001, 'Orbit made an unnecessary extra turn');
+        for (const step of [steps[0], steps.at(-1)]) assert(Math.hypot(step.x, step.y) < distance * .00003 + .001, 'Abrupt departure or arrival');
+        const accelerations = steps.slice(1).map((step, f) => ({ x: step.x - steps[f].x, y: step.y - steps[f].y }));
+        accelerations.forEach((acceleration, f) => {
+          assert(Math.hypot(acceleration.x, acceleration.y) < distance * .002 + .001, 'Velocity discontinuity');
+          if (f) assert(Math.hypot(acceleration.x - accelerations[f - 1].x, acceleration.y - accelerations[f - 1].y) < distance * .0002 + .001, 'Acceleration discontinuity');
+        });
+      });
       assert.deepEqual(interpolateRailLayout(from,to,1,bounds),to);
       assert.deepEqual(journey(1), to);
     }
   }
+});
+
+test('crossing flights may overlap without repelling or stopping one another', () => {
+  const bounds = { left: 16, right: 1000, top: 82, bottom: 822 };
+  const from = [{ x: 100, y: 200, width: 100, height: 44 }, { x: 700, y: 200, width: 100, height: 44 }];
+  const to = [from[1], from[0]];
+  const journey = createRailJourney(from, to, bounds);
+  assert(railItemsOverlap(...journey(.5)), 'Flights should cross freely');
+  assert(journey(.5)[0].y > 390, 'Missing orbital sweep');
+  assert(journey(.6)[0].x > journey(.4)[0].x + 150, 'Flight hesitated at the crossing');
+  assert.deepEqual(journey(0), from);
+  assert.deepEqual(journey(1), to);
+});
+
+test('satellites travel a true elliptical orbit with tangential departure', () => {
+  const bounds = { left: 16, right: 1100, top: 82, bottom: 822 };
+  const from = [{ x: 200, y: 200, width: 100, height: 44 }];
+  const to = [{ ...from[0], x: 800 }];
+  const journey = createRailJourney(from, to, bounds);
+  const minorRadius = journey(.5)[0].y - 200;
+  assert(minorRadius > 190);
+  for (let frame = 1; frame < 120; frame++) {
+    const point = journey(frame / 120)[0];
+    const ellipse = ((point.x - 500) / 300) ** 2 + ((point.y - 200) / minorRadius) ** 2;
+    assert(Math.abs(ellipse - 1) < .000001, 'Satellite left its elliptical orbit');
+  }
+  const departure = journey(.1)[0];
+  assert(departure.y - 200 > (departure.x - 200) * 10, 'Departure should sweep tangentially around the orbit');
 });
 
 test('the rail bends throughout the handoff without a straight transit-lane plateau', () => {

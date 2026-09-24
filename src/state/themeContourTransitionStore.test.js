@@ -111,12 +111,16 @@ test('direct chapter navigation commits one destination under the dissolve and f
     duration: 300,
   });
   advance(16);
+  assert.equal(getThemeContourTransition().startedAt, 16);
+  assert.equal(getThemeContourTransition().duration, 300);
   assert.deepEqual(visits, [6]);
   assert.equal(getThemeContourTransition().active, true);
   assert.equal(getThemeContourTransition().targetSceneIndex, 5);
   assert.equal(getThemeContourTransition().targetChapterIndex, 6);
   assert.equal(completed, false);
   advance(150);
+  assert.equal(getThemeContourTransition().linearProgress, .5);
+  assert.equal(getThemeContourTransition().startedAt, 16);
   assert.ok(getThemeContourTransition().progress > 0);
   assert.ok(getThemeContourTransition().progress < 1);
   assert.equal(completed, false);

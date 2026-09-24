@@ -1,7 +1,8 @@
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 export const HOME_COMPACT_QUERY = '(max-width: 1100px), (max-height: 700px), (pointer: coarse)';
-export const NAV_COMPACT_QUERY = '(max-width: 1100px), (max-height: 500px), (pointer: coarse)';
+export const NAV_COMPACT_QUERY = '(orientation: portrait) and (max-width: 1100px), (orientation: portrait) and (pointer: coarse)';
+export const NAV_LANDSCAPE_QUERY = '(orientation: landscape) and (max-width: 1100px), (orientation: landscape) and (max-height: 500px), (orientation: landscape) and (pointer: coarse)';
 
 // Landmarks shared by the eight authored Home paintings, in source-image space.
 export function getHomeCompositionLayout(projection, width, height, headerBottom = 80, compact = width <= 1100 || height <= 700) {

@@ -18,7 +18,7 @@ test('Home reading areas stay below the header and hold three role lines', () =>
 
 test('short landscape chapters reserve the theme and lore control dock', () => {
   const bounds = getContourContentBounds('projects', { left: 0, top: 0, width: 844, height: 475 }, 844, 390);
-  assert.equal(bounds.top, 136);
+  assert.equal(bounds.top, 82);
   assert.equal(bounds.top + bounds.height, 292);
-  assert(bounds.left + bounds.width <= 822);
+  assert(bounds.left + bounds.width <= 844 * .58);
 });

@@ -1,12 +1,12 @@
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { CHAPTER_RAIL_STAGES } from '../data/chapterRailCelestialData.js';
 import { cinematicSmootherStep, getCinematicSceneReveals } from '../data/cinematicSceneTimeline.js';
 import { subscribeSpatialMotion } from '../state/spatialMotionStore.js';
 import { subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { setCachedStyleProperty, toggleCachedClass } from '../utils/motionPerformance.js';
-import { NAV_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
-import { containRailLayout, createRailJourney, interpolateRailLayout, separateRailItems } from '../utils/chapterRailLayout.js';
+import { NAV_COMPACT_QUERY, NAV_LANDSCAPE_QUERY } from '../utils/homeCompositionLayout.js';
+import { createRailJourney, interpolateRailLayout, separateRailItems } from '../utils/chapterRailLayout.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -131,7 +131,10 @@ function getStageTransition(scenePosition) {
   return { fromIndex: 6, toIndex: 6, mix: 0 };
 }
 
-export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
+export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railWindow }) {
+  const windowRef = useRef(railWindow);
+  windowRef.current = railWindow;
+  const invalidateRef = useRef(null);
   useLayoutEffect(() => {
     const rail = railRef.current;
     if (!rail || itemCount < 1) return undefined;
@@ -141,10 +144,16 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
     let disposed = false;
     let navigation = null;
     let renderedItems = [];
+    let flights = [];
     const compactQuery = window.matchMedia(NAV_COMPACT_QUERY);
+    const landscapeQuery = window.matchMedia(NAV_LANDSCAPE_QUERY);
     const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let labelSizes = [];
     const projectionNodes = new Map();
+    const cancelFlights = () => {
+      flights.forEach(flight => flight.cancel());
+      flights = [];
+    };
 
     const readStageImage = (selector) => {
       const cached = projectionNodes.get(selector);
@@ -163,7 +172,23 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
       const isDesktop = !compactQuery.matches;
       toggleCachedClass(rail, 'is-orbit-ready', isDesktop);
       rail.dataset.layout = isDesktop ? 'contour' : 'compact';
+      const windowed = isDesktop && landscapeQuery.matches && windowRef.current.count < itemCount;
+      const visibleStart = windowed ? windowRef.current.start : 0;
+      const visibleCount = windowed ? windowRef.current.count : itemCount;
+      rail.dataset.windowed = String(windowed);
+      rail.dataset.visibleStart = String(visibleStart);
+      rail.dataset.visibleCount = String(visibleCount);
+      itemRefs.current.forEach((item, index) => {
+        const hidden = index < visibleStart || index >= visibleStart + visibleCount;
+        if (item.inert !== hidden) {
+          item.style.visibility = hidden ? 'hidden' : '';
+          item.inert = hidden;
+          if (hidden) item.setAttribute('aria-hidden', 'true'); else item.removeAttribute('aria-hidden');
+        }
+      });
       if (!isDesktop) {
+        cancelFlights();
+        if (navigation) { navigation.journey = null; navigation.items = []; }
         rail.dataset.moving = 'false';
         return;
       }
@@ -178,58 +203,101 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
         : getStageTransition(scenePosition);
       rail.dataset.motionProgress = transition.mix.toFixed(4);
       rail.dataset.motionSource = navigation ? 'chapter' : 'scroll';
-      const bounds = { left: 16, right: innerWidth - 16, top: 82, bottom: innerHeight - 78 };
+      const landscape = landscapeQuery.matches;
+      const bounds = { left: landscape ? innerWidth * .62 : 16, right: innerWidth - 16, top: windowed ? 122 : 82, bottom: innerHeight - (landscape ? 96 : 78) };
+      const markerSize = landscapeQuery.matches ? 19.2 : 24;
+      const markerCenter = 6 + markerSize / 2;
       const layout = stageIndex => {
         const source = CHAPTER_RAIL_STAGES[stageIndex];
         const projection = readStageProjection(source, fallback);
         const stage = resolveStage(source, projection);
-        const fitsRow = labelSizes.reduce((sum, size) => sum + size.width + 50, -6) <= bounds.right - bounds.left;
-        const axis = (stageIndex === 1 || stageIndex === 6) && fitsRow ? 'x' : 'y';
+        const sizes = labelSizes.slice(visibleStart, visibleStart + visibleCount);
+        const fitsRow = sizes.reduce((sum, size) => sum + size.width + markerSize + 26, -6) <= bounds.right - bounds.left;
+        const axis = !landscape && (stageIndex === 1 || stageIndex === 6) && fitsRow ? 'x' : 'y';
         const routes = new Map();
-        for (let i = 0; i < itemCount; i++) for (let j = i + 1; j < itemCount; j++) routes.set(`${i}:${j}`, { axis, sign: -1 });
-        const anchors = labelSizes.map((size, index) => {
-          const point = projectStagePoint(stage, index, itemCount, projection);
-          return { x: point.x - 18, y: point.y - 22, width: size.width + 44, height: 44 };
+        for (let i = 0; i < visibleCount; i++) for (let j = i + 1; j < visibleCount; j++) routes.set(`${i}:${j}`, { axis, sign: -1 });
+        const anchors = sizes.map((size, index) => {
+          const point = projectStagePoint(stage, index, visibleCount, projection);
+          return { x: point.x - markerCenter, y: point.y - 22, width: size.width + markerSize + 20, height: 44 };
         });
+        if (landscape) {
+          const left = Math.min(...anchors.map(point => point.x));
+          const span = Math.max(1, Math.max(...anchors.map(point => point.x)) - left);
+          const available = Math.max(0, bounds.right - bounds.left - Math.max(...anchors.map(point => point.width)));
+          anchors.forEach((point, index) => {
+            const contour = (point.x - left) / span;
+            const sceneAnchor = clamp(point.x / innerWidth);
+            point.x = bounds.left + (contour * .55 + sceneAnchor * .45) * available;
+            point.y = bounds.top + index / Math.max(1, visibleCount - 1) * (bounds.bottom - bounds.top - 44);
+          });
+        }
         if (axis === 'x') {
           const top = Math.min(...anchors.map(point => point.y));
           const bottom = Math.max(...anchors.map(point => point.y + point.height));
           const shift = Math.max(0, bounds.top - top) + Math.min(0, bounds.bottom - bottom);
           anchors.forEach(point => { point.y += shift; });
         }
-        return separateRailItems(anchors, bounds, 6, routes);
+        const visible = separateRailItems(anchors, bounds, 6, routes);
+        return labelSizes.map((_, index) => visible[clamp(index - visibleStart, 0, visibleCount - 1)]);
       };
       const from = navigation?.items.length === itemCount ? navigation.items : layout(transition.fromIndex);
       const to = layout(transition.toIndex);
       let buttons;
+      let baseButtons;
+      let flightDrift;
       if (navigation) {
         if (!navigation.journey) {
+          cancelFlights();
+          navigation.items = from;
           navigation.destination = to;
           navigation.journey = createRailJourney(from, to, bounds);
         }
-        const follow = cinematicSmootherStep(transition.mix);
-        buttons = containRailLayout(navigation.journey(transition.mix).map((item, index) => ({
+        const progress = reducedQuery.matches ? 1 : clamp((transition.mix - navigation.segmentStart) / (1 - navigation.segmentStart || 1));
+        const follow = cinematicSmootherStep(progress);
+        const drift = to.map((item, index) => ({
+          x: (item.x - navigation.destination[index].x) * follow,
+          y: (item.y - navigation.destination[index].y) * follow,
+        }));
+        buttons = navigation.journey(progress).map((item, index) => ({
           ...item,
-          x: item.x + (to[index].x - navigation.destination[index].x) * follow,
-          y: item.y + (to[index].y - navigation.destination[index].y) * follow,
-        })), bounds);
+          x: item.x + drift[index].x,
+          y: item.y + drift[index].y,
+        }));
+        if (!flights.length && navigation.startedAt && !reducedQuery.matches && progress < 1) {
+          // Animate the long flight on the compositor; JS only tracks the small
+          // drift of the painting underneath it. A busy dissolve cannot stall it.
+          const poses = Array.from({ length: 121 }, (_, index) => navigation.journey(index / 120));
+          flights = itemRefs.current.map((item, index) => {
+            const flight = item.animate(poses.map((pose, frameIndex) => ({
+              offset: frameIndex / 120,
+              transform: `translate3d(${pose[index].x}px, ${pose[index].y}px, 0)`,
+            })), { duration: navigation.duration * (1 - navigation.segmentStart), fill: 'both', easing: 'linear' });
+            flight.id = 'chapter-rail-flight';
+            flight.startTime = navigation.startedAt + navigation.duration * navigation.segmentStart;
+            return flight;
+          });
+        }
+        if (flights.length) { baseButtons = from; flightDrift = drift; }
       } else {
+        cancelFlights();
         buttons = interpolateRailLayout(from, to, transition.mix, bounds);
       }
       const moving = transition.mix > 0 && transition.mix < 1;
       if (rail.dataset.moving !== String(moving)) rail.dataset.moving = String(moving);
       renderedItems = buttons;
-      buttons.forEach(({ x, y, width }, index) => {
+      (baseButtons || buttons).forEach(({ x, y, width }, index) => {
         const item = itemRefs.current[index];
         setCachedStyleProperty(item, '--chapter-tab-x', `${x.toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-tab-y', `${y.toFixed(2)}px`);
+        setCachedStyleProperty(item, '--chapter-drift-x', `${(flightDrift?.[index].x || 0).toFixed(2)}px`);
+        setCachedStyleProperty(item, '--chapter-drift-y', `${(flightDrift?.[index].y || 0).toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-tab-width', `${width}px`);
         setCachedStyleProperty(item, '--chapter-label-opacity', '1');
       });
 
       const finalPoint = renderedItems[itemCount - 1];
       if (finalPoint) {
-        setCachedStyleProperty(rail, '--chapter-collapse-x', `${(finalPoint.x + 18).toFixed(2)}px`);
+        setCachedStyleProperty(rail, '--chapter-collapse-x', `${(finalPoint.x + markerCenter).toFixed(2)}px`);
         setCachedStyleProperty(rail, '--chapter-collapse-y', `${(finalPoint.y + 76).toFixed(2)}px`);
       }
       // The painted plate keeps drifting after scroll settles. Read its live
@@ -243,11 +311,20 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
 
     const handleResize = () => {
       if (disposed) return;
+      if (navigation) {
+        navigation.items = itemRefs.current.map(item => {
+          const { x, y, width, height } = item.getBoundingClientRect();
+          return { x, y, width, height };
+        });
+        navigation.segmentStart = navigation.progress;
+        navigation.journey = null;
+      }
       labelSizes = [];
       renderedItems = [];
       projectionNodes.clear();
       scheduleRender();
     };
+    invalidateRef.current = handleResize;
 
     const unsubscribe = subscribeSpatialMotion((motion) => {
       scenePosition = motion.scenePosition;
@@ -263,9 +340,12 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
             target: transition.targetChapterIndex,
             items: renderedItems.slice(),
             progress: 0,
+            segmentStart: 0,
           };
         }
-        navigation.progress = transition.progress;
+        navigation.progress = transition.linearProgress;
+        navigation.startedAt = transition.startedAt;
+        navigation.duration = transition.duration;
       } else {
         navigation = null;
       }
@@ -275,21 +355,24 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef }) {
     window.addEventListener('resize', handleResize, { passive: true });
     window.visualViewport?.addEventListener('resize', handleResize, { passive: true });
     compactQuery.addEventListener?.('change', handleResize);
-    reducedQuery.addEventListener?.('change', scheduleRender);
+    reducedQuery.addEventListener?.('change', handleResize);
     document.addEventListener('visibilitychange', scheduleRender);
     document.fonts.ready.then(handleResize);
 
     return () => {
       disposed = true;
+      invalidateRef.current = null;
       unsubscribe();
       unsubscribeNavigation();
+      cancelFlights();
       window.cancelAnimationFrame(frame);
       window.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('resize', handleResize);
       compactQuery.removeEventListener?.('change', handleResize);
-      reducedQuery.removeEventListener?.('change', scheduleRender);
+      reducedQuery.removeEventListener?.('change', handleResize);
       document.removeEventListener('visibilitychange', scheduleRender);
       rail.classList.remove('is-orbit-ready');
     };
   }, [itemCount, itemRefs, railRef]);
+  useLayoutEffect(() => { invalidateRef.current?.(); }, [railWindow.start, railWindow.count]);
 }
