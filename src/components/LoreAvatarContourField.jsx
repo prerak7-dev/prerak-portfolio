@@ -1,10 +1,11 @@
 import { memo, useEffect, useRef } from 'react';
 import { getSwarmScenePalette } from '../data/swarmScenePalettes.js';
+import { createTracerAnimation } from '../utils/tracerAnimation.js';
+import { sampleTracerPoint } from '../utils/tracerMotion.js';
 
 const SAMPLE_SIZE = 288;
 const CONTOUR_POINTS = 240;
 const ALPHA_THRESHOLD = 28;
-const STOP_MOTION_FRAME_MS = 120;
 
 const TRACER_PROFILE = Object.freeze({
   cycleMs: 9400,
@@ -119,12 +120,11 @@ function strokeContour(context, points, color, alpha, width, blur) {
 
 function drawTracer(context, points, headIndex, palette, profile, time) {
   const trailLength = Math.max(12, Math.round(points.length * profile.trailRatio));
-  const pointCount = points.length;
   const pulse = 0.88 + Math.sin((time / profile.pulseMs) * Math.PI * 2) * 0.12;
   const intensity = profile.intensity * pulse;
   const trail = [];
   for (let distance = trailLength; distance >= 0; distance -= 1) {
-    trail.push(points[wrap(headIndex - profile.direction * distance, pointCount)]);
+    trail.push(sampleTracerPoint(points, headIndex - profile.direction * distance, true));
   }
   const start = trail[0];
   const head = trail[trail.length - 1];
@@ -153,7 +153,7 @@ function drawTracer(context, points, headIndex, palette, profile, time) {
   context.lineWidth = 0.62;
   context.stroke();
 
-  const tangentPoint = points[wrap(headIndex + profile.direction * 3, pointCount)];
+  const tangentPoint = sampleTracerPoint(points, headIndex + profile.direction * 3, true);
   const tangentLength = Math.max(0.001, Math.hypot(tangentPoint.x - head.x, tangentPoint.y - head.y));
   const tangentX = (tangentPoint.x - head.x) / tangentLength;
   const tangentY = (tangentPoint.y - head.y) / tangentLength;
@@ -185,19 +185,20 @@ export const LoreAvatarContourField = memo(function LoreAvatarContourField({ the
     const canvas = canvasRef.current;
     const figure = canvas?.parentElement;
     if (!canvas || !figure) return undefined;
+    const context = canvas.getContext('2d');
+    if (!context) return undefined;
 
     const image = figure.querySelector('.lore-avatar-image.is-current');
     if (!image) return undefined;
 
     const appearance = getSwarmScenePalette(theme, 0, 'wayfinder');
     const palette = { core: appearance.colors[0], glow: appearance.colors[1] };
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let contour = [];
-    let timer = 0;
+    let silhouette;
+    let animation;
     let disposed = false;
     let cssWidth = 1;
     let cssHeight = 1;
-    let lastStopMotionFrame = -1;
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
@@ -206,34 +207,22 @@ export const LoreAvatarContourField = memo(function LoreAvatarContourField({ the
       const pixelRatio = Math.min(1.5, window.devicePixelRatio || 1);
       canvas.width = Math.max(1, Math.round(cssWidth * pixelRatio));
       canvas.height = Math.max(1, Math.round(cssHeight * pixelRatio));
-      const context = canvas.getContext('2d');
-      context?.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     };
 
     const rebuild = () => {
       if (disposed || !image.complete || !image.naturalWidth) return;
       resize();
-      contour = extractSilhouette(image).map((point) => ({
+      silhouette ??= extractSilhouette(image);
+      contour = silhouette.map((point) => ({
         x: (point.x / SAMPLE_SIZE) * cssWidth,
         y: (point.y / SAMPLE_SIZE) * cssHeight,
       }));
     };
 
-    const render = (time = 0) => {
-      if (disposed) return;
-      const context = canvas.getContext('2d');
-      if (!context || !contour.length) {
-        timer = window.setTimeout(() => render(performance.now()), STOP_MOTION_FRAME_MS);
-        return;
-      }
-
-      const stopMotionFrame = Math.floor(time / STOP_MOTION_FRAME_MS);
-      if (!reducedMotion && stopMotionFrame === lastStopMotionFrame) {
-        timer = window.setTimeout(() => render(performance.now()), STOP_MOTION_FRAME_MS);
-        return;
-      }
-      lastStopMotionFrame = stopMotionFrame;
-      const steppedTime = stopMotionFrame * STOP_MOTION_FRAME_MS;
+    const render = ({ time, reducedMotion }) => {
+      if (disposed || !contour.length) return;
+      const milliseconds = time * 1000;
 
       context.clearRect(0, 0, cssWidth, cssHeight);
       context.save();
@@ -246,31 +235,27 @@ export const LoreAvatarContourField = memo(function LoreAvatarContourField({ the
       if (reducedMotion) {
         strokeContour(context, contour, palette.core, 0.7, 1.2, 0);
       } else {
-        const drift = Math.sin(steppedTime / TRACER_PROFILE.driftMs) * 0.014;
+        const drift = Math.sin(milliseconds / TRACER_PROFILE.driftMs) * 0.014;
         const phase = wrap(
           TRACER_PROFILE.offset
-          + TRACER_PROFILE.direction * (steppedTime / TRACER_PROFILE.cycleMs)
+          + TRACER_PROFILE.direction * (milliseconds / TRACER_PROFILE.cycleMs)
           + drift,
           1,
         );
-        const headIndex = Math.floor(phase * contour.length);
-        drawTracer(context, contour, headIndex, palette, TRACER_PROFILE, steppedTime);
+        const headIndex = phase * contour.length;
+        drawTracer(context, contour, headIndex, palette, TRACER_PROFILE, milliseconds);
       }
       context.restore();
-
-      if (!reducedMotion) {
-        timer = window.setTimeout(() => render(performance.now()), STOP_MOTION_FRAME_MS);
-      }
     };
 
     const start = () => {
       rebuild();
-      window.clearTimeout(timer);
-      render(performance.now());
+      animation?.invalidate();
     };
 
     const observer = new ResizeObserver(start);
     observer.observe(figure);
+    animation = createTracerAnimation(render);
 
     if (image.complete && image.naturalWidth) {
       start();
@@ -282,7 +267,7 @@ export const LoreAvatarContourField = memo(function LoreAvatarContourField({ the
       disposed = true;
       observer.disconnect();
       image.removeEventListener('load', start);
-      window.clearTimeout(timer);
+      animation.dispose();
     };
   }, [theme, imageSrc]);
 

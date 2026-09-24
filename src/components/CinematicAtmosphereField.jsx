@@ -7,6 +7,7 @@ import { getCinematicSceneReveals } from '../data/cinematicSceneTimeline.js';
 import { getSwarmScenePalette } from '../data/swarmScenePalettes.js';
 import { getTracerSceneBlend } from '../data/tracerSceneFields.js';
 import { getSpatialMotion, subscribeSpatialMotion } from '../state/spatialMotionStore.js';
+import { createTracerAnimation } from '../utils/tracerAnimation.js';
 import {
   getFocusedCinematicStreamlines,
   loadCinematicGeometryField,
@@ -117,6 +118,8 @@ function drawGeometryScene({
   time,
   power,
   quality,
+  clipWidth,
+  clipHeight,
 }) {
   if (!geometry || weight < 0.002) return;
   drawGeometryStreamlines({
@@ -128,6 +131,8 @@ function drawGeometryScene({
     time,
     power,
     quality,
+    clipWidth,
+    clipHeight,
     densityScale: 1.08,
     alphaScale: 1.62,
     widthScale: 1.2,
@@ -138,9 +143,11 @@ function drawGeometryScene({
 export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({ theme = 'default' }) {
   const canvasRef = useRef(null);
   const themeRef = useRef(theme);
+  const animationRef = useRef(null);
 
   useEffect(() => {
     themeRef.current = theme;
+    animationRef.current?.invalidate();
   }, [theme]);
 
   useEffect(() => {
@@ -152,13 +159,10 @@ export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({
     const resources = new Map();
     const motion = { ...getSpatialMotion() };
     const projectionNodes = new Array(SCENE_PROJECTION_SELECTORS.length).fill(null);
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let disposed = false;
-    let frame = 0;
-    let previousTimestamp = 0;
+    let animation;
     let cinematicTime = 0;
     let flowSpeed = 1;
-    let lastRenderedTimestamp = 0;
     let width = 1;
     let height = 1;
     let renderedPixelRatio = 0;
@@ -170,7 +174,10 @@ export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({
       resources.set(filename, null);
       loadCinematicGeometryField(filename)
         .then((resource) => {
-          if (!disposed) resources.set(filename, resource);
+          if (!disposed) {
+            resources.set(filename, resource);
+            animation?.invalidate();
+          }
         })
         .catch(() => {
           if (!disposed) resources.set(filename, false);
@@ -180,6 +187,7 @@ export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({
 
     const unsubscribe = subscribeSpatialMotion((next) => {
       Object.assign(motion, next);
+      animation?.invalidate();
     });
 
     const resize = () => {
@@ -272,6 +280,8 @@ export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({
           time,
           power,
           quality,
+          clipWidth: width,
+          clipHeight: height,
         });
       });
     };
@@ -349,46 +359,21 @@ export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({
       });
     };
 
-    const draw = (timestamp = 0) => {
+    const draw = ({ delta: elapsed, reducedMotion }) => {
       const root = document.documentElement;
       const quality = root.classList.contains('motion-quality-low')
         ? 0.62
         : root.classList.contains('motion-quality-balanced')
           ? 0.82
           : 1;
-      const displayHz = Math.max(60, Number(root.dataset.displayHz) || 60);
       const isTransitioning = Math.abs(
         motion.scenePosition - Math.round(motion.scenePosition)
       ) > 0.001 || Math.abs(motion.velocity) > 0.01;
-      // While transitioning (user is actively scrolling), continue to render
-      // at a reduced quality instead of skipping frames entirely. Skipping
-      // frames can leave the render loop dormant if the motion settling
-      // signals are slightly noisy; this keeps tracers and animated text
-      // responsive during scroll-based navigation.
+      // Reduce path count under load, not the cadence of visible motion.
       let renderQuality = quality;
       if (isTransitioning && !reducedMotion) {
         renderQuality = Math.max(0.5, quality * 0.66);
       }
-      const idleTargetHz = renderQuality < 0.7
-        ? 24
-        : renderQuality < 0.9
-          ? Math.min(36, displayHz)
-          : Math.min(60, displayHz);
-      const ambientTargetHz = idleTargetHz;
-      const targetInterval = 1000 / ambientTargetHz;
-      if (
-        !reducedMotion
-        && lastRenderedTimestamp
-        && timestamp - lastRenderedTimestamp < targetInterval - 0.4
-      ) {
-        frame = window.requestAnimationFrame(draw);
-        return;
-      }
-      lastRenderedTimestamp = timestamp;
-      const elapsed = previousTimestamp
-        ? Math.min(0.05, Math.max(0.001, (timestamp - previousTimestamp) / 1000))
-        : 1 / 60;
-      previousTimestamp = timestamp;
       const targetFlowSpeed = 1 + Math.min(0.26, Math.abs(motion.velocity) * 0.028);
       flowSpeed += (targetFlowSpeed - flowSpeed) * (1 - Math.exp(-elapsed * 2.4));
       cinematicTime += elapsed * flowSpeed;
@@ -470,21 +455,21 @@ export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({
           });
         }
       }
-
-      if (!reducedMotion) frame = window.requestAnimationFrame(draw);
     };
 
     const observer = new ResizeObserver(() => {
       resize();
-      if (reducedMotion) draw(0);
+      animation?.invalidate();
     });
     observer.observe(canvas);
     resize();
-    draw(0);
+    animation = createTracerAnimation(draw);
+    animationRef.current = animation;
 
     return () => {
       disposed = true;
-      if (frame) window.cancelAnimationFrame(frame);
+      animation.dispose();
+      animationRef.current = null;
       observer.disconnect();
       unsubscribe();
     };

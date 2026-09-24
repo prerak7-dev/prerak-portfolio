@@ -13,9 +13,10 @@ import {
   readSceneImageProjection,
 } from '../utils/cinematicGeometryRenderer.js';
 import { setCachedStyleProperty } from '../utils/motionPerformance.js';
+import { createTracerAnimation } from '../utils/tracerAnimation.js';
 
 const MAX_PIXEL_RATIO = 1.2;
-const POINTER_EASE = 4.2;
+const POINTER_EASE = 18;
 const GATEWAY_GEOMETRY_STRIDE = 3;
 const SCENE_PROJECTION_SELECTORS = Object.freeze([
   '.gateway-sequence-preloads img[data-frame-index="0"]',
@@ -84,11 +85,8 @@ export const BoundaryFilamentField = memo(function BoundaryFilamentField({
     const fixedSceneIndex = Number.isFinite(sceneIndex) ? Math.round(sceneIndex) : null;
     const renderConfig = VARIANT_RENDERING[variant] || VARIANT_RENDERING.tabs;
     const projectionNodes = new Array(SCENE_PROJECTION_SELECTORS.length).fill(null);
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let disposed = false;
-    let frame = 0;
-    let previousTime = 0;
-    let lastRenderedTime = 0;
+    let animation;
     let width = 1;
     let height = 1;
     let renderedPixelRatio = 0;
@@ -100,7 +98,10 @@ export const BoundaryFilamentField = memo(function BoundaryFilamentField({
       resources.set(filename, null);
       loadCinematicGeometryField(filename)
         .then((resource) => {
-          if (!disposed) resources.set(filename, resource);
+          if (!disposed) {
+            resources.set(filename, resource);
+            animation?.invalidate();
+          }
         })
         .catch(() => {
           if (!disposed) resources.set(filename, false);
@@ -110,6 +111,7 @@ export const BoundaryFilamentField = memo(function BoundaryFilamentField({
 
     const unsubscribe = subscribeSpatialMotion((next) => {
       Object.assign(motion, next);
+      animation?.invalidate();
     });
 
     const resize = () => {
@@ -274,7 +276,7 @@ export const BoundaryFilamentField = memo(function BoundaryFilamentField({
       pointer.inside = false;
     };
 
-    const draw = (timestamp = 0) => {
+    const draw = ({ time, delta: elapsed }) => {
       const root = document.documentElement;
       const quality = root.classList.contains('motion-quality-low')
         ? 0.6
@@ -285,38 +287,17 @@ export const BoundaryFilamentField = memo(function BoundaryFilamentField({
         motion.scenePosition - Math.round(motion.scenePosition)
       ) > 0.001 || Math.abs(motion.velocity) > 0.01;
       const renderQuality = isNarrativeTransition ? Math.min(0.56, quality) : quality;
-      const targetHz = isNarrativeTransition
-        ? 15
-        : renderQuality < 0.7
-          ? 45
-          : renderQuality < 0.9
-            ? 60
-            : 120;
-      const targetInterval = 1000 / targetHz;
-      if (
-        !reducedMotion
-        && lastRenderedTime
-        && timestamp - lastRenderedTime < targetInterval - 0.4
-      ) {
-        frame = window.requestAnimationFrame(draw);
-        return;
-      }
-      lastRenderedTime = timestamp;
-      const elapsed = previousTime
-        ? Math.min(0.05, Math.max(0.001, (timestamp - previousTime) / 1000))
-        : 1 / 60;
-      previousTime = timestamp;
       const pointerEase = 1 - Math.exp(-elapsed * POINTER_EASE);
       pointer.x += (pointer.targetX - pointer.x) * pointerEase;
       pointer.y += (pointer.targetY - pointer.y) * pointerEase;
       pointer.energy += ((pointer.inside ? 0.18 : 0) - pointer.energy)
-        * (1 - Math.exp(-elapsed * 2.3));
+        * (1 - Math.exp(-elapsed * 10));
       pointer.phase += elapsed * 0.68;
 
       const normalized = clamp((intensityRef.current - 0.35) / 1.35);
       const power = 0.82 + normalized * 0.42;
-      const time = timestamp / 1000;
       const canvasRect = canvas.getBoundingClientRect();
+      if (canvasRect.width < 1 || canvasRect.height < 1) return;
       const localOffset = { left: canvasRect.left, top: canvasRect.top };
       const position = fixedSceneIndex ?? motion.scenePosition;
       const blend = getTracerSceneBlend(theme, position);
@@ -342,23 +323,21 @@ export const BoundaryFilamentField = memo(function BoundaryFilamentField({
           localOffset,
         });
       }
-
-      if (!reducedMotion) frame = window.requestAnimationFrame(draw);
     };
 
     parent.addEventListener('pointermove', handlePointerMove, { passive: true });
     parent.addEventListener('pointerleave', handlePointerLeave, { passive: true });
     const observer = new ResizeObserver(() => {
       resize();
-      if (reducedMotion) draw(0);
+      animation?.invalidate();
     });
     observer.observe(canvas);
     resize();
-    draw(0);
+    animation = createTracerAnimation(draw);
 
     return () => {
       disposed = true;
-      if (frame) window.cancelAnimationFrame(frame);
+      animation.dispose();
       observer.disconnect();
       unsubscribe();
       parent.removeEventListener('pointermove', handlePointerMove);

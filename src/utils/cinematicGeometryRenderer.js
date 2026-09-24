@@ -1,4 +1,5 @@
 import { projectGeometryPoint } from './cinematicGeometryField.js';
+import { sampleMotionHistory } from './tracerMotion.js';
 
 const TAU = Math.PI * 2;
 const normalizedPathCache = new WeakMap();
@@ -63,44 +64,18 @@ function getNormalizedPathRecords(streamlines) {
   const cached = normalizedPathCache.get(streamlines);
   if (cached) return cached;
 
-  const records = streamlines.map((streamline) => {
-    let length = 0;
-    for (let index = 1; index < streamline.points.length; index += 1) {
-      const previous = streamline.points[index - 1];
-      const point = streamline.points[index];
-      length += Math.hypot(point.x - previous.x, point.y - previous.y);
-    }
-    return {
-      length: Math.max(0.001, length),
-      path: buildNormalizedPath(streamline.points),
-      points: streamline.points,
-      streamline,
-      trailPaths: new Map(),
-    };
-  });
+  const records = streamlines.map(streamline => ({
+    points: streamline.points,
+    streamline,
+    bounds: {
+      left: Math.min(...streamline.points.map(point => point.x)),
+      top: Math.min(...streamline.points.map(point => point.y)),
+      right: Math.max(...streamline.points.map(point => point.x)),
+      bottom: Math.max(...streamline.points.map(point => point.y)),
+    },
+  }));
   normalizedPathCache.set(streamlines, records);
   return records;
-}
-
-function getCachedTrailPath(record, headIndex, direction, trailPointCount) {
-  const quantizedHead = Math.min(
-    record.points.length - 1,
-    Math.max(1, Math.round(headIndex / 3) * 3),
-  );
-  const quantizedTrail = Math.max(6, Math.round(trailPointCount / 3) * 3);
-  const key = `${direction}:${quantizedHead}:${quantizedTrail}`;
-  const cached = record.trailPaths.get(key);
-  if (cached) return cached;
-
-  const start = direction > 0
-    ? Math.max(0, quantizedHead - quantizedTrail)
-    : Math.min(record.points.length - 1, quantizedHead + quantizedTrail);
-  const points = direction > 0
-    ? record.points.slice(start, quantizedHead + 1)
-    : record.points.slice(quantizedHead, start + 1).reverse();
-  const path = buildNormalizedPath(points.length >= 2 ? points : record.points.slice(0, 2));
-  record.trailPaths.set(key, path);
-  return path;
 }
 
 function drawCachedGeometryStreamlines({
@@ -123,11 +98,13 @@ function drawCachedGeometryStreamlines({
   headFrequency,
   cinematicEmphasis,
 }) {
+  const offsetX = projection.left - (localOffset?.left || 0);
+  const offsetY = projection.top - (localOffset?.top || 0);
   if (
-    projection.left > (clipWidth ?? Infinity) + 36
-    || projection.top > (clipHeight ?? Infinity) + 36
-    || projection.left + projection.width < -36
-    || projection.top + projection.height < -36
+    offsetX > (clipWidth ?? Infinity) + 36
+    || offsetY > (clipHeight ?? Infinity) + 36
+    || offsetX + projection.width < -36
+    || offsetY + projection.height < -36
   ) return;
 
   const records = getNormalizedPathRecords(streamlines);
@@ -144,10 +121,7 @@ function drawCachedGeometryStreamlines({
   const userScale = Math.max(1, (Math.abs(projection.width) + Math.abs(projection.height)) * 0.5);
 
   context.save();
-  context.translate(
-    projection.left - (localOffset?.left || 0),
-    projection.top - (localOffset?.top || 0),
-  );
+  context.translate(offsetX, offsetY);
   context.scale(projection.width, projection.height);
   context.globalCompositeOperation = palette.compositeOperation || 'source-over';
   context.lineCap = 'round';
@@ -157,20 +131,21 @@ function drawCachedGeometryStreamlines({
     const record = records[index];
     const { streamline } = record;
     if (record.points.length < 4) continue;
+    if (offsetX + record.bounds.right * projection.width < -36
+      || offsetY + record.bounds.bottom * projection.height < -36
+      || offsetX + record.bounds.left * projection.width > (clipWidth ?? Infinity) + 36
+      || offsetY + record.bounds.top * projection.height > (clipHeight ?? Infinity) + 36) continue;
 
     const motionCycle = streamline.phase * 2
       + time * streamline.speed * palette.drift * 1.7;
-    const headProgress = 0.5 - Math.cos(motionCycle * Math.PI) * 0.5;
-    const headIndex = Math.min(
-      record.points.length - 1,
-      Math.max(1, Math.round(headProgress * (record.points.length - 1))),
+    const sampleCount = Math.min(
+      28,
+      Math.max(10, Math.round(record.points.length * streamline.trail * trailScale * 0.65)),
     );
-    const direction = Math.sin(motionCycle * Math.PI) >= 0 ? 1 : -1;
-    const trailPointCount = Math.min(
-      34,
-      Math.max(8, Math.round(record.points.length * streamline.trail * trailScale * 0.78)),
+    const points = sampleMotionHistory(
+      record.points, motionCycle, streamline.trail * trailScale * 0.78, sampleCount,
     );
-    const trailPath = getCachedTrailPath(record, headIndex, direction, trailPointCount);
+    const trailPath = buildNormalizedPath(points);
 
     const color = palette.colors[streamline.colorIndex % palette.colors.length];
     const pulse = 0.88
@@ -215,8 +190,8 @@ function drawCachedGeometryStreamlines({
     }
 
     if (index % Math.max(1, headFrequency) !== 0) continue;
-    const head = record.points[headIndex];
-    const previous = record.points[headIndex - 1];
+    const head = points[points.length - 1];
+    const previous = points[points.length - 2];
     const angle = Math.atan2(head.y - previous.y, head.x - previous.x);
     const radius = (0.72 + streamline.depth * 0.86) * depthScale * widthScale / userScale;
     context.save();
@@ -252,26 +227,6 @@ function pathIntersectsClip(points, clipWidth, clipHeight, margin = 28) {
     && maxY >= -margin
     && minX <= clipWidth + margin
     && minY <= clipHeight + margin;
-}
-
-function sampleMotionHistory(path, motionCycle, historySpan, sampleCount) {
-  const sourcePoints = [];
-  let previousPointIndex = -1;
-
-  for (let sampleIndex = sampleCount - 1; sampleIndex >= 0; sampleIndex -= 1) {
-    const age = sampleIndex / Math.max(1, sampleCount - 1);
-    const sampleCycle = motionCycle - historySpan * age;
-    const progress = 0.5 - Math.cos(sampleCycle * Math.PI) * 0.5;
-    const pointIndex = Math.min(
-      path.length - 1,
-      Math.max(0, Math.round(progress * (path.length - 1))),
-    );
-    if (pointIndex === previousPointIndex) continue;
-    sourcePoints.push(path[pointIndex]);
-    previousPointIndex = pointIndex;
-  }
-
-  return sourcePoints;
 }
 
 function projectPath(points, projection, localOffset = null) {
@@ -405,7 +360,7 @@ export function drawGeometryStreamlines({
   const visibleCount = Math.min(
     streamlines.length,
     maxVisibleCount,
-    Math.max(12, Math.round(streamlines.length * quality * 0.44 * densityScale)),
+    Math.max(16, Math.round(streamlines.length * quality * 0.28 * densityScale)),
   );
   const depthScale = clamp(Math.min(projection.width / 1600, projection.height / 900), 0.68, 1.32);
   context.save();
@@ -419,7 +374,7 @@ export function drawGeometryStreamlines({
     if (path.length < 4) continue;
     const motionCycle = streamline.phase * 2
       + time * streamline.speed * palette.drift * 1.7;
-    const historySpan = streamline.trail * trailScale * 1.45;
+    const historySpan = streamline.trail * trailScale * 0.78;
     const sampleCount = Math.min(
       28,
       Math.max(10, Math.round(path.length * streamline.trail * trailScale * 0.65)),
