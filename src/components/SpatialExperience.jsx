@@ -13,11 +13,12 @@ import { getLoreAvatarState } from '../data/loreAvatarData.js';
 import { createAssetPath, createMailtoHref, getSafeLinkProps } from '../security/contentSecurity.js';
 import { CASE_STUDY_TIMING, useCaseStudySequence } from '../hooks/useCaseStudySequence.js';
 import { useChapterRailChoreography } from '../hooks/useChapterRailChoreography.js';
+import { useChapterRailScroll } from '../hooks/useChapterRailScroll.js';
 import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
 import { useHomeCompositionLayout } from '../hooks/useHomeCompositionLayout.js';
 import { useTextMaterials } from '../hooks/useTextMaterials.js';
 import { useChapterTextTransition } from '../hooks/useChapterTextTransition.js';
-import { HOME_COMPACT_QUERY, NAV_COMPACT_QUERY, NAV_LANDSCAPE_QUERY } from '../utils/homeCompositionLayout.js';
+import { HOME_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
 import { changeTextContent } from '../utils/changeTextContent.js';
 import { ContourCores, ContourCaseStudies } from './ContourChapterContent.jsx';
 import {
@@ -411,81 +412,14 @@ function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onS
   const railRef = useRef(null);
   const itemRefs = useRef([]);
   const celestialAsset = getChapterCelestialAsset(theme);
-  const [railWindow, setRailWindow] = useState({ start: 0, count: spatialChapters.length });
-  const touchStart = useRef(null);
-  const suppressSwipeClick = useRef(false);
-
-  useLayoutEffect(() => {
-    const query = window.matchMedia(NAV_LANDSCAPE_QUERY);
-    const resize = () => setRailWindow(current => {
-      const count = query.matches ? Math.min(spatialChapters.length, Math.max(2, Math.floor((innerHeight - 216) / 50))) : spatialChapters.length;
-      const start = Math.max(0, Math.min(current.start, activeIndex, spatialChapters.length - count));
-      return { count, start: activeIndex >= start + count ? activeIndex - count + 1 : start };
-    });
-    resize();
-    window.addEventListener('resize', resize);
-    query.addEventListener('change', resize);
-    return () => { window.removeEventListener('resize', resize); query.removeEventListener('change', resize); };
-  }, [activeIndex]);
+  const scrollTabs = useChapterRailScroll({ listRef, activeIndex, itemCount: spatialChapters.length });
 
   useChapterRailChoreography({
     itemCount: spatialChapters.length,
     itemRefs,
     railRef,
-    railWindow,
+    listRef,
   });
-
-  const scrollWindow = useCallback(direction => setRailWindow(current => ({
-    ...current, start: Math.max(0, Math.min(spatialChapters.length - current.count, current.start + direction)),
-  })), []);
-
-  useEffect(() => {
-    const list = listRef.current;
-    let lastWheel = 0;
-    const wheel = event => {
-      if (window.matchMedia(NAV_LANDSCAPE_QUERY).matches && railWindow.count < spatialChapters.length) {
-        event.preventDefault(); event.stopPropagation();
-        if (performance.now() - lastWheel > 180) { scrollWindow(Math.sign(event.deltaY || event.deltaX)); lastWheel = performance.now(); }
-      } else if (window.matchMedia(NAV_COMPACT_QUERY).matches && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-        event.preventDefault(); event.stopPropagation(); list.scrollLeft += event.deltaY;
-      }
-    };
-    list?.addEventListener('wheel', wheel, { passive: false });
-    return () => list?.removeEventListener('wheel', wheel);
-  }, [railWindow.count, scrollWindow]);
-
-  useEffect(() => {
-    const compact = window.matchMedia(NAV_COMPACT_QUERY);
-    let frame = 0;
-    const recenter = (behavior = 'auto') => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        if (!compact.matches) return;
-        const list = listRef.current;
-        const activeTab = list?.querySelector('[role="tab"][aria-selected="true"]');
-        if (!list || !activeTab) return;
-        const target = activeTab.offsetLeft - (list.clientWidth - activeTab.offsetWidth) / 2;
-        list.scrollTo({ left: Math.max(0, target), behavior });
-      });
-    };
-    const resize = () => recenter();
-    const observer = new ResizeObserver(resize);
-    if (listRef.current) observer.observe(listRef.current);
-    compact.addEventListener('change', resize);
-    window.addEventListener('resize', resize, { passive: true });
-    recenter(window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
-    return () => {
-      window.cancelAnimationFrame(frame);
-      observer.disconnect();
-      compact.removeEventListener('change', resize);
-      window.removeEventListener('resize', resize);
-    };
-  }, [activeIndex]);
-
-  const scrollTabs = (direction) => {
-    if (window.matchMedia(NAV_LANDSCAPE_QUERY).matches) { scrollWindow(direction); return; }
-    listRef.current?.scrollBy({ left: direction * Math.max(180, listRef.current.clientWidth * 0.7), behavior: 'smooth' });
-  };
 
   return (
     <nav
@@ -506,17 +440,7 @@ function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onS
       <button type="button" className="chapter-scroll-arrow previous tracer-control celestial-control" aria-label="Previous chapters" onClick={() => scrollTabs(-1)}>
         <TrianglePointer direction="left" />
       </button>
-      <div ref={listRef} className="chapter-rail-list" role="tablist" aria-label="Spatial portfolio chapters" data-lenis-prevent
-        onClickCapture={event => { if (suppressSwipeClick.current) { event.preventDefault(); event.stopPropagation(); suppressSwipeClick.current = false; } }}
-        onTouchStart={event => { suppressSwipeClick.current = false; touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; }}
-        onTouchEnd={event => {
-          if (!touchStart.current || !window.matchMedia(NAV_LANDSCAPE_QUERY).matches) return;
-          const dx = touchStart.current.x - event.changedTouches[0].clientX;
-          const dy = touchStart.current.y - event.changedTouches[0].clientY;
-          const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-          if (Math.abs(delta) > 28) { suppressSwipeClick.current = true; scrollWindow(Math.sign(delta)); }
-          touchStart.current = null;
-        }}>
+      <div ref={listRef} className="chapter-rail-list" role="tablist" aria-label="Spatial portfolio chapters" data-lenis-prevent>
         {spatialChapters.map((chapter, index) => (
           <button
             key={chapter.id}

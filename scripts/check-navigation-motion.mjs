@@ -51,6 +51,13 @@ try {
       const rail = document.querySelector('.chapter-rail');
       return rail.dataset.motionSource === 'chapter' && Number(rail.dataset.motionProgress) > .45;
     });
+    const orbitDirections = await page.evaluate(() => document.getAnimations().filter(animation => animation.id === 'chapter-rail-flight').map(animation => {
+      const frames = animation.effect.getKeyframes();
+      const [a, mid, b] = [frames[0], frames[60], frames.at(-1)].map(frame => new DOMMatrix(frame.transform));
+      const sweep = (b.m41 - a.m41) * (mid.m42 - (a.m42 + b.m42) / 2) - (b.m42 - a.m42) * (mid.m41 - (a.m41 + b.m41) / 2);
+      return Math.abs(sweep) > .1 ? Math.sign(sweep) : 0;
+    }));
+    assert(new Set(orbitDirections.filter(Boolean)).size <= 1, `${label}: Home or another tab broke away from the shared orbital direction`);
     await page.screenshot({ path: `${output}/${width}-${label.replaceAll(' ', '-')}-midpoint.png` });
     await page.waitForFunction(() => document.querySelector('.archive-viewport').classList.contains('chapter-settled') && document.querySelector('.archive-viewport').dataset.chapterCopyPhase === 'idle');
     await page.waitForFunction(() => document.querySelector('.chapter-rail').dataset.moving === 'false', null, { timeout: 8000 });

@@ -7,6 +7,20 @@ export function interpolateRailLayout(from, to, progress, bounds) {
 }
 
 export function createRailJourney(from, to, bounds) {
+  // Choose one orbital direction for the entire constellation. Per-tab choices
+  // can send Home around the opposite side of the scene from its neighbours.
+  let inwardSweep = 0;
+  let fallbackDirection = 0;
+  from.forEach((a, index) => {
+    const b = to[index];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const centerX = (bounds.left + bounds.right - Math.max(a.width, b.width)) / 2;
+    const centerY = (bounds.top + bounds.bottom - Math.max(a.height, b.height)) / 2;
+    inwardSweep += -dy * (centerX - (a.x + b.x) / 2) + dx * (centerY - (a.y + b.y) / 2);
+    if (!fallbackDirection && Math.hypot(dx, dy) >= .02) fallbackDirection = Math.sign(dx || -dy);
+  });
+  const direction = Math.abs(inwardSweep) > .001 ? Math.sign(inwardSweep) : fallbackDirection;
   const bends = from.map((a, index) => {
     const b = to[index];
     const dx = b.x - a.x;
@@ -14,13 +28,6 @@ export function createRailJourney(from, to, bounds) {
     const distance = Math.hypot(dx, dy);
     if (distance < .02) return { x: 0, y: 0 };
     const normal = { x: -dy / distance, y: dx / distance };
-    const center = {
-      x: (bounds.left + bounds.right - Math.max(a.width, b.width)) / 2,
-      y: (bounds.top + bounds.bottom - Math.max(a.height, b.height)) / 2,
-    };
-    const inward = normal.x * (center.x - (a.x + b.x) / 2)
-      + normal.y * (center.y - (a.y + b.y) / 2);
-    const direction = Math.abs(inward) > .001 ? Math.sign(inward) : Math.sign(normal.y || normal.x);
     const sweep = Math.min(220, distance * .36) * (.9 + .1 * Math.sin(index / Math.max(1, from.length - 1) * Math.PI));
     const bend = { x: normal.x * direction * sweep, y: normal.y * direction * sweep };
     // Each satellite follows half an ellipse around the midpoint of its journey.

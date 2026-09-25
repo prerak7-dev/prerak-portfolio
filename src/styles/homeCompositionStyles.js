@@ -3,6 +3,7 @@ import { HOME_COMPACT_QUERY, NAV_COMPACT_QUERY, NAV_LANDSCAPE_QUERY } from '../u
 export const homeCompositionStyles = `
   .archive-viewport .archive-header { z-index: 40; pointer-events: none; }
   .archive-header :is(button, a) { pointer-events: auto; }
+  .archive-viewport .chapter-rail .chapter-rail-list { scroll-snap-type: none !important; scroll-behavior: auto !important; }
   .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong { scale: 1 !important; }
   .archive-app .lore-parchment p { font-size: 24.225px; line-height: 1.45; }
   .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list strong {
@@ -35,15 +36,25 @@ export const homeCompositionStyles = `
     .archive-app .archive-viewport .chapter-rail.is-orbit-ready[data-layout="contour"] .chapter-celestial-marker {
       width: 19.2px !important; height: 19.2px !important; flex-basis: 19.2px;
     }
-    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-rail-list { opacity: 1; }
-    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-rail-list button:not([aria-hidden="true"]) { opacity: 1; pointer-events: auto; touch-action: none; }
+    .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-rail-list {
+      overflow-x: auto !important; overflow-y: hidden !important; scrollbar-width: none;
+      overscroll-behavior: contain; opacity: 1;
+    }
+    .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-rail-list::after {
+      content: ''; display: block; width: calc(100% + var(--chapter-scroll-range, 0px)); height: 1px; pointer-events: none;
+    }
+    .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-rail-list button {
+      position: fixed !important; touch-action: none;
+      clip-path: var(--chapter-tab-clip, none) !important;
+    }
+    .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-rail-list button:not([aria-hidden="true"]) { opacity: 1; pointer-events: auto; }
     .archive-app .archive-viewport .chapter-rail[data-layout="contour"] .chapter-collapse { display: none; }
-    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-scroll-arrow {
+    .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-scroll-arrow {
       display: grid; place-items: center; position: absolute; top: var(--mobile-nav-top, 70px);
       width: 44px; height: 44px; padding: 0; pointer-events: auto; z-index: 5;
     }
-    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-scroll-arrow.previous { left: auto; right: 56px; }
-    .archive-app .archive-viewport .chapter-rail[data-windowed="true"] .chapter-scroll-arrow.next { left: auto; right: 12px; }
+    .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-scroll-arrow.previous { left: auto; right: 56px; }
+    .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-scroll-arrow.next { left: auto; right: 12px; }
   }
   .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-celestial-marker {
     position: relative !important; inset: auto !important;

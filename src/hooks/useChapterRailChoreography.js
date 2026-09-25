@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect } from 'react';
 import { CHAPTER_RAIL_STAGES } from '../data/chapterRailCelestialData.js';
 import { cinematicSmootherStep, getCinematicSceneReveals } from '../data/cinematicSceneTimeline.js';
 import { subscribeSpatialMotion } from '../state/spatialMotionStore.js';
@@ -7,6 +7,7 @@ import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js'
 import { setCachedStyleProperty, toggleCachedClass } from '../utils/motionPerformance.js';
 import { NAV_COMPACT_QUERY, NAV_LANDSCAPE_QUERY } from '../utils/homeCompositionLayout.js';
 import { createRailJourney, interpolateRailLayout, separateRailItems } from '../utils/chapterRailLayout.js';
+import { CHAPTER_RAIL_SCROLL_STEP, getChapterRailCapacity, scrollRailAlongCurve } from '../utils/chapterRailScroll.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -131,10 +132,7 @@ function getStageTransition(scenePosition) {
   return { fromIndex: 6, toIndex: 6, mix: 0 };
 }
 
-export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railWindow }) {
-  const windowRef = useRef(railWindow);
-  windowRef.current = railWindow;
-  const invalidateRef = useRef(null);
+export function useChapterRailChoreography({ itemCount, itemRefs, railRef, listRef }) {
   useLayoutEffect(() => {
     const rail = railRef.current;
     if (!rail || itemCount < 1) return undefined;
@@ -169,25 +167,19 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railW
 
     const render = () => {
       frame = 0;
-      const isDesktop = !compactQuery.matches;
-      toggleCachedClass(rail, 'is-orbit-ready', isDesktop);
-      rail.dataset.layout = isDesktop ? 'contour' : 'compact';
-      const windowed = isDesktop && landscapeQuery.matches && windowRef.current.count < itemCount;
-      const visibleStart = windowed ? windowRef.current.start : 0;
-      const visibleCount = windowed ? windowRef.current.count : itemCount;
-      rail.dataset.windowed = String(windowed);
-      rail.dataset.visibleStart = String(visibleStart);
+      const isContour = !compactQuery.matches;
+      toggleCachedClass(rail, 'is-orbit-ready', isContour);
+      rail.dataset.layout = isContour ? 'contour' : 'compact';
+      const landscape = landscapeQuery.matches;
+      const visibleCount = getChapterRailCapacity(innerHeight, itemCount, landscape);
+      const scrollable = isContour && visibleCount < itemCount;
+      const scrollOffset = scrollable ? (listRef.current?.scrollLeft || 0) / CHAPTER_RAIL_SCROLL_STEP : 0;
+      rail.dataset.scrollable = String(scrollable);
+      rail.dataset.scrollOffset = scrollOffset.toFixed(4);
       rail.dataset.visibleCount = String(visibleCount);
-      itemRefs.current.forEach((item, index) => {
-        const hidden = index < visibleStart || index >= visibleStart + visibleCount;
-        if (item.inert !== hidden) {
-          item.style.visibility = hidden ? 'hidden' : '';
-          item.inert = hidden;
-          if (hidden) item.setAttribute('aria-hidden', 'true'); else item.removeAttribute('aria-hidden');
-        }
-      });
-      if (!isDesktop) {
+      if (!isContour) {
         cancelFlights();
+        itemRefs.current.forEach(item => { item.style.visibility = ''; item.inert = false; item.removeAttribute('aria-hidden'); });
         if (navigation) { navigation.journey = null; navigation.items = []; }
         rail.dataset.moving = 'false';
         return;
@@ -203,34 +195,22 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railW
         : getStageTransition(scenePosition);
       rail.dataset.motionProgress = transition.mix.toFixed(4);
       rail.dataset.motionSource = navigation ? 'chapter' : 'scroll';
-      const landscape = landscapeQuery.matches;
-      const bounds = { left: landscape ? innerWidth * .62 : 16, right: innerWidth - 16, top: windowed ? 122 : 82, bottom: innerHeight - (landscape ? 96 : 78) };
+      const bounds = { left: 16, right: innerWidth - 16, top: 82, bottom: innerHeight - (landscape ? 96 : 78) };
       const markerSize = landscapeQuery.matches ? 19.2 : 24;
       const markerCenter = 6 + markerSize / 2;
       const layout = stageIndex => {
         const source = CHAPTER_RAIL_STAGES[stageIndex];
         const projection = readStageProjection(source, fallback);
         const stage = resolveStage(source, projection);
-        const sizes = labelSizes.slice(visibleStart, visibleStart + visibleCount);
+        const sizes = scrollable ? Array.from({ length: visibleCount }, () => ({ width: Math.max(...labelSizes.map(size => size.width)) })) : labelSizes;
         const fitsRow = sizes.reduce((sum, size) => sum + size.width + markerSize + 26, -6) <= bounds.right - bounds.left;
-        const axis = !landscape && (stageIndex === 1 || stageIndex === 6) && fitsRow ? 'x' : 'y';
+        const axis = (stageIndex === 1 || stageIndex === 6) && fitsRow ? 'x' : 'y';
         const routes = new Map();
         for (let i = 0; i < visibleCount; i++) for (let j = i + 1; j < visibleCount; j++) routes.set(`${i}:${j}`, { axis, sign: -1 });
         const anchors = sizes.map((size, index) => {
           const point = projectStagePoint(stage, index, visibleCount, projection);
           return { x: point.x - markerCenter, y: point.y - 22, width: size.width + markerSize + 20, height: 44 };
         });
-        if (landscape) {
-          const left = Math.min(...anchors.map(point => point.x));
-          const span = Math.max(1, Math.max(...anchors.map(point => point.x)) - left);
-          const available = Math.max(0, bounds.right - bounds.left - Math.max(...anchors.map(point => point.width)));
-          anchors.forEach((point, index) => {
-            const contour = (point.x - left) / span;
-            const sceneAnchor = clamp(point.x / innerWidth);
-            point.x = bounds.left + (contour * .55 + sceneAnchor * .45) * available;
-            point.y = bounds.top + index / Math.max(1, visibleCount - 1) * (bounds.bottom - bounds.top - 44);
-          });
-        }
         if (axis === 'x') {
           const top = Math.min(...anchors.map(point => point.y));
           const bottom = Math.max(...anchors.map(point => point.y + point.height));
@@ -238,7 +218,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railW
           anchors.forEach(point => { point.y += shift; });
         }
         const visible = separateRailItems(anchors, bounds, 6, routes);
-        return labelSizes.map((_, index) => visible[clamp(index - visibleStart, 0, visibleCount - 1)]);
+        return scrollable ? scrollRailAlongCurve(visible, labelSizes.map(size => ({ width: size.width + markerSize + 20, height: 44 })), scrollOffset) : visible;
       };
       const from = navigation?.items.length === itemCount ? navigation.items : layout(transition.fromIndex);
       const to = layout(transition.toIndex);
@@ -287,6 +267,15 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railW
       renderedItems = buttons;
       (baseButtons || buttons).forEach(({ x, y, width }, index) => {
         const item = itemRefs.current[index];
+        const point = buttons[index];
+        const clips = [Math.max(0, bounds.top - point.y), Math.max(0, point.x + width - bounds.right), Math.max(0, point.y + point.height - bounds.bottom), Math.max(0, bounds.left - point.x)];
+        const hidden = scrollable && (clips[0] + clips[2] >= point.height || clips[1] + clips[3] >= width);
+        setCachedStyleProperty(item, '--chapter-tab-clip', scrollable ? `inset(${clips.map(value => `${value.toFixed(2)}px`).join(' ')})` : 'none');
+        if (item.inert !== hidden) {
+          item.style.visibility = hidden ? 'hidden' : '';
+          item.inert = hidden;
+          if (hidden) item.setAttribute('aria-hidden', 'true'); else item.removeAttribute('aria-hidden');
+        }
         setCachedStyleProperty(item, '--chapter-tab-x', `${x.toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-tab-y', `${y.toFixed(2)}px`);
         setCachedStyleProperty(item, '--chapter-drift-x', `${(flightDrift?.[index].x || 0).toFixed(2)}px`);
@@ -324,7 +313,6 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railW
       projectionNodes.clear();
       scheduleRender();
     };
-    invalidateRef.current = handleResize;
 
     const unsubscribe = subscribeSpatialMotion((motion) => {
       scenePosition = motion.scenePosition;
@@ -353,6 +341,7 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railW
     });
 
     window.addEventListener('resize', handleResize, { passive: true });
+    listRef.current?.addEventListener('scroll', scheduleRender, { passive: true });
     window.visualViewport?.addEventListener('resize', handleResize, { passive: true });
     compactQuery.addEventListener?.('change', handleResize);
     reducedQuery.addEventListener?.('change', handleResize);
@@ -361,18 +350,17 @@ export function useChapterRailChoreography({ itemCount, itemRefs, railRef, railW
 
     return () => {
       disposed = true;
-      invalidateRef.current = null;
       unsubscribe();
       unsubscribeNavigation();
       cancelFlights();
       window.cancelAnimationFrame(frame);
       window.removeEventListener('resize', handleResize);
+      listRef.current?.removeEventListener('scroll', scheduleRender);
       window.visualViewport?.removeEventListener('resize', handleResize);
       compactQuery.removeEventListener?.('change', handleResize);
       reducedQuery.removeEventListener?.('change', handleResize);
       document.removeEventListener('visibilitychange', scheduleRender);
       rail.classList.remove('is-orbit-ready');
     };
-  }, [itemCount, itemRefs, railRef]);
-  useLayoutEffect(() => { invalidateRef.current?.(); }, [railWindow.start, railWindow.count]);
+  }, [itemCount, itemRefs, railRef, listRef]);
 }

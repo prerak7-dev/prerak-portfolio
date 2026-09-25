@@ -64,14 +64,36 @@ test('flights stay within the viewport and arrive with continuous velocity and a
 
 test('crossing flights may overlap without repelling or stopping one another', () => {
   const bounds = { left: 16, right: 1000, top: 82, bottom: 822 };
-  const from = [{ x: 100, y: 200, width: 100, height: 44 }, { x: 700, y: 200, width: 100, height: 44 }];
-  const to = [from[1], from[0]];
+  const from = [{ x: 100, y: 200, width: 100, height: 44 }, { x: 100, y: 300, width: 100, height: 44 }];
+  const to = [{ ...from[0], x: 700, y: 300 }, { ...from[1], x: 700, y: 200 }];
   const journey = createRailJourney(from, to, bounds);
   assert(railItemsOverlap(...journey(.5)), 'Flights should cross freely');
   assert(journey(.5)[0].y > 390, 'Missing orbital sweep');
   assert(journey(.6)[0].x > journey(.4)[0].x + 150, 'Flight hesitated at the crossing');
   assert.deepEqual(journey(0), from);
   assert.deepEqual(journey(1), to);
+});
+
+test('Home shares the panels orbital direction instead of taking the opposite detour', () => {
+  const bounds = { left: 16, right: 1424, top: 82, bottom: 822 };
+  const from = [[914, 89], [952, 139], [996, 189], [1047, 239], [1103, 289], [1164, 339], [1229, 389]]
+    .map(([x, y]) => ({ x, y, width: 130, height: 44 }));
+  const to = [[349, 704], [493, 715], [632, 709], [784, 722], [923, 715], [1067, 721], [1210, 706]]
+    .map(([x, y]) => ({ x, y, width: 130, height: 44 }));
+  const journey = createRailJourney(from, to, bounds);
+  const reverse = createRailJourney(to, from, bounds);
+  const midpoint = journey(.5);
+  const directions = midpoint.map((point, index) => {
+    const a = from[index];
+    const b = to[index];
+    return Math.sign((b.x - a.x) * (point.y - (a.y + b.y) / 2) - (b.y - a.y) * (point.x - (a.x + b.x) / 2));
+  });
+  assert(directions.every(direction => direction === directions[0] && direction !== 0));
+  assert(Math.hypot(midpoint[0].x - midpoint[1].x, midpoint[0].y - midpoint[1].y) < 100, 'Home peeled away from its neighbouring satellite');
+  for (const progress of [.1, .25, .5, .75, .9]) journey(progress).forEach((point, index) => {
+    const reversed = reverse(1 - progress)[index];
+    assert(Math.hypot(point.x - reversed.x, point.y - reversed.y) < .001);
+  });
 });
 
 test('satellites travel a true elliptical orbit with tangential departure', () => {

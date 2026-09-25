@@ -40,14 +40,19 @@ try {
     } else {
       const count = Number(await page.locator('.chapter-rail').getAttribute('data-visible-count'));
       const boxes = await page.locator('.chapter-rail-list > button:not([aria-hidden="true"])').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON()));
-      assert.equal(boxes.length, count);
+      assert(boxes.length >= count, 'Landscape contour lost visible tabs');
       assert(Math.max(...boxes.map(box => box.x)) - Math.min(...boxes.map(box => box.x)) > 8, 'Landscape contour was flattened into a straight bar');
-      for (const box of boxes) assert(box.x >= width * .62 - 1 && box.right <= width - 15 && box.y >= 81 && box.bottom <= height - 95, JSON.stringify(box));
+      const hitboxes = await page.locator('.chapter-rail-list > button:not([aria-hidden="true"])').evaluateAll(nodes => nodes.map(node => {
+        const rect = node.getBoundingClientRect();
+        const [top = 0, right = top, bottom = top, left = right] = getComputedStyle(node).clipPath.match(/[\d.]+/g)?.map(Number) || [];
+        return { x: rect.x + left, y: rect.y + top, right: rect.right - right, bottom: rect.bottom - bottom };
+      }));
+      for (const box of hitboxes) assert(box.x >= 15 && box.right <= width - 15 && box.y >= 81 && box.bottom <= height - 95, JSON.stringify(box));
       if (count < 7) {
         await page.getByRole('button', { name: 'Next chapters', exact: true }).click();
-        await page.waitForFunction(() => document.querySelector('.chapter-rail').dataset.visibleStart === '1');
+        await page.waitForFunction(() => Number(document.querySelector('.chapter-rail').dataset.scrollOffset) > .99);
         await page.getByRole('button', { name: 'Previous chapters', exact: true }).click();
-        await page.waitForFunction(() => document.querySelector('.chapter-rail').dataset.visibleStart === '0');
+        await page.waitForFunction(() => Number(document.querySelector('.chapter-rail').dataset.scrollOffset) < .01);
       }
     }
     await page.screenshot({ path: `tmp/mobile-navigation/home-${width}.png` });
