@@ -18,6 +18,7 @@ import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
 import { useHomeCompositionLayout } from '../hooks/useHomeCompositionLayout.js';
 import { useTextMaterials } from '../hooks/useTextMaterials.js';
 import { useChapterTextTransition } from '../hooks/useChapterTextTransition.js';
+import { useContourReading } from '../hooks/useContourReading.js';
 import { HOME_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
 import { changeTextContent } from '../utils/changeTextContent.js';
 import { ContourCores, ContourCaseStudies } from './ContourChapterContent.jsx';
@@ -611,15 +612,14 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
     : themePromptCompleted || activeIndex !== 0
       ? spatialChapters[activeIndex]?.guide || spatialChapters[0].guide
       : 'Choose a season. An old friend left me four accounts of this night; not one agrees with the others. I have my suspicions about the friend.';
-  const typed = message;
   useEffect(() => {
-    if (collapsed || !textAnimationReady || !message || typed !== message
+    if (collapsed || !textAnimationReady || !message
       || pointerReading || focusReading) return undefined;
-    // Start reading time after the final character, and pause for interaction.
+    // Allow the contour entrance to finish, then pause reading time on interaction.
     const readingMs = Math.max(9000, message.trim().split(/\s+/).length * 400 + 2500);
     const timer = window.setTimeout(() => changeTextContent(() => setCollapsed(true), '.archive-scene-stack, .lore-parchment'), readingMs);
     return () => window.clearTimeout(timer);
-  }, [collapsed, textAnimationReady, message, typed, pointerReading, focusReading]);
+  }, [collapsed, textAnimationReady, message, pointerReading, focusReading]);
   const guideState = !introGuideReady ? 'is-awaiting' : textAnimationReady ? 'is-ready' : 'is-opening';
 
   return (
@@ -634,7 +634,7 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
           <LoreAvatarContourField theme={theme} imageSrc={currentAvatar} />
         </div>
       </div>
-      <div className="lore-parchment tracer-slab" data-lenis-prevent data-tracer-prop="lore" aria-hidden={collapsed}><p>{typed}</p></div>
+      <div className="lore-parchment tracer-slab" data-lenis-prevent data-contour-reading data-tracer-prop="lore" aria-hidden={collapsed} {...(collapsed ? { inert: '' } : {})} tabIndex={collapsed ? -1 : 0} aria-label="Lore passage"><p>{message}</p></div>
       <button
         type="button"
         className="lore-toggle"
@@ -818,7 +818,7 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
 
   return (
     <div ref={compositionRef} data-compact={compact} className={`intro-chapter-content home-composition is-copy-complete is-resume-visible is-resume-complete ${isActive ? 'is-active' : ''}`}>
-      <div className="intro-copy-stage" data-lenis-prevent>
+      <div className="intro-copy-stage" data-lenis-prevent data-contour-reading tabIndex={0} aria-label="Introduction">
         <div className="intro-manifesto">
           {copy.slice(0, 4).map((phrase, index) => (
             <p className="intro-coordinate intro-manifesto-line has-copy" key={phrase} style={{ '--manifesto-index': index }}><span>{phrase}</span></p>
@@ -1330,6 +1330,7 @@ export function SpatialExperience({
   const sceneRefs = useRef([]);
   const viewportRef = useRef(null);
   useTextMaterials(viewportRef);
+  useContourReading(viewportRef);
   const chapterCopy = useChapterTextTransition(viewportRef, activeIndex, experienceVisible, theme);
   const displayedContentIndex = chapterCopy.index;
   const chapterIsSettled = experienceVisible && cinematicReadiness.settled && !chapterNavigationActive;
@@ -1351,7 +1352,9 @@ export function SpatialExperience({
   } = useCaseStudySequence(projectsActive, spatialPortfolio.projects.length);
   const handleIntro = useCallback(() => onChapterSelect(0), [onChapterSelect]);
   const handleIntroGuideReady = useCallback(() => setIntroGuideReady(true), []);
-  const handleThemeChosen = useCallback(() => setThemePromptCompleted(true), []);
+  const handleThemeChosen = useCallback(() => {
+    if (!themePromptCompleted) changeTextContent(() => setThemePromptCompleted(true), '.lore-parchment');
+  }, [themePromptCompleted]);
   const handleArchitectureClose = useCallback(() => setArchitectureProject(null), []);
   const handleArchitectureOpen = useCallback(() => {
     setArchitectureProject(spatialPortfolio.projects[displayedProjectIndex]);

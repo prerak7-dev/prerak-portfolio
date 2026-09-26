@@ -1,4 +1,5 @@
 import { useLayoutEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { TEXT_DISPLAY_SELECTOR } from '../data/textMaterials.js';
 import { findTextTargets } from '../utils/textTargets.js';
 import { claimTextMask, releaseTextMask } from '../utils/textMaskOwnership.js';
@@ -36,13 +37,15 @@ function visibleBounds(node, root) {
     if (parent !== node && /(auto|scroll|hidden|clip)/.test(`${style.overflowX} ${style.overflowY}`)) {
       const clip = parent.getBoundingClientRect();
       bounds.left = Math.max(bounds.left, clip.left); bounds.right = Math.min(bounds.right, clip.right);
-      bounds.top = Math.max(bounds.top, clip.top); bounds.bottom = Math.min(bounds.bottom, clip.bottom);
+      const bottom = parent.hasAttribute('data-reading-visible-height') ? Math.min(clip.bottom, clip.top + Number(parent.dataset.readingVisibleHeight)) : clip.bottom;
+      bounds.top = Math.max(bounds.top, clip.top); bounds.bottom = Math.min(bounds.bottom, bottom);
     }
   }
   return bounds.right > bounds.left && bounds.bottom > bounds.top ? bounds : null;
 }
 
 const visible = (node, root) => Boolean(visibleBounds(node, root));
+const withinScope = (node, scope) => !scope || (typeof scope === 'string' ? node.closest(scope) : scope.contains(node));
 
 function freezeAppearance(source, clone) {
   const originals = [source, ...source.querySelectorAll('*')];
@@ -74,6 +77,10 @@ export function useTextMaterials(ref) {
     let localFrame = 0;
     let localScope = null;
     let localRequest = 0;
+    let localPhase = null;
+    let localChange = null;
+    let loading = false;
+    const pendingChanges = new Map();
     const ghosts = new Map();
     const savedMasks = new Map();
     const maskOwner = Symbol('theme-content');
@@ -86,14 +93,16 @@ export function useTextMaterials(ref) {
         if (!node.classList.contains('material-text')) node.classList.add('material-text');
         node.dataset.textMaterial = node.matches(TEXT_DISPLAY_SELECTOR) ? 'display-ink' : 'ink';
       });
-      if (layer && transition?.active) applyLiveMask();
+      if (transition?.active && renderer && (layer || localPhase)) applyLiveMask();
     };
     const scheduleScan = () => { if (!disposed && !scanFrame) scanFrame = requestAnimationFrame(scan); };
     scan();
     const observer = new MutationObserver(records => {
-      if (records.some(record => record.type !== 'attributes' || record.target.matches('.archive-scene, .lore-parchment, .spatial-lore-guide, .contour-content'))) scheduleScan();
+      if (localPhase) scan();
+      else if (records.some(record => record.type !== 'attributes' || record.target.matches('.archive-scene, .lore-parchment, .spatial-lore-guide, .contour-content'))) scheduleScan();
+      runNextChange();
     });
-    observer.observe(root, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'aria-hidden'] });
+    observer.observe(root, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'aria-hidden', 'data-chapter-copy-phase'] });
     const appearanceObserver = new MutationObserver(scheduleScan);
     appearanceObserver.observe(root, { attributes: true, attributeFilter: ['class'] });
 
@@ -104,6 +113,7 @@ export function useTextMaterials(ref) {
       savedMasks.clear();
       ghosts.clear();
       delete root.dataset.textDissolving;
+      delete root.dataset.textContentPhase;
     };
     const snapshot = () => {
       layer = document.createElement('div');
@@ -112,7 +122,7 @@ export function useTextMaterials(ref) {
       layer.inert = true;
       for (const node of targets) {
         if (node.hasAttribute('data-chapter-text-mask')) continue;
-        if (localScope && !node.closest(localScope)) continue;
+        if (!withinScope(node, localScope)) continue;
         if (transition.kind === 'chapter' && node.closest('.chapter-rail')) continue;
         const bounds = visibleBounds(node, root);
         if (!bounds) continue;
@@ -122,7 +132,7 @@ export function useTextMaterials(ref) {
         freezeAppearance(node, clone);
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;`;
-        if (bounds.top > rect.top || bounds.bottom < rect.bottom) wrapper.style.clipPath = `inset(${Math.max(0, bounds.top - rect.top)}px 0 ${Math.max(0, rect.bottom - bounds.bottom)}px 0)`;
+        wrapper.style.clipPath = `inset(${Math.max(0, bounds.top - rect.top)}px ${Math.max(0, rect.right - bounds.right)}px ${Math.max(0, rect.bottom - bounds.bottom)}px ${Math.max(0, bounds.left - rect.left)}px)`;
         const { width, height } = layoutBox(node);
         const overrides = { position: 'absolute', inset: '0 auto auto 0', margin: '0', 'box-sizing': 'border-box', width: `${width + .02}px`, height: `${height}px`, 'min-width': '0', 'min-height': '0', 'max-width': 'none', 'max-height': 'none', scale: 'none', translate: 'none', rotate: 'none', transform: `scale(${rect.width / width},${rect.height / height})`, 'transform-origin': '0 0', 'mask-image': 'none' };
         for (const [key, value] of Object.entries(overrides)) clone.style.setProperty(key, value, 'important');
@@ -141,7 +151,7 @@ export function useTextMaterials(ref) {
     };
     function applyLiveMask() {
       const measurements = targets.filter(node => !savedMasks.has(node) && !node.hasAttribute('data-chapter-text-mask') && visible(node, root)
-        && (!localScope || node.closest(localScope))
+        && withinScope(node, localScope)
         && !(transition.kind === 'chapter' && node.closest('.chapter-rail')))
         .map(node => ({ node, rect: node.getBoundingClientRect(), ...layoutBox(node) }));
       for (const { node, rect, width, height } of measurements) {
@@ -150,7 +160,7 @@ export function useTextMaterials(ref) {
         const sx = rect.width / (width || rect.width);
         const sy = rect.height / (height || rect.height);
         node.closest('.contour-focus')?.setAttribute('data-contour-revealed', 'true');
-        claimTextMask(node, maskOwner, renderer.mask(rect, 'incoming', sx, sy));
+        claimTextMask(node, maskOwner, localPhase === 'exiting' ? 'linear-gradient(transparent, transparent)' : renderer.mask(rect, 'incoming', sx, sy));
       }
     }
     const paint = state => {
@@ -158,10 +168,17 @@ export function useTextMaterials(ref) {
       root.dataset.textDissolving = state.kind;
     };
     const unsubscribe = subscribeThemeContourTransition(state => {
-      if (localScope && !state.active) return;
-      if (state.active) { cancelAnimationFrame(localFrame); localScope = null; localRequest++; }
+      if ((localPhase || loading) && !state.active) return;
+      if (state.active && (localPhase || loading)) {
+        if (localChange && !localChange.updated && !pendingChanges.has(localChange.selector)) pendingChanges.set(localChange.selector, localChange);
+        else localChange?.complete?.();
+        localChange = null; localPhase = null; loading = false;
+        cancelAnimationFrame(localFrame); localScope = null; localRequest++;
+        restore();
+        delete root.dataset.textContentPhase;
+      }
       transition = state;
-      if (!state.active || reduced.matches || !state.geometryImage || state.fromTheme === 'boot') { restore(); return; }
+      if (!state.active || reduced.matches || !state.geometryImage || state.fromTheme === 'boot') { restore(); queueMicrotask(runNextChange); return; }
       if (state.kind === 'chapter') {
         if (token !== state.token) {
           restore(); token = state.token;
@@ -185,48 +202,84 @@ export function useTextMaterials(ref) {
         restore(); renderer?.dispose(); renderer = null;
       }
     });
-    const changeContent = async event => {
-      if (transition?.active || reduced.matches) return;
-      event.preventDefault();
+    async function runNextChange() {
+      if (disposed || loading || transition?.active || !pendingChanges.size || root.dataset.chapterCopyPhase !== 'idle') return;
+      const change = pendingChanges.values().next().value;
+      pendingChanges.delete(change.selector);
+      localChange = change;
+      if (reduced.matches) { change.update(); change.complete?.(); localChange = null; queueMicrotask(runNextChange); return; }
+      loading = true;
       const request = ++localRequest;
       const theme = [...root.classList].find(name => name.startsWith('theme-'))?.slice(6) || 'default';
       const chapter = ['intro', 'cores', 'projects', 'professional', 'education', 'personal', 'contact'].indexOf(root.dataset.chapter);
       const sceneIndex = [0, 1, 2, 3, 3, 4, 5][Math.max(0, chapter)];
-      let updated = false;
+      const complete = () => {
+        restore(); localScope = null; localPhase = null; localChange = null; loading = false;
+        transition = null;
+        change.complete?.();
+        queueMicrotask(runNextChange);
+      };
       try {
         const resource = await loadCinematicGeometryField(getCinematicGeometryAsset(theme, sceneIndex, 0));
-        if (disposed) return;
-        if (request !== localRequest || transition?.active) { event.detail.update(); return; }
+        if (disposed || request !== localRequest) return;
+        if (reduced.matches) { change.update(); change.updated = true; complete(); return; }
+        loading = false;
         transition = { active: true, kind: 'content', fromTheme: theme, sceneIndex, geometryImage: resource.image, progress: 0 };
-        localScope = event.detail.selector;
+        localScope = change.selector;
+        localPhase = 'exiting';
         restore(); scan(); renderer ??= createTextContourRenderer();
         configure(transition); snapshot(); applyLiveMask(); paint(transition);
-        event.detail.update(); updated = true;
-        const start = performance.now();
+        root.dataset.textContentPhase = 'exiting';
+        let start = performance.now();
         const tick = now => {
           if (disposed || request !== localRequest) return;
-          transition.progress = Math.min(1, (now - start) / 850);
+          transition.progress = Math.max(0, Math.min(1, (now - start) / (localPhase === 'exiting' ? 420 : 720)));
           paint(transition);
-          if (transition.progress < 1) localFrame = requestAnimationFrame(tick);
-          else { transition.active = false; restore(); localScope = null; }
+          if (transition.progress >= 1 && localPhase === 'exiting') {
+            // Commit only after the old face is gone; mask the new DOM before paint.
+            layer?.remove(); layer = null; ghosts.clear();
+            savedMasks.forEach((_, node) => releaseTextMask(node, maskOwner)); savedMasks.clear();
+            flushSync(change.update); change.updated = true;
+            root.dispatchEvent(new Event('contour-reading-refresh'));
+            localPhase = 'entering'; transition.progress = 0;
+            renderer.draw(0); scan(); applyLiveMask();
+            root.dataset.textContentPhase = 'entering';
+            start = now + 60;
+          } else if (transition.progress >= 1) {
+            delete root.dataset.textContentPhase; complete(); return;
+          }
+          localFrame = requestAnimationFrame(tick);
         };
         localFrame = requestAnimationFrame(tick);
       } catch {
-        if (!updated) event.detail.update();
-        restore(); localScope = null;
-        if (transition) transition.active = false;
+        if (request !== localRequest) return;
+        if (!change.updated) change.update();
+        delete root.dataset.textContentPhase; complete();
       }
+    }
+    const changeContent = event => {
+      if (reduced.matches) return;
+      event.preventDefault();
+      pendingChanges.get(event.detail.selector)?.complete?.();
+      pendingChanges.set(event.detail.selector, event.detail);
+      runNextChange();
     };
     window.addEventListener('text-contour-change', changeContent);
     const warmup = window.setTimeout(() => {
       try { if (!disposed && !reduced.matches) renderer ??= createTextContourRenderer(); } catch { /* The live DOM is the fallback. */ }
     }, 100);
     const resize = () => {
-      if (transition?.active && layer) {
+      if (transition?.active && (layer || localPhase)) {
         failedToken = transition.token;
         localRequest++; cancelAnimationFrame(localFrame); localScope = null;
-        if (transition.kind === 'content') transition.active = false;
+        if (transition.kind === 'content') {
+          if (localChange && !localChange.updated) localChange.update();
+          localChange?.complete?.(); localChange = null; localPhase = null;
+          transition.active = false;
+          delete root.dataset.textContentPhase;
+        }
         restore();
+        queueMicrotask(runNextChange);
       }
     };
     const preference = () => { if (reduced.matches) { resize(); restore(); } };
@@ -235,6 +288,7 @@ export function useTextMaterials(ref) {
     return () => {
       disposed = true; observer.disconnect(); appearanceObserver.disconnect(); unsubscribe(); cancelAnimationFrame(scanFrame);
       localRequest++; cancelAnimationFrame(localFrame); clearTimeout(warmup);
+      localChange?.complete?.(); pendingChanges.forEach(change => change.complete?.()); pendingChanges.clear();
       window.removeEventListener('text-contour-change', changeContent);
       window.removeEventListener('resize', resize); reduced.removeEventListener('change', preference);
       restore(); renderer?.dispose();

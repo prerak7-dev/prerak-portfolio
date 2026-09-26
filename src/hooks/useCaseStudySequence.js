@@ -28,10 +28,9 @@ export function useCaseStudySequence(active, itemCount) {
   const [sequence, setSequence] = useState({ selectedIndex: 0, displayedIndex: 0, cycle: 0 });
   const selectProject = useCallback(index => {
     const safeIndex = Math.min(Math.max(0, index), Math.max(0, itemCount - 1));
-    if (safeIndex === sequence.displayedIndex) return;
     changeTextContent(() => setSequence(current => ({
       selectedIndex: safeIndex, displayedIndex: safeIndex, cycle: current.cycle + 1,
     })), '.contour-projects');
-  }, [itemCount, sequence.displayedIndex]);
+  }, [itemCount]);
   return { ...sequence, phase: active ? 'visible' : 'idle', entryDelay: 0, selectProject };
 }

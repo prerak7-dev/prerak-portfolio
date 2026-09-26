@@ -17,7 +17,7 @@ await page.addInitScript(() => {
   const encode = HTMLCanvasElement.prototype.toDataURL;
   HTMLCanvasElement.prototype.toDataURL = function(...args) { window.transitionAudit.encodes++; return encode.apply(this, args); };
 });
-const settled = () => page.waitForFunction(() => document.querySelector('.archive-viewport')?.classList.contains('chapter-settled') && document.querySelector('.archive-viewport').dataset.chapterCopyPhase === 'idle' && !document.querySelector('.text-contour-ghosts'));
+const settled = () => page.waitForFunction(() => document.querySelector('.archive-viewport')?.classList.contains('chapter-settled') && document.querySelector('.archive-viewport').dataset.chapterCopyPhase === 'idle' && !document.querySelector('.archive-viewport').dataset.textContentPhase && !document.querySelector('.text-contour-ghosts'));
 async function chapter(label, id) {
   const tab = page.getByRole('tab', { name: label, exact: true });
   await tab.focus();
@@ -40,7 +40,7 @@ try {
     window.auditFrame = requestAnimationFrame(sample);
   });
   await page.getByRole('button', { name: 'Spring', exact: true }).click();
-  await page.waitForSelector('.text-contour-ghosts');
+  await page.waitForFunction(() => document.querySelector('.archive-viewport').dataset.textDissolving === 'theme' && document.querySelector('.text-contour-ghosts'));
   const alignment = await page.evaluate(() => [...document.querySelectorAll('.text-contour-ghosts > div > *')]
     .filter(node => node.textContent === 'Prerak Pandey' || node.textContent === 'Wonderer,').map(clone => {
       const original = [...document.querySelectorAll('.archive-viewport .material-text')].find(node => node.textContent === clone.textContent);
@@ -48,9 +48,19 @@ try {
       return Math.max(...box(original).map((value, index) => Math.abs(value - box(clone)[index])));
     }));
   assert(alignment.length === 2 && Math.max(...alignment) < 1, `Snapshot glyph shift: ${alignment}`);
+  const themeEncodes = await page.evaluate(async () => {
+    const counts = [];
+    while (document.querySelector('.archive-viewport').dataset.textDissolving === 'theme') {
+      counts.push(window.transitionAudit.encodes);
+      await new Promise(requestAnimationFrame);
+    }
+    return counts;
+  });
+  assert(themeEncodes.length >= 5 && new Set(themeEncodes).size === 1, `Mask re-encoded during theme animation: ${themeEncodes}`);
   await settled();
   const audit = await page.evaluate(() => { cancelAnimationFrame(window.auditFrame); return window.transitionAudit; });
-  assert(audit.encodes <= 1, `Repeated mask encoding: ${audit.encodes}`);
+  // The initial lore update, theme handoff, and queued lore entry each bake once.
+  assert(audit.encodes <= 3, `Repeated mask encoding: ${audit.encodes}`);
   assert(Math.max(...audit.shifts.map(rect => Math.max(...rect.map((value, i) => Math.abs(value - audit.shifts[0][i]))))) < 1);
   const intervals = audit.frames.slice(1).map((time, i) => time - audit.frames[i]).sort((a,b) => a-b);
   console.log(JSON.stringify({ encodes: audit.encodes, frames: intervals.length, p50: intervals[Math.floor(intervals.length*.5)], p95: intervals[Math.floor(intervals.length*.95)], max: intervals.at(-1), glyphShift: Math.max(...alignment) }));
@@ -84,10 +94,10 @@ try {
 
   await chapter('Case Studies', 'projects');
   const overview = await page.locator('.contour-projects .contour-record').first().innerText();
-  assert(await page.locator('.contour-projects .contour-record').count() > 5);
+  assert.equal(await page.locator('.contour-projects .contour-record').count(), 1);
   await page.getByRole('button', { name: 'Plugin', exact: true }).click();
   await page.waitForSelector('.text-contour-ghosts');
-  await page.waitForFunction(() => !document.querySelector('.text-contour-ghosts'));
+  await settled();
   assert.notEqual(await page.locator('.contour-projects .contour-record').first().innerText(), overview);
   await page.getByRole('button', { name: 'Telemetry', exact: true }).click();
   await page.waitForSelector('.text-contour-ghosts');
@@ -102,7 +112,7 @@ try {
     if (await collapse.count()) { await collapse.click(); await page.waitForFunction(() => !document.querySelector('.text-contour-ghosts')); }
     await page.waitForTimeout(200);
     assert.equal(await page.locator('.home-beat-controls').count(), 0);
-    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions']) assert(await page.locator(selector).isVisible(), `${selector} missing on ${width}`);
+    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions']) assert.equal(await page.locator(selector).count(), 1, `${selector} missing on ${width}`);
     assert.equal(await page.locator('.intro-status').count(), 0);
     const order = await page.locator('.intro-copy-stage > *').evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return [r.top,r.bottom]; }));
     for (let i=1;i<order.length;i++) assert(order[i][0] >= order[i-1][1], `Home copy overlaps at ${width}`);

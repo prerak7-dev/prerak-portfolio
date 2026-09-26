@@ -17,4 +17,4 @@ export const TEXT_TARGET_SELECTOR = [
   '.focus-pager > span', '.home-beat-controls > span', '.timeline-axis > span',
 ].join(',');
 
-export const TEXT_DISPLAY_SELECTOR = 'h1, h2, h3, h4, .intro-role, .archive-identity strong, .field-note-placeholder strong';
+export const TEXT_DISPLAY_SELECTOR = 'h1, h2, h3, h4, .intro-role, .archive-identity strong, .chapter-rail-list strong, .field-note-placeholder strong';

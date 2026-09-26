@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowRight, ExternalLink, GitBranch, Layers, FileText, ListChecks } from 'lucide-react';
 import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
 import { projectArchitectures, spatialPortfolio } from '../data/spatialPortfolioData.js';
 import { getSafeLinkProps } from '../security/contentSecurity.js';
+import { changeTextContent } from '../utils/changeTextContent.js';
 
 const cores = [
   ['Services', 'Reliable backends and asynchronous content pipelines.'],
@@ -15,14 +16,14 @@ export function ContourCores({ isActive, onContinue }) {
   useContourContentLayout(ref, 'cores', isActive);
   return <div ref={ref} data-lenis-prevent className={`contour-content contour-cores ${isActive ? 'is-present' : ''}`}>
     <header><p className="contour-eyebrow">Cores</p><h2>Three cores.<br />One connected practice.</h2></header>
-    <div className="contour-reading-list">
+    <div className="contour-reading-list" data-contour-reading tabIndex={0} aria-label="Engineering disciplines">
       {cores.map(([title, text]) => <article className="contour-record" key={title}><h3>{title}</h3><p>{text}</p></article>)}
     </div>
     <footer><button className="contour-link" onClick={onContinue}><span>Case studies</span> <ArrowRight aria-hidden="true" /></button></footer>
   </div>;
 }
 
-function CaseFocus({ project }) {
+function CaseFocus({ project, mode, onModeChange }) {
   const listRef = useRef(null);
   const architecture = projectArchitectures[project.architectureKey];
   const stacks = spatialPortfolio.projectStacks[project.architectureKey] || [];
@@ -35,18 +36,16 @@ function CaseFocus({ project }) {
     ...(architecture.command ? [{ category: 'Debug', title: 'Runtime visibility', text: architecture.command }] : []),
     ...stacks.map(([title, items]) => ({ category: 'Stack', title, text: items.join(' / ') })),
   ];
-  const jumpTo = category => {
-    const list = listRef.current;
-    const target = [...list.children].find(node => node.dataset.category === category);
-    if (target) list.scrollTo({ top: target.offsetTop - list.offsetTop, behavior: 'auto' });
-  };
+  const visibleRecords = records.filter(record => mode === 'Topology'
+    ? ['Topology', 'Anim Blueprint', 'Implementation', 'Debug'].includes(record.category)
+    : record.category === mode);
   return <>
-    <div className="case-focus-modes" role="group" aria-label="Project details">
+    <div className="case-focus-modes case-detail-copy" role="group" aria-label="Project details">
       {[[FileText, 'Overview'], [ListChecks, 'Evidence'], [GitBranch, 'Topology'], [Layers, 'Stack']].map(([Icon, label]) =>
-        <button key={label} aria-label={label} title={label} onClick={() => jumpTo(label)}><Icon aria-hidden="true" /><span>{label}</span></button>)}
+        <button key={label} aria-label={label} title={label} aria-pressed={mode === label} onClick={() => onModeChange(label)}><Icon aria-hidden="true" /><span>{label}</span></button>)}
     </div>
-    <div ref={listRef} className="contour-reading-list" data-lenis-prevent tabIndex={0} aria-label={`${project.title} details`}>
-      {records.map((record, index) => <article className="contour-record" data-category={record.category} key={index}>
+    <div ref={listRef} className="contour-reading-list case-detail-copy" data-mode={mode} data-lenis-prevent data-contour-reading tabIndex={0} aria-label={`${project.title} ${mode.toLowerCase()}`}>
+      {visibleRecords.map((record, index) => <article className="contour-record" data-category={record.category} key={`${mode}-${index}`}>
         <p className="contour-eyebrow">{record.category}{record.step ? ` / ${String(record.step).padStart(2, '0')}` : ''}</p>
         <h3>{record.title}</h3><p>{record.text}</p>
       </article>)}
@@ -57,6 +56,14 @@ function CaseFocus({ project }) {
 
 export function ContourCaseStudies({ isActive, displayedProjectIndex, selectedProjectIndex, onProjectChange }) {
   const ref = useRef(null);
+  const projectIndexRef = useRef(displayedProjectIndex);
+  projectIndexRef.current = displayedProjectIndex;
+  const [detail, setDetail] = useState({ project: displayedProjectIndex, mode: 'Overview' });
+  if (detail.project !== displayedProjectIndex) setDetail({ project: displayedProjectIndex, mode: 'Overview' });
+  const selectMode = mode => changeTextContent(() => {
+    // Resolve the project at commit time, after any queued project transition.
+    setDetail({ project: projectIndexRef.current, mode });
+  }, '.contour-projects .case-detail-copy');
   useContourContentLayout(ref, 'projects', isActive);
   const project = spatialPortfolio.projects[displayedProjectIndex];
   return <div ref={ref} data-lenis-prevent className={`contour-content contour-projects ${isActive ? 'is-present' : ''}`}>
@@ -64,6 +71,6 @@ export function ContourCaseStudies({ isActive, displayedProjectIndex, selectedPr
     <nav className="contour-project-tabs" aria-label="Projects">
       {spatialPortfolio.projects.map((item, index) => <button key={item.architectureKey} aria-pressed={selectedProjectIndex === index} onClick={() => onProjectChange(index)}>{['Pipeline', 'Plugin', 'Telemetry'][index]}</button>)}
     </nav>
-    <CaseFocus key={project.architectureKey} project={project} />
+    <CaseFocus key={project.architectureKey} project={project} mode={detail.project === displayedProjectIndex ? detail.mode : 'Overview'} onModeChange={selectMode} />
   </div>;
 }

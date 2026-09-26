@@ -1,5 +1,4 @@
 import { useLayoutEffect, useState } from 'react';
-import { subscribeSpatialMotion } from '../state/spatialMotionStore.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { getHomeCompositionLayout, HOME_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
 import { setCachedStyleProperty } from '../utils/motionPerformance.js';
@@ -36,11 +35,10 @@ export function useHomeCompositionLayout(ref) {
     observer.observe(document.documentElement);
     const header = document.querySelector('.archive-header');
     if (header) observer.observe(header);
-    const unsubscribe = subscribeSpatialMotion(schedule);
     document.fonts.ready.then(schedule);
     window.addEventListener('resize', schedule, { passive: true });
     measure();
-    return () => { disposed = true; unsubscribe(); observer.disconnect(); window.removeEventListener('resize', schedule); cancelAnimationFrame(frame); };
+    return () => { disposed = true; observer.disconnect(); window.removeEventListener('resize', schedule); cancelAnimationFrame(frame); };
   }, [ref]);
   return compact;
 }

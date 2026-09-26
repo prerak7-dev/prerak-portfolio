@@ -31,14 +31,11 @@ export const textMaterialStyles = `
     letter-spacing: 0;
     font-synthesis: none;
   }
-  .archive-app .archive-viewport :is(.contour-eyebrow, [aria-pressed="true"], .chapter-rail-list .active strong).material-text {
+  .archive-app .archive-viewport :is(.contour-eyebrow, [aria-pressed="true"]).material-text {
     --type-ink-color: var(--type-accent);
   }
-  .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong.material-text {
-    --type-ink-color: var(--type-ink);
-  }
-  .archive-app .archive-viewport .chapter-rail .chapter-rail-list button.active strong.material-text {
-    --type-ink-color: var(--type-accent);
+  .archive-app .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button strong.material-text {
+    text-shadow: none !important;
   }
   /* Static pigment layers leave the alpha mask exclusively to contour dissolves. */
   @supports ((background-clip: text) or (-webkit-background-clip: text)) and (color: color-mix(in srgb, white, transparent)) {
@@ -103,9 +100,19 @@ export const textMaterialStyles = `
   }
   .archive-viewport .contour-content { overflow: hidden; }
   .archive-viewport .contour-reading-list {
-    position: relative; min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain;
-    scrollbar-width: thin; padding: 2px 8px 6px 2px;
+    position: relative; min-height: 0; flex: 1; overflow: hidden; overscroll-behavior: contain;
+    padding: 8px 8px 6px 2px;
   }
+  .archive-app .archive-viewport [data-contour-reading] {
+    overflow: hidden !important; scroll-behavior: auto !important; scroll-snap-type: none !important;
+    touch-action: pan-x; overscroll-behavior: contain;
+    clip-path: inset(0 0 var(--reading-clip-bottom, 0px) 0) !important;
+  }
+  .archive-app .archive-viewport [data-contour-reading]::after { content: ''; display: block; height: var(--reading-tail, 0px); flex: none; }
+  .archive-app .archive-viewport [data-reading-hidden] { visibility: hidden !important; pointer-events: none !important; }
+  .archive-app .archive-viewport .contour-reading-list p:not(.contour-eyebrow) { line-height: 1.6; }
+  .archive-app .archive-viewport .intro-copy-stage :is(.intro-role, .intro-coordinate) { line-height: 1.5; }
+  .archive-app .archive-viewport [data-contour-reading]:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
   .archive-viewport .contour-record { margin: 0 0 24px; }
   .archive-viewport .contour-record:last-child { margin-bottom: 0; }
   .archive-viewport .contour-record h3 { margin-bottom: 8px; }

@@ -1,5 +1,4 @@
 import { useLayoutEffect } from 'react';
-import { subscribeSpatialMotion } from '../state/spatialMotionStore.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { getContourContentBounds } from '../utils/contourContentLayout.js';
 import { HOME_COMPACT_QUERY, NAV_LANDSCAPE_QUERY } from '../utils/homeCompositionLayout.js';
@@ -23,11 +22,10 @@ export function useContourContentLayout(ref, chapter, enabled = true) {
       for (const key of ['left', 'top', 'width', 'height']) setCachedStyleProperty(node, `--content-${key}`, `${bounds[key].toFixed(1)}px`);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
-    const unsubscribe = subscribeSpatialMotion(() => { if (enabled) schedule(); });
     const observer = new ResizeObserver(schedule);
     observer.observe(document.documentElement);
     window.addEventListener('resize', schedule, { passive: true });
     measure();
-    return () => { unsubscribe(); observer.disconnect(); window.removeEventListener('resize', schedule); cancelAnimationFrame(frame); };
+    return () => { observer.disconnect(); window.removeEventListener('resize', schedule); cancelAnimationFrame(frame); };
   }, [ref, chapter, enabled]);
 }

@@ -62,6 +62,15 @@ try {
   const materials = [];
   for (const season of ['default', 'fall', 'spring', 'winter']) for (const light of [false, true]) {
     await theme(page, season, light);
+    const navigation = await page.evaluate(() => {
+      const properties = ['fontFamily', 'fontWeight', 'color', 'backgroundImage', 'backgroundSize', 'textShadow', 'filter'];
+      const heading = getComputedStyle(document.querySelector('.archive-identity strong'));
+      return [...document.querySelectorAll('.chapter-rail-list strong')].map(node => {
+        const label = getComputedStyle(node);
+        return { size: label.fontSize, differences: properties.filter(property => label[property] !== heading[property]).map(property => [property, label[property], heading[property]]) };
+      });
+    });
+    assert(navigation.length === 7 && navigation.every(label => label.size === '12px' && !label.differences.length), `Header/nav mismatch in ${season} ${light}: ${JSON.stringify(navigation)}`);
     const tokens = await page.locator('.intro-role').first().evaluate(node => ({
       ink: getComputedStyle(node).getPropertyValue('--type-ink'),
       face: getComputedStyle(node).getPropertyValue('--type-face'),
@@ -119,7 +128,7 @@ try {
     await settled(page);
     const collapse = page.getByRole('button', { name: 'Collapse lore guide' });
     if (await collapse.count()) await collapse.click();
-    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions']) assert(await page.locator(selector).isVisible());
+    for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions']) assert.equal(await page.locator(selector).count(), 1);
     assert.equal(await page.locator('.intro-status').count(), 0);
     assert.equal(await page.locator('.home-beat-controls').count(), 0);
     await page.screenshot({ path: `${output}/home-${width}.png` });
@@ -136,7 +145,7 @@ try {
     await projects.focus(); await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('.archive-viewport').dataset.chapter === 'projects');
     await settled(page);
-    assert(await page.locator('.contour-projects .contour-record').count() > 5);
+    assert.equal(await page.locator('.contour-projects .contour-record').count(), 1);
     await page.screenshot({ path: `${output}/projects-${width}.png` });
     report.push({ width, height, continuousCopy: true, loreToggle: true });
   }

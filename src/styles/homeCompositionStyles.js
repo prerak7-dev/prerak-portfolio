@@ -5,7 +5,19 @@ export const homeCompositionStyles = `
   .archive-header :is(button, a) { pointer-events: auto; }
   .archive-viewport .chapter-rail .chapter-rail-list { scroll-snap-type: none !important; scroll-behavior: auto !important; }
   .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong { scale: 1 !important; }
+  .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong { font-weight: 700; }
   .archive-app .lore-parchment p { font-size: 24.225px; line-height: 1.45; }
+  .archive-app .archive-viewport .spatial-lore-guide .lore-parchment {
+    position: fixed; inset: auto max(24px, env(safe-area-inset-right)) 144px auto;
+    width: min(440px, calc(100vw - 48px)); height: auto;
+    min-height: 0; max-height: calc(100dvh - 250px);
+    display: block; padding: 8px; margin: 0; overflow: hidden;
+    transform: none; text-align: left; transform-origin: initial;
+  }
+  .archive-app .archive-viewport .spatial-lore-guide .lore-parchment p {
+    width: 100%; margin: 0; padding: 0; text-align: left; text-indent: 0;
+    overflow-wrap: anywhere; white-space: normal;
+  }
   .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list strong {
     width: max-content; max-width: 156px; padding: 10px 0; white-space: nowrap;
     pointer-events: auto; cursor: pointer;
@@ -64,7 +76,7 @@ export const homeCompositionStyles = `
   .archive-app .archive-viewport .chapter-rail.is-orbit-ready .chapter-rail-list strong {
     position: relative !important; inset: auto !important; flex: none;
     width: max-content; max-width: none; padding: 0;
-    font-size: 16px; line-height: 1.2; text-align: left; white-space: nowrap;
+    font-size: 12px; line-height: 1.2; text-align: left; white-space: nowrap;
     transform: none !important; animation: none !important;
   }
   }
@@ -139,7 +151,7 @@ export const homeCompositionStyles = `
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list strong.scenic-text {
       position: relative !important; inset: auto !important; width: max-content; padding: 0;
-      font-size: 16px; line-height: 1.2; transform: none !important; transform-origin: left center;
+      font-size: 12px; line-height: 1.2; transform: none !important; transform-origin: left center;
       animation: none !important; opacity: 1; pointer-events: auto;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-scroll-arrow {
@@ -208,11 +220,11 @@ export const homeCompositionStyles = `
     .archive-app .archive-viewport .spatial-lore-guide .lore-parchment {
       position: absolute; left: auto; right: max(20px, env(safe-area-inset-right)); top: calc(var(--mobile-header-top) + 72px); bottom: calc(var(--mobile-dock-bottom) + 82px);
       width: min(440px, calc(100% - 40px)); max-height: none; min-height: 0; height: auto;
-      display: block;
+      display: flex; flex-direction: column;
       padding: 6px 8px 12px; overflow: auto; overscroll-behavior: contain;
       scrollbar-width: thin; transform: none; clip-path: none;
     }
-    .archive-app .archive-viewport .spatial-lore-guide .lore-parchment p { font-size: 19.38px; line-height: 1.45; }
+    .archive-app .archive-viewport .spatial-lore-guide .lore-parchment p { flex: none; margin-top: auto; font-size: 19.38px; line-height: 1.45; }
     .archive-app .archive-viewport:has(.spatial-lore-guide:not(.is-collapsed)) .archive-scene-stack {
       opacity: 0; visibility: hidden; pointer-events: none;
     }
@@ -250,21 +262,36 @@ export const homeCompositionStyles = `
     .archive-viewport .archive-header-actions { gap: 4px; }
     .archive-viewport .archive-header-actions a { font-size: 13px; }
   }
-  @media (max-height: 500px) and (min-width: 600px) {
-    .archive-viewport .contour-content { display: flex; flex-direction: column; gap: 12px; }
+  @media (max-height: 500px) and (orientation: landscape) {
+    .archive-viewport .contour-content { display: grid; grid-template-columns: minmax(150px, .85fr) minmax(0, 1.15fr); grid-template-rows: minmax(0, 1fr) 44px; gap: 8px 12px; }
     .archive-viewport .contour-content .contour-focus { justify-content: flex-start; padding: 0; }
     .archive-viewport .contour-content .contour-eyebrow { margin-bottom: 4px; font-size: 13px; }
     .archive-viewport .contour-content p { font-size: 16px; line-height: 1.25; }
     .archive-viewport .contour-cores > header { grid-column: 1; grid-row: 1; }
     .archive-viewport .contour-cores > article { grid-column: 2; grid-row: 1; }
+    .archive-viewport .contour-cores .contour-reading-list { grid-column: 2; grid-row: 1; }
     .archive-viewport .contour-cores > footer { grid-column: 1 / -1; grid-row: 2; }
     .archive-viewport .contour-projects { grid-template-rows: 30px 1fr 44px; }
     .archive-viewport .contour-projects > header { grid-column: 1; grid-row: 1; }
     .archive-viewport .contour-projects > nav { grid-column: 1; grid-row: 2; align-self: start; }
     .archive-viewport .contour-projects .case-focus-modes { grid-column: 1; grid-row: 3; }
     .archive-viewport .contour-projects > article { grid-column: 2; grid-row: 1 / 3; }
+    .archive-viewport .contour-projects .contour-reading-list { grid-column: 2; grid-row: 1 / 3; }
     .archive-viewport .contour-projects > footer { grid-column: 2; grid-row: 3; }
     .archive-viewport .contour-projects .contour-project-tabs { gap: 0; }
     .archive-viewport .contour-projects .contour-project-tabs button { padding-inline: 6px; }
+    .archive-viewport .contour-projects .contour-project-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; align-content: start; }
+    .archive-viewport .contour-projects .contour-project-tabs button { flex: none; }
+    .archive-viewport .case-focus-modes { flex-wrap: nowrap; gap: 0; }
+    .archive-viewport .case-focus-modes button { width: 36px; min-width: 0; padding: 8px; }
+  }
+  @media (max-width: 650px) and (max-height: 500px) and (orientation: landscape) {
+    .archive-viewport .contour-projects .contour-record h3 { font-size: 18px; line-height: 1.15; }
+    .archive-viewport .contour-projects .contour-reading-list { grid-row: 1 / -1; }
+    .archive-viewport .contour-projects .case-focus-modes { width: 120px; }
+    .archive-viewport .contour-projects .case-focus-modes button { width: 30px; padding: 5px; }
+    .archive-viewport .contour-projects > footer { grid-column: 1; grid-row: 3; justify-self: end; width: 30px; }
+    .archive-viewport .contour-projects > footer a { width: 30px; padding: 5px; }
+    .archive-viewport .contour-projects > footer a span { display: none; }
   }
 `;
