@@ -40,7 +40,7 @@ function CaseFocus({ project, mode, onModeChange }) {
     ? ['Topology', 'Anim Blueprint', 'Implementation', 'Debug'].includes(record.category)
     : record.category === mode);
   return <>
-    <div className="case-focus-modes case-detail-copy" role="group" aria-label="Project details">
+    <div className="case-focus-modes" role="group" aria-label="Project details">
       {[[FileText, 'Overview'], [ListChecks, 'Evidence'], [GitBranch, 'Topology'], [Layers, 'Stack']].map(([Icon, label]) =>
         <button key={label} aria-label={label} title={label} aria-pressed={mode === label} onClick={() => onModeChange(label)}><Icon aria-hidden="true" /><span>{label}</span></button>)}
     </div>
@@ -59,11 +59,17 @@ export function ContourCaseStudies({ isActive, displayedProjectIndex, selectedPr
   const projectIndexRef = useRef(displayedProjectIndex);
   projectIndexRef.current = displayedProjectIndex;
   const [detail, setDetail] = useState({ project: displayedProjectIndex, mode: 'Overview' });
+  const mode = detail.project === displayedProjectIndex ? detail.mode : 'Overview';
+  const latest = useRef({ isActive, mode });
+  latest.current = { isActive, mode };
   if (detail.project !== displayedProjectIndex) setDetail({ project: displayedProjectIndex, mode: 'Overview' });
   const selectMode = mode => changeTextContent(() => {
     // Resolve the project at commit time, after any queued project transition.
     setDetail({ project: projectIndexRef.current, mode });
-  }, '.contour-projects .case-detail-copy');
+  }, '.contour-projects .contour-reading-list', {
+    key: 'case-detail',
+    shouldUpdate: () => latest.current.isActive && latest.current.mode !== mode,
+  });
   useContourContentLayout(ref, 'projects', isActive);
   const project = spatialPortfolio.projects[displayedProjectIndex];
   return <div ref={ref} data-lenis-prevent className={`contour-content contour-projects ${isActive ? 'is-present' : ''}`}>
@@ -71,6 +77,6 @@ export function ContourCaseStudies({ isActive, displayedProjectIndex, selectedPr
     <nav className="contour-project-tabs" aria-label="Projects">
       {spatialPortfolio.projects.map((item, index) => <button key={item.architectureKey} aria-pressed={selectedProjectIndex === index} onClick={() => onProjectChange(index)}>{['Pipeline', 'Plugin', 'Telemetry'][index]}</button>)}
     </nav>
-    <CaseFocus key={project.architectureKey} project={project} mode={detail.project === displayedProjectIndex ? detail.mode : 'Overview'} onModeChange={selectMode} />
+    <CaseFocus project={project} mode={mode} onModeChange={selectMode} />
   </div>;
 }

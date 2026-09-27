@@ -20,3 +20,12 @@ test('desktop project content stays left of the painted planetary limb', () => {
   const bounds = getContourContentBounds('projects',{left:0,top:0,width:1600,height:900},1600,900);
   assert.ok(bounds.left+bounds.width<1600*.64);
 });
+
+test('stacked portrait controls leave chapter content below the navigation', () => {
+  for (const chapter of ['cores', 'projects']) {
+    const bounds = getContourContentBounds(chapter, { left: -310, top: 0, width: 1010, height: 568 }, 320, 568, true, false, 194);
+    assert.equal(bounds.top, 194);
+    assert(bounds.height >= 96);
+    assert(bounds.top + bounds.height <= 568 - 100);
+  }
+});

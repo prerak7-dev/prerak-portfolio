@@ -70,7 +70,8 @@ export function useContourReading(ref) {
       pending.add(node);
       changeTextContent(() => {
         if (node.isConnected && readers.get(node) === reader) showPage(node, reader, index);
-      }, node)
+      }, node, { shouldUpdate: () => node.isConnected && !node.closest('[aria-hidden="true"]')
+        && readers.get(node) === reader && reader.index !== index })
         .finally(() => pending.delete(node));
     };
     const wheel = event => {

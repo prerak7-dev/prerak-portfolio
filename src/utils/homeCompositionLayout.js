@@ -19,6 +19,10 @@ export function getHomeCompositionLayout(projection, width, height, headerBottom
   const water = { left: waterLeft, top: y(.852), width: waterRight - waterLeft, height: Math.max(62, height - 32 - y(.852)) };
   return {
     compact, sky, water,
+    thought: {
+      left: clamp(x(.075) + 28, 20, width - 220),
+      top: Math.max(top + 8, y(.418) - 148),
+    },
     roleSize: Math.min(compact ? 24 : 28, Math.max(16, Math.floor(skyHeight / 3.36))),
     mottoWidth: clamp(sky.width * .31, 130, 170),
     gate: { left: x(.5), top: y(.8) + 12 },

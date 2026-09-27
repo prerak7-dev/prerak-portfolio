@@ -571,6 +571,12 @@ function SpatialHud({ theme, onThemeChange, onThemeChosen }) {
 
 function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }) {
   const [collapsed, setCollapsed] = useState(true);
+  const collapsedRef = useRef(collapsed);
+  collapsedRef.current = collapsed;
+  const changeCollapsed = useCallback(value => changeTextContent(() => setCollapsed(value),
+    window.matchMedia(HOME_COMPACT_QUERY).matches ? '.archive-scene-stack, .lore-parchment' : '.lore-parchment', {
+      key: 'lore-visibility', shouldUpdate: () => collapsedRef.current !== value,
+    }), []);
   const textAnimationReady = introGuideReady;
   const [pointerReading, setPointerReading] = useState(false);
   const [focusReading, setFocusReading] = useState(false);
@@ -617,9 +623,9 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
       || pointerReading || focusReading) return undefined;
     // Allow the contour entrance to finish, then pause reading time on interaction.
     const readingMs = Math.max(9000, message.trim().split(/\s+/).length * 400 + 2500);
-    const timer = window.setTimeout(() => changeTextContent(() => setCollapsed(true), '.archive-scene-stack, .lore-parchment'), readingMs);
+    const timer = window.setTimeout(() => changeCollapsed(true), readingMs);
     return () => window.clearTimeout(timer);
-  }, [collapsed, textAnimationReady, message, pointerReading, focusReading]);
+  }, [collapsed, textAnimationReady, message, pointerReading, focusReading, changeCollapsed]);
   const guideState = !introGuideReady ? 'is-awaiting' : textAnimationReady ? 'is-ready' : 'is-opening';
 
   return (
@@ -641,7 +647,7 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
         aria-label={!introGuideReady ? 'Lore guide waiting for introduction' : collapsed ? 'Expand lore guide' : 'Collapse lore guide'}
         aria-expanded={!collapsed}
         disabled={!introGuideReady}
-        onClick={() => changeTextContent(() => setCollapsed((value) => !value), '.archive-scene-stack, .lore-parchment')}
+        onClick={() => changeCollapsed(!collapsed)}
       >
         <TrianglePointer direction={collapsed ? 'left' : 'right'} />
       </button>
@@ -819,13 +825,13 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
   return (
     <div ref={compositionRef} data-compact={compact} className={`intro-chapter-content home-composition is-copy-complete is-resume-visible is-resume-complete ${isActive ? 'is-active' : ''}`}>
       <div className="intro-copy-stage" data-lenis-prevent data-contour-reading tabIndex={0} aria-label="Introduction">
+        <div className="intro-role-orbit">
+          {copy.slice(4, 7).map(phrase => <p className="intro-role" key={phrase}><ScenicText>{phrase}</ScenicText></p>)}
+        </div>
         <div className="intro-manifesto">
           {copy.slice(0, 4).map((phrase, index) => (
             <p className="intro-coordinate intro-manifesto-line has-copy" key={phrase} style={{ '--manifesto-index': index }}><span>{phrase}</span></p>
           ))}
-        </div>
-        <div className="intro-role-orbit">
-          {copy.slice(4, 7).map(phrase => <p className="intro-role" key={phrase}><ScenicText>{phrase}</ScenicText></p>)}
         </div>
         <div className="intro-actions">
           <a className="tracer-action" data-tracer-prop="action" href={profile.resume} download><span>{copy[7]}</span></a>
@@ -1321,6 +1327,8 @@ export function SpatialExperience({
   onEnvironmentReady,
 }) {
   const [themePromptCompleted, setThemePromptCompleted] = useState(false);
+  const themePromptCompletedRef = useRef(themePromptCompleted);
+  themePromptCompletedRef.current = themePromptCompleted;
   const [introGuideReady, setIntroGuideReady] = useState(false);
   const [architectureProject, setArchitectureProject] = useState(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
@@ -1353,7 +1361,9 @@ export function SpatialExperience({
   const handleIntro = useCallback(() => onChapterSelect(0), [onChapterSelect]);
   const handleIntroGuideReady = useCallback(() => setIntroGuideReady(true), []);
   const handleThemeChosen = useCallback(() => {
-    if (!themePromptCompleted) changeTextContent(() => setThemePromptCompleted(true), '.lore-parchment');
+    if (!themePromptCompleted) changeTextContent(() => setThemePromptCompleted(true), '.lore-parchment', {
+      shouldUpdate: () => !themePromptCompletedRef.current,
+    });
   }, [themePromptCompleted]);
   const handleArchitectureClose = useCallback(() => setArchitectureProject(null), []);
   const handleArchitectureOpen = useCallback(() => {

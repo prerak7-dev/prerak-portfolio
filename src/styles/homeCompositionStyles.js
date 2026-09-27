@@ -89,10 +89,11 @@ export const homeCompositionStyles = `
     position: absolute; margin: 0; padding: 0; max-width: none;
   }
   .archive-viewport .home-composition .intro-manifesto {
-    left: var(--home-sky-left); top: var(--home-sky-top);
+    left: var(--home-thought-left); top: var(--home-thought-top);
     width: var(--home-motto-width); gap: 6px;
   }
-  .archive-viewport .home-composition .intro-manifesto-line { font-size: 16px; line-height: 1.25; }
+  .archive-viewport .home-composition .intro-manifesto-line { font-size: 18.4px; line-height: 1.25; }
+  .archive-viewport [data-home-awaiting] { visibility: hidden !important; }
   .archive-viewport .home-composition .intro-manifesto-line { transform: translateX(calc(var(--manifesto-index) * 12px)); }
   .archive-viewport .home-composition .intro-role-orbit {
     left: calc(var(--home-sky-left) + var(--home-motto-width) + 24px); top: var(--home-sky-top);
@@ -112,12 +113,21 @@ export const homeCompositionStyles = `
   @media ${HOME_COMPACT_QUERY} {
     .archive-viewport { --mobile-header-top: max(10px, env(safe-area-inset-top)); --mobile-nav-top: calc(var(--mobile-header-top) + 60px); --mobile-dock-bottom: calc(18px + env(safe-area-inset-bottom)); }
     .archive-viewport .archive-header { position: fixed; top: var(--mobile-header-top); left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); height: 52px; gap: 12px; }
-    .archive-viewport .archive-identity { flex: 1; gap: 8px; padding: 0; }
+    .archive-viewport .archive-identity { flex: 0 1 auto; gap: 8px; padding: 0; }
     .archive-viewport .archive-identity .profile-avatar { flex: none; width: 36px; height: 36px; }
     .archive-viewport .archive-identity strong { font-size: 18px; line-height: 1.1; }
     .archive-viewport .archive-identity small { display: none; }
     .archive-viewport .archive-header-actions { flex: none; padding: 0; gap: 8px; }
     .archive-viewport .archive-header-actions a { min-height: 44px; padding: 0 4px; font-size: 15px; }
+  }
+  @media (orientation: portrait) and (max-width: 700px) {
+    .archive-viewport { --mobile-header-top: calc(max(8px, env(safe-area-inset-top)) + 56px); }
+  }
+  @media (orientation: landscape) and (max-width: 700px) {
+    .archive-viewport .archive-identity { max-width: calc(50vw - 134px); }
+    .archive-viewport .archive-identity strong { font-size: 16px; white-space: normal; }
+    .archive-viewport .archive-header-actions { gap: 4px; }
+    .archive-viewport .archive-header-actions a { font-size: 13px; padding-inline: 0; }
   }
   @media ${NAV_COMPACT_QUERY} {
     .archive-viewport .chapter-rail.is-orbit-rail,
@@ -172,7 +182,7 @@ export const homeCompositionStyles = `
       max-height: none; display: block; flex: none;
     }
     .archive-viewport .home-composition .intro-manifesto { display: flex; flex-wrap: wrap; gap: 0 6px; }
-    .archive-viewport .home-composition .intro-manifesto-line { transform: none; font-size: 16px; }
+    .archive-viewport .home-composition .intro-manifesto-line { transform: none; font-size: 18.4px; }
     .archive-viewport .home-composition .intro-role-orbit { display: grid; }
     .archive-viewport .home-composition .intro-copy-stage .intro-role { font-size: 24px; line-height: 1.08; }
     .archive-viewport .home-composition .intro-copy-stage .intro-status { font-size: 16px; line-height: 1.3; }
@@ -183,8 +193,8 @@ export const homeCompositionStyles = `
     }
     .archive-viewport .home-composition .intro-gate-cta { width: 158px; min-width: 0; min-height: 44px; padding: 4px 6px; font-size: 16px; }
     .archive-viewport .spatial-hud.theme-switcher {
-      position: fixed; inset: auto auto var(--mobile-dock-bottom) max(10px, env(safe-area-inset-left));
-      padding: 9px 11px; transform: none !important; translate: none; animation: none; transition: none;
+      position: fixed; inset: max(8px, env(safe-area-inset-top)) 0 auto;
+      padding: 4px 8px; transform: none !important; translate: none; animation: none; transition: none;
     }
     .archive-viewport .archive-progress { display: none; }
     .archive-viewport .theme-switcher .theme-icon-row { gap: 0; }

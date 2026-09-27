@@ -4,7 +4,7 @@ const require = createRequire(process.env.PLAYWRIGHT_PACKAGE || 'C:/Users/prera/
 const { chromium } = require('playwright');
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 try {
-  for (const [width, height] of [[1440, 900], [390, 844], [844, 390], [568, 320]]) {
+  for (const [width, height] of [[1440, 900], [390, 844], [320, 568], [844, 390], [568, 320]]) {
     const page = await browser.newPage({ viewport: { width, height }, isMobile: width < 1000, hasTouch: width < 1000, reducedMotion: 'reduce' });
     await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:4187/prerak-portfolio/');
     await page.waitForFunction(() => document.querySelector('.archive-viewport')?.dataset.chapterCopyPhase === 'idle' && document.querySelector('.archive-viewport').classList.contains('chapter-settled'));

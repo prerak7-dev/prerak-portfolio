@@ -7284,15 +7284,15 @@ export const spatialStyles = `
   }
 
   .archive-viewport .spatial-hud.theme-switcher {
-    position: absolute;
-    left: 24px;
-    right: auto;
-    bottom: 24px;
+    position: fixed;
+    inset: max(16px, env(safe-area-inset-top)) 0 auto;
+    margin: 0 auto;
+    z-index: 41;
     width: max-content;
     max-width: calc(100vw - 32px);
     height: auto;
     min-height: 0;
-    padding: 13px 16px;
+    padding: 8px 12px;
     border: 0;
     border-radius: 0;
     background: none;
@@ -7343,10 +7343,11 @@ export const spatialStyles = `
   }
   .theme-switcher .theme-icon-row button:hover { color: #fff; }
   .theme-switcher .theme-icon-row button:focus-visible { outline: 2px solid #fff1cf; outline-offset: 2px; }
-  .theme-switcher .theme-icon-row svg { width: 25px; height: 25px; }
+  .theme-switcher .theme-icon-row svg { width: 20px; height: 20px; }
   .theme-icon-tooltip {
     position: absolute;
-    bottom: calc(100% + 12px);
+    top: calc(100% + 10px);
+    bottom: auto;
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
@@ -7360,10 +7361,10 @@ export const spatialStyles = `
   }
   .theme-icon-row button:is(:hover, :focus-visible) .theme-icon-tooltip { opacity: 1; }
   @media (max-width: 760px) {
-    .archive-viewport .spatial-hud.theme-switcher { left: 10px; bottom: 36px; padding: 9px 11px; }
+    .archive-viewport .spatial-hud.theme-switcher { padding: 4px 8px; }
     .theme-switcher .theme-icon-row { gap: 0; }
     .archive-viewport .theme-switcher .theme-icon-row button { width: 44px; height: 44px; min-width: 44px; }
-    .theme-switcher .theme-icon-row svg { width: 23px; height: 23px; }
+    .theme-switcher .theme-icon-row svg { width: 20px; height: 20px; }
   }
 
   @media (prefers-reduced-motion: reduce) {

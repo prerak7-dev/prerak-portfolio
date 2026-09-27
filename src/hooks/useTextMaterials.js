@@ -10,6 +10,7 @@ import { createTextContourRenderer } from '../utils/textContourRenderer.js';
 import { getCinematicGeometryAsset } from '../data/cinematicAssets.js';
 import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
 import { beginTracerContourTransition, maskTracerContourTransition, finishTracerContourTransition } from '../utils/tracerContourTransition.js';
+import { TEXT_CONTENT_ENTRY_MS } from '../utils/textChoreography.js';
 
 const SCENE_IMAGES = ['.gateway-sequence-preloads img', '.cores-plate img', '.systems-plate img', '.chronology-plate img', '.field-plate img', '.surface-plate img'];
 const APPEARANCE_PROPERTIES = ['display', 'box-sizing', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-transform', 'text-align', 'text-indent', 'white-space', 'word-spacing', 'word-break', 'overflow-wrap', 'color', '-webkit-text-fill-color', '-webkit-text-stroke', 'text-shadow', 'background-image', 'background-size', 'background-position', 'background-repeat', 'background-blend-mode', 'background-clip', '-webkit-background-clip', 'filter', 'padding', 'margin', 'vertical-align', 'text-decoration', 'gap', 'align-items', 'justify-content'];
@@ -91,7 +92,8 @@ export function useTextMaterials(ref) {
       targets = findTextTargets(root);
       targets.forEach(node => {
         if (!node.classList.contains('material-text')) node.classList.add('material-text');
-        node.dataset.textMaterial = node.matches(TEXT_DISPLAY_SELECTOR) ? 'display-ink' : 'ink';
+        const material = node.matches(TEXT_DISPLAY_SELECTOR) ? 'display-ink' : 'ink';
+        if (node.dataset.textMaterial !== material) node.dataset.textMaterial = material;
       });
       if (transition?.active && renderer && (layer || localPhase)) applyLiveMask();
     };
@@ -121,7 +123,7 @@ export function useTextMaterials(ref) {
       layer.setAttribute('aria-hidden', 'true');
       layer.inert = true;
       for (const node of targets) {
-        if (node.hasAttribute('data-chapter-text-mask')) continue;
+        if (node.closest('[data-chapter-text-mask]')) continue;
         if (!withinScope(node, localScope)) continue;
         if (transition.kind === 'chapter' && node.closest('.chapter-rail')) continue;
         const bounds = visibleBounds(node, root);
@@ -150,7 +152,7 @@ export function useTextMaterials(ref) {
       renderer.configure(state.geometryImage, projection, getTracerSceneField(state.fromTheme, state.sceneIndex), width, height);
     };
     function applyLiveMask() {
-      const measurements = targets.filter(node => !savedMasks.has(node) && !node.hasAttribute('data-chapter-text-mask') && visible(node, root)
+      const measurements = targets.filter(node => !savedMasks.has(node) && !node.closest('[data-chapter-text-mask]') && visible(node, root)
         && withinScope(node, localScope)
         && !(transition.kind === 'chapter' && node.closest('.chapter-rail')))
         .map(node => ({ node, rect: node.getBoundingClientRect(), ...layoutBox(node) }));
@@ -164,14 +166,18 @@ export function useTextMaterials(ref) {
       }
     }
     const paint = state => {
-      renderer.draw(state.progress);
+      renderer.draw(state.progress, 'default', state.kind === 'theme' ? Math.pow(state.progress, 1.2) : state.progress);
       root.dataset.textDissolving = state.kind;
     };
     const unsubscribe = subscribeThemeContourTransition(state => {
       if ((localPhase || loading) && !state.active) return;
       if (state.active && (localPhase || loading)) {
-        if (localChange && !localChange.updated && !pendingChanges.has(localChange.selector)) pendingChanges.set(localChange.selector, localChange);
-        else localChange?.complete?.();
+        if (localChange && !localChange.updated && !pendingChanges.has(localChange.key)) {
+          // Resume the interrupted project before its queued detail/page requests.
+          const pending = [...pendingChanges];
+          pendingChanges.clear(); pendingChanges.set(localChange.key, localChange);
+          pending.forEach(([key, change]) => pendingChanges.set(key, change));
+        } else localChange?.complete?.();
         localChange = null; localPhase = null; loading = false;
         cancelAnimationFrame(localFrame); localScope = null; localRequest++;
         restore();
@@ -205,7 +211,9 @@ export function useTextMaterials(ref) {
     async function runNextChange() {
       if (disposed || loading || transition?.active || !pendingChanges.size || root.dataset.chapterCopyPhase !== 'idle') return;
       const change = pendingChanges.values().next().value;
-      pendingChanges.delete(change.selector);
+      pendingChanges.delete(change.key);
+      // Recheck at execution time: earlier requests may already have selected this content.
+      if (!change.shouldUpdate()) { change.complete?.(); queueMicrotask(runNextChange); return; }
       localChange = change;
       if (reduced.matches) { change.update(); change.complete?.(); localChange = null; queueMicrotask(runNextChange); return; }
       loading = true;
@@ -222,6 +230,7 @@ export function useTextMaterials(ref) {
       try {
         const resource = await loadCinematicGeometryField(getCinematicGeometryAsset(theme, sceneIndex, 0));
         if (disposed || request !== localRequest) return;
+        if (!change.shouldUpdate()) { complete(); return; }
         if (reduced.matches) { change.update(); change.updated = true; complete(); return; }
         loading = false;
         transition = { active: true, kind: 'content', fromTheme: theme, sceneIndex, geometryImage: resource.image, progress: 0 };
@@ -233,7 +242,7 @@ export function useTextMaterials(ref) {
         let start = performance.now();
         const tick = now => {
           if (disposed || request !== localRequest) return;
-          transition.progress = Math.max(0, Math.min(1, (now - start) / (localPhase === 'exiting' ? 420 : 720)));
+          transition.progress = Math.max(0, Math.min(1, (now - start) / (localPhase === 'exiting' ? 420 : TEXT_CONTENT_ENTRY_MS)));
           paint(transition);
           if (transition.progress >= 1 && localPhase === 'exiting') {
             // Commit only after the old face is gone; mask the new DOM before paint.
@@ -260,8 +269,8 @@ export function useTextMaterials(ref) {
     const changeContent = event => {
       if (reduced.matches) return;
       event.preventDefault();
-      pendingChanges.get(event.detail.selector)?.complete?.();
-      pendingChanges.set(event.detail.selector, event.detail);
+      pendingChanges.get(event.detail.key)?.complete?.();
+      pendingChanges.set(event.detail.key, event.detail);
       runNextChange();
     };
     window.addEventListener('text-contour-change', changeContent);

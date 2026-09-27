@@ -121,10 +121,12 @@ try {
     assert.equal(await list.getAttribute('data-reading-page'), '0');
     await page.getByRole('button', { name: 'Pipeline', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.archive-viewport').dataset.textContentPhase === 'exiting');
+    await page.getByRole('button', { name: 'Evidence', exact: true }).click();
     await page.getByRole('button', { name: 'Spring', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.archive-viewport').classList.contains('theme-spring'));
     await page.waitForFunction(() => document.querySelector('.contour-project-tabs button:first-child').getAttribute('aria-pressed') === 'true');
     await idle(page);
+    assert.equal(await list.getAttribute('data-mode'), 'Evidence', 'Theme interruption reordered the project and detail requests');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.getByRole('button', { name: 'Plugin', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: 'Plugin', exact: true }).getAttribute('aria-pressed'), 'true');

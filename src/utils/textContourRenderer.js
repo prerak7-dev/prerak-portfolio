@@ -75,12 +75,15 @@ export function createTextContourRenderer() {
   const svg = svgElement('svg', { width: 0, height: 0, 'aria-hidden': 'true' });
   svg.style.cssText = 'position:absolute;pointer-events:none;overflow:hidden';
   const defs = svgElement('defs', {}, svg);
-  const functions = [];
-  ['incoming', 'outgoing'].forEach((direction, index) => {
-    const filter = svgElement('filter', { id: `${prefix}-${direction}-filter`, filterUnits: 'objectBoundingBox', primitiveUnits: 'objectBoundingBox', x: 0, y: 0, width: 1, height: 1, 'color-interpolation-filters': 'sRGB' }, defs);
-    const transfer = svgElement('feComponentTransfer', { x: 0, y: 0, width: 1, height: 1 }, filter);
-    functions.push(svgElement('feFuncA', { type: 'linear', slope: index ? 16 : -16, intercept: index ? 1 : 0 }, transfer));
-  });
+  const channels = new Map();
+  const channelFunctions = channel => {
+    if (!channels.has(channel)) channels.set(channel, ['incoming', 'outgoing'].map((direction, index) => {
+      const filter = svgElement('filter', { id: `${prefix}-${channel}-${direction}-filter`, filterUnits: 'objectBoundingBox', primitiveUnits: 'objectBoundingBox', x: 0, y: 0, width: 1, height: 1, 'color-interpolation-filters': 'sRGB' }, defs);
+      const transfer = svgElement('feComponentTransfer', { x: 0, y: 0, width: 1, height: 1 }, filter);
+      return svgElement('feFuncA', { type: 'linear', slope: index ? 16 : -16, intercept: index ? 1 : 0 }, transfer);
+    }));
+    return channels.get(channel);
+  };
   document.body.append(svg);
   let field;
   let viewport;
@@ -113,13 +116,16 @@ export function createTextContourRenderer() {
       bakedFields.set(key, field);
       if (bakedFields.size > 16) bakedFields.delete(bakedFields.keys().next().value);
     },
-    draw(progress) {
+    draw(progress, channel = 'default', incomingProgress = progress) {
+      const functions = channelFunctions(channel);
       const front = -.08 + smooth((progress - .015) / .97) * 1.16;
       const intercept = 16 * front + .5;
-      functions[0].setAttribute('intercept', intercept);
+      const incomingFront = -.08 + smooth((incomingProgress - .015) / .97) * 1.16;
+      functions[0].setAttribute('intercept', 16 * incomingFront + .5);
       functions[1].setAttribute('intercept', 1 - intercept);
     },
-    mask(rect, direction = 'incoming', scaleX = 1, scaleY = 1) {
+    mask(rect, direction = 'incoming', scaleX = 1, scaleY = 1, channel = 'default') {
+      channelFunctions(channel);
       const id = `${prefix}-mask-${++maskIndex}`;
       const mask = svgElement('mask', { id, maskUnits: 'userSpaceOnUse', x: -4, y: -4, width: rect.width / scaleX + 8, height: rect.height / scaleY + 8, 'mask-type': 'alpha' }, defs);
       const width = viewport.width / scaleX;
@@ -130,7 +136,7 @@ export function createTextContourRenderer() {
         width, height,
         preserveAspectRatio: 'none',
       }, pattern);
-      svgElement('rect', { x: -4, y: -4, width: rect.width / scaleX + 8, height: rect.height / scaleY + 8, fill: `url(#${id}-field)`, filter: `url(#${prefix}-${direction}-filter)` }, mask);
+      svgElement('rect', { x: -4, y: -4, width: rect.width / scaleX + 8, height: rect.height / scaleY + 8, fill: `url(#${id}-field)`, filter: `url(#${prefix}-${channel}-${direction}-filter)` }, mask);
       return `url("#${id}")`;
     },
     dispose() {

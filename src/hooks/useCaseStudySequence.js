@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { changeTextContent } from '../utils/changeTextContent.js';
 
 export const CASE_STUDY_TIMING = Object.freeze({
@@ -26,11 +26,16 @@ export const CASE_STUDY_TIMING = Object.freeze({
 
 export function useCaseStudySequence(active, itemCount) {
   const [sequence, setSequence] = useState({ selectedIndex: 0, displayedIndex: 0, cycle: 0 });
+  const latest = useRef({ active, sequence });
+  latest.current = { active, sequence };
   const selectProject = useCallback(index => {
     const safeIndex = Math.min(Math.max(0, index), Math.max(0, itemCount - 1));
-    changeTextContent(() => setSequence(current => ({
+    return changeTextContent(() => setSequence(current => current.displayedIndex === safeIndex ? current : ({
       selectedIndex: safeIndex, displayedIndex: safeIndex, cycle: current.cycle + 1,
-    })), '.contour-projects');
+    })), '.contour-projects .contour-reading-list', {
+      key: 'case-project',
+      shouldUpdate: () => latest.current.active && latest.current.sequence.displayedIndex !== safeIndex,
+    });
   }, [itemCount]);
   return { ...sequence, phase: active ? 'visible' : 'idle', entryDelay: 0, selectProject };
 }

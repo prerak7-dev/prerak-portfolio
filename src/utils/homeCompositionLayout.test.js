@@ -22,3 +22,14 @@ test('short landscape chapters reserve the theme and lore control dock', () => {
   assert.equal(bounds.top + bounds.height, 292);
   assert(bounds.left + bounds.width <= 844 * .58);
 });
+
+test('Home thoughts sit above and beside the painted figure across desktop crops', () => {
+  for (const [width, height] of [[1366, 768], [1440, 900], [1920, 1080], [2560, 1440]]) {
+    const cover = Math.max(width, height * 1672 / 941);
+    const projection = { left: (width - cover) / 2, top: (height - cover * 941 / 1672) / 2, width: cover, height: cover * 941 / 1672 };
+    const layout = getHomeCompositionLayout(projection, width, height);
+    assert.equal(layout.thought.left, projection.left + projection.width * .075 + 28);
+    assert(layout.thought.top + 130 < projection.top + projection.height * .418);
+    assert(layout.thought.left + layout.mottoWidth < layout.sky.left + layout.mottoWidth + 24);
+  }
+});
