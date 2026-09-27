@@ -18,12 +18,12 @@ try {
     await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:4187/prerak-portfolio/');
     await idle(page);
     const navStyle = await page.evaluate(() => {
-      const heading = getComputedStyle(document.querySelector('.archive-identity strong'));
+      const heading = getComputedStyle(document.querySelector('.intro-role > .scenic-text'));
       const label = getComputedStyle(document.querySelector('.chapter-rail-list strong'));
       return { size: label.fontSize, heading: [heading.fontFamily, heading.fontWeight, heading.color, heading.backgroundImage], label: [label.fontFamily, label.fontWeight, label.color, label.backgroundImage] };
     });
     assert.equal(navStyle.size, '12px');
-    assert.deepEqual(navStyle.label, navStyle.heading, 'Navigation labels do not share the header material');
+    assert.deepEqual(navStyle.label, navStyle.heading, 'Navigation labels do not share the Full-Stack title material');
     const guide = page.locator('.spatial-lore-guide');
     if ((await guide.getAttribute('class')).includes('is-collapsed')) {
       await page.getByRole('button', { name: 'Expand lore guide', exact: true }).click();

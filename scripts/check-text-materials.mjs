@@ -34,6 +34,29 @@ async function theme(page, season, light) {
   await page.waitForTimeout(850);
   await page.mouse.move(3, 3);
 }
+async function navigationMatchesTitle(page, context) {
+  const navigation = await page.evaluate(() => {
+    const properties = ['fontFamily', 'fontWeight', 'fontStyle', 'fontSynthesis', 'textTransform', 'letterSpacing', 'color', 'webkitTextFillColor', 'webkitTextStroke', 'backgroundImage', 'backgroundSize', 'backgroundBlendMode', 'textShadow', 'boxShadow', 'filter', 'textDecoration'];
+    const title = getComputedStyle(document.querySelector('.intro-role > .scenic-text'));
+    return [...document.querySelectorAll('.chapter-rail-list strong')].map(node => {
+      const label = getComputedStyle(node);
+      const button = getComputedStyle(node.parentElement);
+      return {
+        size: label.fontSize,
+        differences: properties.filter(property => label[property] !== title[property]).map(property => [property, label[property], title[property]]),
+        container: [button.backgroundImage, button.boxShadow, button.textShadow, button.filter],
+        decorations: ['::before', '::after'].map(pseudo => getComputedStyle(node.parentElement, pseudo).display),
+      };
+    });
+  });
+  assert.equal(navigation.length, 7);
+  for (const label of navigation) {
+    assert.equal(label.size, '12px');
+    assert.deepEqual(label.differences, [], `Title/nav mismatch in ${context}`);
+    assert(label.container.every(value => value === 'none'), `Navigation highlight in ${context}: ${JSON.stringify(label)}`);
+    assert(label.decorations.every(value => value === 'none'), `Navigation decoration in ${context}`);
+  }
+}
 async function rectangles(page, selectors) {
   return page.evaluate(selectors => selectors.map(selector => {
     const node = document.querySelector(selector);
@@ -62,15 +85,12 @@ try {
   const materials = [];
   for (const season of ['default', 'fall', 'spring', 'winter']) for (const light of [false, true]) {
     await theme(page, season, light);
-    const navigation = await page.evaluate(() => {
-      const properties = ['fontFamily', 'fontWeight', 'color', 'backgroundImage', 'backgroundSize', 'textShadow', 'filter'];
-      const heading = getComputedStyle(document.querySelector('.archive-identity strong'));
-      return [...document.querySelectorAll('.chapter-rail-list strong')].map(node => {
-        const label = getComputedStyle(node);
-        return { size: label.fontSize, differences: properties.filter(property => label[property] !== heading[property]).map(property => [property, label[property], heading[property]]) };
-      });
-    });
-    assert(navigation.length === 7 && navigation.every(label => label.size === '12px' && !label.differences.length), `Header/nav mismatch in ${season} ${light}: ${JSON.stringify(navigation)}`);
+    await navigationMatchesTitle(page, `${season} ${light}`);
+    await page.getByRole('tab', { name: 'Cores', exact: true }).hover();
+    await navigationMatchesTitle(page, `${season} ${light} hover`);
+    await page.getByRole('tab', { name: 'Home', exact: true }).focus();
+    await navigationMatchesTitle(page, `${season} ${light} focus/active`);
+    await page.mouse.move(3, 3);
     const tokens = await page.locator('.intro-role').first().evaluate(node => ({
       ink: getComputedStyle(node).getPropertyValue('--type-ink'),
       face: getComputedStyle(node).getPropertyValue('--type-face'),
@@ -128,6 +148,7 @@ try {
     await settled(page);
     const collapse = page.getByRole('button', { name: 'Collapse lore guide' });
     if (await collapse.count()) await collapse.click();
+    await navigationMatchesTitle(page, `${width}x${height}`);
     for (const selector of ['.intro-manifesto', '.intro-role-orbit', '.intro-actions']) assert.equal(await page.locator(selector).count(), 1);
     assert.equal(await page.locator('.intro-status').count(), 0);
     assert.equal(await page.locator('.home-beat-controls').count(), 0);

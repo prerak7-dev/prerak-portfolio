@@ -34,8 +34,19 @@ export const textMaterialStyles = `
   .archive-app .archive-viewport :is(.contour-eyebrow, [aria-pressed="true"]).material-text {
     --type-ink-color: var(--type-accent);
   }
-  .archive-app .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button strong.material-text {
-    text-shadow: none !important;
+  .archive-app .archive-viewport :is(.intro-role > .scenic-text, .chapter-rail.is-orbit-rail .chapter-rail-list button strong.material-text) {
+    font-family: var(--font-display) !important; font-weight: 600; font-style: normal;
+    font-synthesis: none; text-transform: uppercase; letter-spacing: 0;
+    text-shadow: none !important; box-shadow: none !important; filter: none !important;
+    text-decoration: none;
+  }
+  .archive-app .archive-viewport .chapter-rail .chapter-rail-list > button {
+    background: transparent !important; box-shadow: none !important;
+    text-shadow: none !important; filter: none !important;
+  }
+  .archive-app .archive-viewport .chapter-rail .chapter-rail-list > button::before,
+  .archive-app .archive-viewport .chapter-rail .chapter-rail-list > button::after {
+    content: none !important; display: none !important;
   }
   /* Static pigment layers leave the alpha mask exclusively to contour dissolves. */
   @supports ((background-clip: text) or (-webkit-background-clip: text)) and (color: color-mix(in srgb, white, transparent)) {

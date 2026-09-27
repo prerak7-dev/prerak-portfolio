@@ -5,7 +5,6 @@ export const homeCompositionStyles = `
   .archive-header :is(button, a) { pointer-events: auto; }
   .archive-viewport .chapter-rail .chapter-rail-list { scroll-snap-type: none !important; scroll-behavior: auto !important; }
   .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong { scale: 1 !important; }
-  .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong { font-weight: 700; }
   .archive-app .lore-parchment p { font-size: 24.225px; line-height: 1.45; }
   .archive-app .archive-viewport .spatial-lore-guide .lore-parchment {
     position: fixed; inset: auto max(24px, env(safe-area-inset-right)) 144px auto;
