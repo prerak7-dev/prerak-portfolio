@@ -421,6 +421,7 @@ function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onS
     itemRefs,
     railRef,
     listRef,
+    theme,
   });
 
   return (

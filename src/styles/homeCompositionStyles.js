@@ -56,7 +56,7 @@ export const homeCompositionStyles = `
     }
     .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-rail-list button {
       position: fixed !important; touch-action: none;
-      clip-path: var(--chapter-tab-clip, none) !important;
+      clip-path: none !important;
     }
     .archive-app .archive-viewport .chapter-rail[data-scrollable="true"] .chapter-rail-list button:not([aria-hidden="true"]) { opacity: 1; pointer-events: auto; }
     .archive-app .archive-viewport .chapter-rail[data-layout="contour"] .chapter-collapse { display: none; }
@@ -133,7 +133,7 @@ export const homeCompositionStyles = `
     .archive-viewport .chapter-rail.is-orbit-rail,
     .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed {
       position: fixed !important; inset: var(--mobile-nav-top) 8px auto !important;
-      width: calc(100% - 16px) !important; height: 52px !important;
+      width: calc(100% - 16px) !important; height: 60px !important;
       display: block !important;
       opacity: 1; z-index: 30; pointer-events: auto; padding: 0 34px; transform: none !important;
     }
@@ -141,16 +141,17 @@ export const homeCompositionStyles = `
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list,
     .archive-viewport .chapter-rail.is-orbit-rail.is-collapsed .chapter-rail-list {
       position: static !important; inset: auto !important; display: flex !important; align-items: center;
-      width: 100% !important; height: 52px !important; overflow-x: auto !important; overflow-y: hidden !important;
-      scrollbar-width: none; gap: 4px; opacity: 1; transform: none !important; pointer-events: auto;
-      overscroll-behavior-x: contain; touch-action: pan-x; scroll-padding-inline: 8px;
+      width: 100% !important; height: 60px !important; overflow-x: auto !important; overflow-y: hidden !important;
+      scrollbar-width: none; gap: 0; opacity: 1; transform: none !important; pointer-events: auto;
+      overscroll-behavior-x: contain; touch-action: pan-x; scroll-padding-inline: 0;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button,
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button.active,
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button:hover {
-      position: relative !important; inset: auto !important; width: auto !important;
-      height: 48px !important; min-height: 48px !important; flex: none; display: flex !important;
-      align-items: center; justify-content: center; gap: 3px; padding: 0 7px !important;
+      position: relative !important; inset: auto !important; width: calc(100% / 3) !important;
+      height: 60px !important; min-height: 60px !important; flex: 0 0 calc(100% / 3); display: flex !important;
+      min-width: 0; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px; padding: 0 2px !important;
       opacity: 1; pointer-events: auto; transform: none !important; background: transparent !important;
       transition: none !important;
     }
@@ -159,12 +160,14 @@ export const homeCompositionStyles = `
       height: 19.2px !important; scale: 1 !important; transform: none !important; animation: none !important;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list strong.scenic-text {
-      position: relative !important; inset: auto !important; width: max-content; padding: 0;
-      font-size: 12px; line-height: 1.2; transform: none !important; transform-origin: left center;
+      position: relative !important; inset: auto !important; width: 100%; max-width: 100%; padding: 0;
+      height: 34px; display: grid; place-content: start center; text-align: center;
+      white-space: normal; overflow-wrap: normal; word-break: normal;
+      font-size: var(--chapter-portrait-font, 16px); line-height: 17px; transform: none !important; transform-origin: left center;
       animation: none !important; opacity: 1; pointer-events: auto;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-scroll-arrow {
-      display: grid; place-items: center; position: absolute; top: 4px;
+      display: grid; place-items: center; position: absolute; top: 8px;
       width: 32px; height: 44px; z-index: 3; padding: 0; pointer-events: auto;
     }
     .archive-viewport .chapter-rail.is-orbit-rail .chapter-scroll-arrow.previous { left: 0; }

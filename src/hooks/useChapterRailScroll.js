@@ -16,21 +16,33 @@ export function useChapterRailScroll({ listRef, activeIndex, itemCount }) {
     let scroller;
     let dragged = false;
     let dragEndedAt = 0;
+    let disposed = false;
+    const measure = document.createElement('canvas').getContext('2d');
     const reveal = (immediate = false) => {
       if (!scroller) return;
       if (portrait.matches) {
         const tab = list.querySelectorAll('[role="tab"]')[activeRef.current];
         scroller.scrollTo(tab.offsetLeft - (list.clientWidth - tab.offsetWidth) / 2, { immediate });
       } else {
-        const count = getChapterRailCapacity(innerHeight, itemCount, landscape.matches);
+        const count = getChapterRailCapacity(innerHeight, itemCount, landscape.matches, innerWidth);
         const position = scroller.targetScroll / CHAPTER_RAIL_SCROLL_STEP;
         const target = Math.max(activeRef.current - count + 1, Math.min(activeRef.current, position));
         scroller.scrollTo(target * CHAPTER_RAIL_SCROLL_STEP, { immediate });
       }
     };
     const resize = () => {
+      if (disposed) return;
       scroller?.destroy();
-      const count = getChapterRailCapacity(innerHeight, itemCount, landscape.matches);
+      // Fit whole words only on the narrowest phones; never split chapter names.
+      list.querySelectorAll('[role="tab"] strong').forEach(label => {
+        if (!portrait.matches) { label.style.removeProperty('--chapter-portrait-font'); return; }
+        const style = getComputedStyle(label);
+        measure.font = `${style.fontWeight} 16px ${style.fontFamily}`;
+        const words = label.textContent.split(/\s+/).map(word => style.textTransform === 'uppercase' ? word.toUpperCase() : word);
+        const longest = Math.max(...words.map(word => measure.measureText(word).width));
+        label.style.setProperty('--chapter-portrait-font', `${Math.min(16, 16 * (list.clientWidth / 3 - 5) / longest)}px`);
+      });
+      const count = getChapterRailCapacity(innerHeight, itemCount, landscape.matches, innerWidth);
       list.style.setProperty('--chapter-scroll-range', `${landscape.matches ? (itemCount - count) * CHAPTER_RAIL_SCROLL_STEP : 0}px`);
       list.scrollLeft = 0;
       scroller = new Lenis({
@@ -61,7 +73,9 @@ export function useChapterRailScroll({ listRef, activeIndex, itemCount }) {
     window.addEventListener('resize', resize);
     reduced.addEventListener('change', resize);
     resize();
+    document.fonts.ready.then(resize);
     return () => {
+      disposed = true;
       scroller?.destroy(); controllerRef.current = null;
       observe.disconnect(); list.removeEventListener('click', click, true);
       window.removeEventListener('resize', resize); reduced.removeEventListener('change', resize);
@@ -72,7 +86,7 @@ export function useChapterRailScroll({ listRef, activeIndex, itemCount }) {
   return useCallback(direction => {
     const controller = controllerRef.current;
     if (!controller) return;
-    const distance = matchMedia(NAV_COMPACT_QUERY).matches ? Math.max(160, listRef.current.clientWidth * .7) : CHAPTER_RAIL_SCROLL_STEP;
+    const distance = matchMedia(NAV_COMPACT_QUERY).matches ? listRef.current.clientWidth * 2 / 3 : CHAPTER_RAIL_SCROLL_STEP;
     controller.scroller.scrollTo(controller.scroller.targetScroll + direction * distance, { immediate: controller.reduced.matches });
   }, [listRef]);
 }

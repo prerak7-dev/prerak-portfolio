@@ -5,15 +5,36 @@ const require = createRequire(process.env.PLAYWRIGHT_PACKAGE || 'C:/Users/prera/
 const { chromium } = require('playwright');
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 await mkdir('tmp/rail-scrolling', { recursive: true });
-const idle = page => page.waitForFunction(() => document.querySelector('.archive-viewport')?.dataset.chapterCopyPhase === 'idle' && document.querySelector('.archive-viewport').classList.contains('chapter-settled'));
+const idle = page => page.waitForFunction(() => {
+  const root = document.querySelector('.archive-viewport');
+  return root?.dataset.chapterCopyPhase === 'idle' && root.classList.contains('chapter-settled')
+    && root.classList.contains('experience-visible')
+    && !document.documentElement.classList.contains('theme-contour-transition-active');
+});
 try {
-  for (const [width, height] of [[390, 844], [844, 390], [568, 320]]) {
+  for (const [width, height] of [[320, 740], [390, 844], [768, 1024], [844, 390], [568, 320]]) {
     const page = await browser.newPage({ viewport: { width, height }, isMobile: true, hasTouch: true });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:4187/prerak-portfolio/');
     await idle(page);
+    await page.waitForFunction(() => document.querySelector('.archive-viewport')?.dataset.homeIntroStage === 'complete');
     const landscape = width > height;
+    if (!landscape) {
+      const portrait = await page.locator('.chapter-rail-list').evaluate(list => ({
+        width: list.clientWidth,
+        tabs: [...list.querySelectorAll('[role="tab"]')].map(tab => {
+          const label = tab.querySelector('strong');
+          return { width: tab.getBoundingClientRect().width, font: parseFloat(getComputedStyle(label).fontSize), overflow: label.scrollWidth - label.clientWidth };
+        }),
+      }));
+      assert.equal(await page.locator('.chapter-rail').getAttribute('data-visible-count'), '3');
+      portrait.tabs.forEach(tab => {
+        assert(Math.abs(tab.width * 3 - portrait.width) < 1, 'Portrait must show exactly three equal slots');
+        assert(tab.font >= 13 && tab.font <= 16, 'Portrait label is still too small');
+        assert(tab.overflow <= 1, 'Chapter name is cut off');
+      });
+    }
     await page.evaluate(() => {
       window.scrollSamples = [];
       const sample = time => {
@@ -37,6 +58,16 @@ try {
     if (landscape) {
       assert(moving.some(sample => sample.offset > .05 && sample.offset < .95), 'Missing sub-tab scroll positions');
       for (const sample of moving) for (const point of sample.points) assert(Math.abs(point.x - point.cssX) < 1, `Scroll shifted the fixed contour a second time: ${JSON.stringify(point)}`);
+      await page.locator('.chapter-rail-list').evaluate(node => { node.scrollLeft = 48; });
+      await page.waitForTimeout(80);
+      const edge = await page.locator('.chapter-rail-list > button').first().evaluate(node => ({
+        mask: getComputedStyle(node).maskImage, clip: getComputedStyle(node).clipPath, reveal: Number(node.dataset.edgeReveal),
+      }));
+      assert.equal(edge.clip, 'none');
+      assert(edge.reveal > 0 && edge.reveal < 1 && edge.mask.includes('text-contour-'), 'Rail edge is not using the shared contour dissolve');
+      // Return to the arrow destination before exercising the inverse action.
+      await page.locator('.chapter-rail-list').evaluate(node => { node.scrollLeft = 160; });
+      await page.waitForTimeout(80);
     }
     await page.getByRole('button', { name: 'Previous chapters', exact: true }).click();
     await page.waitForTimeout(700);
@@ -79,6 +110,15 @@ try {
       }), count);
       assert(Math.max(...points.map(point => point.y)) - Math.min(...points.map(point => point.y)) < 25, 'Cores did not use its desktop horizon contour');
       assert(Math.max(...points.map(point => point.x)) - Math.min(...points.map(point => point.x)) > width * .3, 'Landscape is still restricted to a side strip');
+      const clearance = await page.evaluate(() => {
+        const copy = document.querySelector('.contour-cores').getBoundingClientRect();
+        const lore = document.querySelector('.lore-toggle').getBoundingClientRect();
+        return [...document.querySelectorAll('.chapter-rail-list > button')].filter(node => !node.inert).every(node => {
+          const rect = node.getBoundingClientRect();
+          return rect.top >= copy.bottom && rect.right <= lore.left;
+        });
+      });
+      assert(clearance, 'Cores rail crosses the copy or lore control');
     }
     await page.screenshot({ path: `tmp/rail-scrolling/cores-${width}.png` });
     for (let press = 0; press < 8; press++) await page.getByRole('button', { name: 'Next chapters', exact: true }).click();
@@ -95,7 +135,7 @@ try {
     await idle(page);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.getByRole('button', { name: 'Next chapters', exact: true }).click();
-    assert(await page.locator('.chapter-rail-list').evaluate(node => node.scrollLeft >= 159), 'Reduced-motion arrow did not respond immediately');
+    assert(await page.locator('.chapter-rail-list').evaluate((node, landscape) => node.scrollLeft >= (landscape ? 160 : node.clientWidth * 2 / 3) - 1, landscape), 'Reduced-motion arrow did not respond immediately');
     await page.evaluate(() => cancelAnimationFrame(window.scrollSampleFrame));
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ width, height, intermediateFrames: moving.length, wheel, touchTravelBeforeRelease: duringTouch, errors }));

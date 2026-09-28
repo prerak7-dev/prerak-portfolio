@@ -36,19 +36,32 @@ try {
         orbit: rail.classList.contains('is-orbit-ready'),
         transforms: nodes.map(node => getComputedStyle(node).transform),
         rects,
+        visible: nodes.map(node => !node.inert && getComputedStyle(node).visibility !== 'hidden'),
+        count: Number(rail.dataset.visibleCount),
         drift: Math.abs(nodes[0].getBoundingClientRect().x - x),
         selectedVisible: selected.left >= bounds.left - 1 && selected.right <= bounds.right + 1,
         contentTop: document.querySelector('.contour-content').getBoundingClientRect().top,
         railBottom: rail.getBoundingClientRect().bottom,
       };
     });
-    assert.equal(result.layout, 'compact', `${width}x${height}: wrong layout`);
-    assert.equal(result.orbit, false);
-    assert(result.transforms.every(value => value === 'none'));
-    assert(result.rects.every(rect => Math.abs(rect.y - result.rects[0].y) < .5));
-    result.rects.slice(1).forEach((rect, index) => assert(rect.left >= result.rects[index].right));
-    assert(result.drift < 1 && result.selectedVisible, 'Rotation lost the selected tab or reintroduced orbital motion');
-    assert(result.contentTop >= result.railBottom - 1, 'Compact rail overlaps chapter content');
+    const landscape = width > height;
+    assert.equal(result.layout, landscape ? 'contour' : 'compact', `${width}x${height}: wrong layout`);
+    assert.equal(result.orbit, landscape);
+    assert(result.selectedVisible, 'Rotation lost the selected tab');
+    if (landscape) {
+      const visible = result.rects.filter((_, index) => result.visible[index]);
+      assert(visible.length >= 2);
+      visible.forEach((a, index) => visible.slice(index + 1).forEach(b => {
+        assert(a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1, 'Landscape tab hit boxes overlap');
+      }));
+    } else {
+      assert.equal(result.count, 3);
+      assert(result.transforms.every(value => value === 'none'));
+      assert(result.rects.every(rect => Math.abs(rect.y - result.rects[0].y) < .5));
+      result.rects.slice(1).forEach((rect, index) => assert(rect.left >= result.rects[index].right - .1));
+      assert(result.drift < 1, 'Portrait tabs moved after rotation settled');
+      assert(result.contentTop >= result.railBottom - 1, 'Compact rail overlaps chapter content');
+    }
     await page.screenshot({ path: `${output}/${width}x${height}.png` });
     console.log(JSON.stringify({ width, height, layout: result.layout, selectedVisible: result.selectedVisible }));
   }
