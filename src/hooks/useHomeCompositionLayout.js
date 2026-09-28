@@ -1,4 +1,5 @@
 import { useLayoutEffect, useState } from 'react';
+import { getSceneCoverProjection } from '../data/cinematicViewport.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { getHomeCompositionLayout, HOME_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
 import { setCachedStyleProperty } from '../utils/motionPerformance.js';
@@ -16,8 +17,7 @@ export function useHomeCompositionLayout(ref) {
       const height = window.innerHeight;
       const image = document.querySelector('.gateway-sequence-preloads img');
       const header = document.querySelector('.archive-header');
-      const coverWidth = Math.max(width, height * 1672 / 941);
-      const projection = readSceneImageProjection(image, { left: (width - coverWidth) / 2, top: (height - coverWidth * 941 / 1672) / 2, width: coverWidth, height: coverWidth * 941 / 1672 }, width);
+      const projection = readSceneImageProjection(image, getSceneCoverProjection(width, height), width);
       const layout = getHomeCompositionLayout(projection, width, height, header?.getBoundingClientRect().bottom ?? 80, window.matchMedia(HOME_COMPACT_QUERY).matches);
       for (const area of ['sky', 'water', 'gate', 'thought']) {
         for (const [key, value] of Object.entries(layout[area])) {
@@ -37,8 +37,10 @@ export function useHomeCompositionLayout(ref) {
     if (header) observer.observe(header);
     document.fonts.ready.then(schedule);
     window.addEventListener('resize', schedule, { passive: true });
+    const imageLoaded = event => { if (event.target.matches?.('.gateway-sequence-preloads img')) schedule(); };
+    window.addEventListener('load', imageLoaded, true);
     measure();
-    return () => { disposed = true; observer.disconnect(); window.removeEventListener('resize', schedule); cancelAnimationFrame(frame); };
+    return () => { disposed = true; observer.disconnect(); window.removeEventListener('resize', schedule); window.removeEventListener('load', imageLoaded, true); cancelAnimationFrame(frame); };
   }, [ref]);
   return compact;
 }

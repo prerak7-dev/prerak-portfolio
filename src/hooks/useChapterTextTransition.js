@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { getSceneCoverProjection } from '../data/cinematicViewport.js';
 import { getCinematicGeometryAsset } from '../data/cinematicAssets.js';
 import { getTracerSceneField } from '../data/tracerSceneFields.js';
 import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
@@ -131,19 +132,24 @@ export function useChapterTextTransition(ref, activeIndex, enabled, theme) {
     const configure = () => {
       const width = innerWidth;
       const height = innerHeight;
-      const cover = Math.max(width, height * 16 / 9);
-      rendererRef.current.configure(resource.image, {
-        left: (width - cover) / 2, top: (height - cover * 9 / 16) / 2,
-        width: cover, height: cover * 9 / 16,
-      }, getTracerSceneField(latest.current.theme, SCENE_INDICES[copy.index]), width, height);
+      rendererRef.current.configure(resource.image,
+        getSceneCoverProjection(width, height, resource.image.naturalWidth / resource.image.naturalHeight),
+        getTracerSceneField(latest.current.theme, SCENE_INDICES[copy.index]), width, height);
       measureIdentity();
       draw();
       maskTargets();
       if (identityHandoffRef.current) identity?.style.removeProperty('visibility');
       maskTracerContourTransition(root, tracerOwner.current, rendererRef.current);
     };
-    const resize = () => {
+    let resizeRequest = 0;
+    const resize = async () => {
       if (!resource || disposed) return;
+      const request = ++resizeRequest;
+      try {
+        const loaded = await loadCinematicGeometryField(getCinematicGeometryAsset(latest.current.theme, SCENE_INDICES[copy.index], 0));
+        if (disposed || request !== resizeRequest) return;
+        resource = loaded;
+      } catch { return; }
       restoreMasks();
       configure();
     };

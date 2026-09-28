@@ -595,6 +595,13 @@ export const spatialStyles = `
     object-fit: cover;
     object-position: 50% 50%;
   }
+
+  @media (max-width: 1100px) and (orientation: portrait) {
+    .cinematic-image-stage {
+      width: max(100vw, 50vh);
+      aspect-ratio: 1 / 2;
+    }
+  }
   .gateway-sequence-preloads img:not(:first-child) {
     display: none;
   }

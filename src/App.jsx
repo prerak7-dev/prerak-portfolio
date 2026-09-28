@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usesPortraitArtwork } from './data/cinematicViewport.js';
+import { usePortraitArtwork } from './hooks/usePortraitArtwork.js';
 import { CinematicContourDissolve } from './components/CinematicContourDissolve.jsx';
 import { SpatialExperience } from './components/SpatialExperience.jsx';
 import {
@@ -40,7 +42,7 @@ function isCompactViewport() {
 }
 
 function preloadTheme(theme, compact = isCompactViewport()) {
-  const key = `${theme}:warm:${compact ? 'compact' : 'full'}`;
+  const key = `${theme}:warm:${compact ? 'compact' : 'full'}:${usesPortraitArtwork() ? 'portrait' : 'landscape'}`;
   if (backgroundPreloads.has(key)) return backgroundPreloads.get(key);
   // Keep the deferred cache small. Gateway frames and contour fields are
   // streamed on demand, so a theme click never competes with a 24-frame
@@ -65,7 +67,7 @@ function waitForIdleSlice(timeout = 180) {
 }
 
 function preloadThemeGeometry(theme, onProgress = null) {
-  const key = `${theme}:geometry`;
+  const key = `${theme}:geometry:${usesPortraitArtwork() ? 'portrait' : 'landscape'}`;
   if (geometryPreloads.has(key)) return geometryPreloads.get(key);
   const assets = getCinematicAssets(theme);
   const filenames = [...new Set([
@@ -135,6 +137,7 @@ function storePreference(key, value) {
 }
 
 export default function App() {
+  const portrait = usePortraitArtwork();
   const { activeIndex, goToChapter } = useSpatialNarrative(spatialChapters.length);
   const [theme, setTheme] = useState(() => readPreference('aegis-theme', themeIds, 'default'));
   const [atmospherePower, setAtmospherePower] = useState(1);
@@ -160,6 +163,15 @@ export default function App() {
   useEffect(() => {
     storePreference('aegis-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (!experienceVisible) return;
+    const cancel = requestIdleWork(() => {
+      preloadTheme(theme);
+      preloadThemeGeometry(theme);
+    });
+    return cancel;
+  }, [portrait, theme, experienceVisible]);
 
   useEffect(() => {
     let cancelled = false;

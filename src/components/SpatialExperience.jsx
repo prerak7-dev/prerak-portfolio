@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePortraitArtwork } from '../hooks/usePortraitArtwork.js';
 import { Moon, Sun, Leaf, Flower2, Snowflake, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getSeason, isLightAppearance, appearanceId } from '../data/themeAppearance.js';
 import {
@@ -1327,6 +1328,7 @@ export function SpatialExperience({
   onEnvironmentReady,
 }) {
   const [themePromptCompleted, setThemePromptCompleted] = useState(false);
+  const portrait = usePortraitArtwork();
   const themePromptCompletedRef = useRef(themePromptCompleted);
   themePromptCompletedRef.current = themePromptCompleted;
   const [introGuideReady, setIntroGuideReady] = useState(false);
@@ -1401,12 +1403,12 @@ export function SpatialExperience({
     />
   ), [displayedProjectIndex, handleArchitectureOpen, projectCycle, projectEntryDelay, projectSequencePhase, projectsInteractive, theme]);
   const environmentStyle = useMemo(() => {
-    const visualAssets = getCinematicAssets(theme);
+    const visualAssets = getCinematicAssets(theme, { portrait });
     return {
       '--surface-image': `url("${createAssetPath(import.meta.env.BASE_URL, visualAssets.surface)}")`,
       '--text-distress-mask': `url("${createAssetPath(import.meta.env.BASE_URL, 'cinematic/ui/text-distress-mask.png')}")`,
     };
-  }, [theme]);
+  }, [theme, portrait]);
 
   useLayoutEffect(() => subscribeSpatialMotion(({ scenePosition }) => {
     sceneRefs.current.forEach((node, index) => {

@@ -1,4 +1,5 @@
 import { useLayoutEffect } from 'react';
+import { getSceneCoverProjection } from '../data/cinematicViewport.js';
 import { flushSync } from 'react-dom';
 import { TEXT_DISPLAY_SELECTOR } from '../data/textMaterials.js';
 import { findTextTargets } from '../utils/textTargets.js';
@@ -147,8 +148,7 @@ export function useTextMaterials(ref) {
     const configure = state => {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      const cover = Math.max(width, height * 16 / 9);
-      const projection = readSceneImageProjection(root.querySelector(SCENE_IMAGES[state.sceneIndex]), { left: (width - cover) / 2, top: (height - cover * 9 / 16) / 2, width: cover, height: cover * 9 / 16 }, width);
+      const projection = readSceneImageProjection(root.querySelector(SCENE_IMAGES[state.sceneIndex]), getSceneCoverProjection(width, height), width);
       renderer.configure(state.geometryImage, projection, getTracerSceneField(state.fromTheme, state.sceneIndex), width, height);
     };
     function applyLiveMask() {

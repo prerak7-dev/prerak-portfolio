@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
+import { getSceneCoverProjection, usesPortraitArtwork } from '../data/cinematicViewport.js';
 import {
   GATEWAY_FRAME_COUNT,
   getCinematicGeometryAsset,
@@ -46,6 +47,7 @@ function isIntroPathwayPoint(point) {
 }
 
 function getIntroGeometryWithoutPathway(geometry) {
+  if (usesPortraitArtwork()) return geometry;
   if (!geometry) return geometry;
   if (introGeometryCache.has(geometry)) return introGeometryCache.get(geometry);
 
@@ -93,6 +95,10 @@ function smootherStep(value) {
 }
 
 function getIntroPlanetFocus(frameProgress) {
+  if (usesPortraitArtwork()) return Object.freeze({
+    centerX: 1.28, centerY: -0.055, radiusX: 0.72, radiusY: 0.36,
+    startAngle: 1.72, endAngle: 2.8, band: 0.07, count: 58,
+  });
   // Gateway frames are baked with this camera transform. Reusing it here lets
   // focused seeds land on the exact painted limb in every generated frame.
   const dolly = smootherStep((frameProgress - 0.06) / 0.94);
@@ -204,15 +210,7 @@ export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({
       canvas.width = Math.max(1, Math.round(width * pixelRatio));
       canvas.height = Math.max(1, Math.round(height * pixelRatio));
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      const stageWidth = Math.max(width, height * 16 / 9);
-      const stageHeight = stageWidth * 9 / 16;
-      fallbackProjection = {
-        left: (width - stageWidth) / 2,
-        top: (height - stageHeight) / 2,
-        width: stageWidth,
-        height: stageHeight,
-        viewportWidth: width,
-      };
+      fallbackProjection = getSceneCoverProjection(width, height);
     };
 
     const getProjectionNode = (sceneIndex) => {

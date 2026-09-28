@@ -1,5 +1,6 @@
 import { getCinematicAtmosphereTransition } from './cinematicSceneTimeline.js';
 import { getSeason } from './themeAppearance.js';
+import { usesPortraitArtwork } from './cinematicViewport.js';
 
 const SCENE_FIELDS = Object.freeze([
   Object.freeze({
@@ -66,19 +67,28 @@ const THEME_DYNAMICS = Object.freeze({
 });
 const resolvedFieldCache = new Map();
 const blendedFieldCache = new Map();
+const PORTRAIT_LANDMARKS = Object.freeze([
+  { source: [0.52, 0.62], horizon: 0.77 },
+  { source: [0.5, 0.68], horizon: 0.72 },
+  { source: [0.73, 0.61], horizon: 0.85 },
+  { source: [0.23, 0.55], horizon: 0.85 },
+  { source: [0.15, 0.52], horizon: 0.66 },
+  { source: [0.68, 0.575], horizon: 0.59 },
+].map(field => Object.freeze({ ...field, source: Object.freeze(field.source) })));
 
 function lerp(from, to, mix) {
   return from + (to - from) * mix;
 }
 
-function resolveField(theme, sceneIndex) {
+function resolveField(theme, sceneIndex, portrait = usesPortraitArtwork()) {
   const safeIndex = Math.min(SCENE_FIELDS.length - 1, Math.max(0, Math.round(sceneIndex || 0)));
   const themeKey = getSeason(theme);
-  const cacheKey = `${themeKey}:${safeIndex}`;
+  const cacheKey = `${themeKey}:${safeIndex}:${portrait}`;
   if (resolvedFieldCache.has(cacheKey)) return resolvedFieldCache.get(cacheKey);
   const dynamics = THEME_DYNAMICS[themeKey];
   const field = Object.freeze({
     ...SCENE_FIELDS[safeIndex],
+    ...(portrait ? PORTRAIT_LANDMARKS[safeIndex] : {}),
     ...dynamics,
     sceneIndex: safeIndex,
     seed: 9719 + safeIndex * 977 + Math.max(0, Object.keys(THEME_DYNAMICS).indexOf(themeKey)) * 131,
@@ -87,8 +97,8 @@ function resolveField(theme, sceneIndex) {
   return field;
 }
 
-export function getTracerSceneField(theme, sceneIndex) {
-  return Object.freeze(resolveField(theme, sceneIndex));
+export function getTracerSceneField(theme, sceneIndex, { portrait = usesPortraitArtwork() } = {}) {
+  return Object.freeze(resolveField(theme, sceneIndex, portrait));
 }
 
 export function getTracerSceneBlend(theme, scenePosition) {
@@ -96,7 +106,7 @@ export function getTracerSceneBlend(theme, scenePosition) {
   const { fromIndex, toIndex } = transition;
   const mix = Math.round(transition.mix * 512) / 512;
   const themeKey = getSeason(theme);
-  const cacheKey = `${themeKey}:${fromIndex}:${toIndex}:${mix}`;
+  const cacheKey = `${themeKey}:${fromIndex}:${toIndex}:${mix}:${usesPortraitArtwork()}`;
   if (blendedFieldCache.has(cacheKey)) return blendedFieldCache.get(cacheKey);
   const from = resolveField(theme, fromIndex);
   const to = resolveField(theme, toIndex);

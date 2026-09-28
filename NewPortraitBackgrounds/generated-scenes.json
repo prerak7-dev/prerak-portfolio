@@ -1,0 +1,486 @@
+{
+  "generator": "Built-in image_gen",
+  "aspectRatio": "1:2",
+  "assets": [
+    {
+      "theme": "default",
+      "mode": "dark",
+      "scene": "home",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-75e48a5b-9a27-4d80-87a1-be42854593c0.png",
+      "prompt": "Use case: style-transfer. Asset type: production smartphone portrait chapter background for an illustrated portfolio. Create ONE new true portrait painting, approximately 1024x2048 (1:2 tall aspect ratio). Reference image 1 is the existing landscape Home painting: preserve its exact charcoal-black, silver-gray and restrained pale-gold palette, hand-painted dense watercolor/ink paper relief texture, architecture, and atmosphere, but REDRAW and RECOMPOSE the entire scene for a tall canvas. This is NOT a center crop, resize, stretched landscape, or landscape embedded inside a tall border. Preserve ALL recognizable features: monumental closed twin archive doors with a luminous circular central seal and narrow vertical seam, broad stepped foundation, reflective water, distant jagged mountains and waterfalls, small cloaked standing man on the left cliff, delicate leaf branches at the outer edges, star flecks, giant golden planetary ring arc at upper right. Portrait arrangement: gate complete and undistorted at x=50%, from y=46% to 78%; full cloaked figure visibly inside the frame at x=18%, head near y=44%, overlooking gate from a left cliff; reflections and water in bottom 20%; ring arc bends inside upper-right 20%. Keep the upper-middle left (x=10%-70%, y=21%-40%) quiet dark ink sky with sparse clouds for overlaid title text, and top 18% relatively calm for controls. The foreground and skyline must feel native to this tall composition; do not omit the man, waterfalls, trees, seal, steps or ring to fit. Entire painting full bleed. No text, letters, logos, UI, panels, labels, borders or watermark.",
+      "original": "default-dark-home.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "dark",
+      "scene": "cores",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-6687ccd2-4261-4089-a2b5-6a25a0343386.png",
+      "prompt": "Use case: style-transfer. Production smartphone chapter background. Generate ONE new full-bleed 1:2 portrait painting (approximately 1024x2048). Reference 1 is existing landscape art; REDRAW its complete scene for a native tall composition, not crop, stretch, borders or resized landscape. Preserve exact charcoal black, silver-gray, restrained pale-gold palette and dense watercolor/ink paper relief texture. Preserve exactly THREE luminous golden suns with different sizes, their cloudy coronas, cloud shelves, black sky, stardust, a rippled ocean and three reflected paths. Recompose the suns in a shallow triangular arrangement across the LOWER HALF, at x=24%,53%,78%, y=68%,60%,73%, all three fully visible inside the portrait. Largest sun in middle, smaller left and right. Quiet dark textured sky and gentle low-detail clouds through upper 52% for chapter text. All ocean reflections converge through the lower fifth. Retain all reference features. No text, typography, UI, logo, borders or watermark.",
+      "original": "default-dark-cores.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "dark",
+      "scene": "systems",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-c0cb81a3-28ce-4a90-9c28-f52d49c37fba.png",
+      "prompt": "Use case: style-transfer. Production smartphone chapter background. Generate ONE new full-bleed 1:2 portrait painting (approximately 1024x2048). Reference 1 is existing landscape art; REDRAW its complete scene for a native tall composition, not crop, stretch, borders or resized landscape. Preserve exact charcoal black, silver-gray, restrained pale-gold palette and dense watercolor/ink paper relief texture. Preserve the enormous textured dark planet with its gold-lit limb, diagonal orbital rings, layered clouds, ocean waves and solitary small standing figure at the horizon. Recompose the planet as a dominant complete readable curved limb on the RIGHT side in lower-middle half, top beginning around 44%, its ring sweeping diagonally through the lower half. Keep the small figure clearly visible near x=66%, y=80%. Preserve distant dark coastline and reflective sea. Upper-left and central top 45% are quiet textured sky for content; no massive planet or ring across that reading area. Retain all reference features. No text, typography, UI, logo, borders or watermark.",
+      "original": "default-dark-systems.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "dark",
+      "scene": "chronology",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-ed350e1e-f805-45ce-a4db-d793a67129e7.png",
+      "prompt": "Use case: style-transfer. Production smartphone chapter background. Generate ONE new full-bleed 1:2 portrait painting (approximately 1024x2048). Reference 1 is existing landscape art; REDRAW its complete scene for a native tall composition, not crop, stretch, borders or resized landscape. Preserve exact charcoal black, silver-gray, restrained pale-gold palette and dense watercolor/ink paper relief texture. Preserve the dramatic bright diagonal golden orbital band, one small cratered crescent moon, exactly three slender distant spires on the reflective horizon, cloud banks and layered mountains/water. Recompose the band as a sweeping diagonal arc across the LOWER HALF from left at y=52% down to right at y=77%, leaving quieter clouded sky above. The small moon stays visible inside the left side near x=22%, y=48%. Three spires fit across horizon at y=81%. Distinct vertical depth, all landmarks recognizable. Retain all reference features. No text, typography, UI, logo, borders or watermark.",
+      "original": "default-dark-chronology.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "dark",
+      "scene": "field",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-cf9bdbf4-06c0-40b2-a38c-ca539dea9e54.png",
+      "prompt": "Use case: style-transfer. Production smartphone chapter background. Generate ONE new full-bleed 1:2 portrait painting (approximately 1024x2048). Reference 1 is existing landscape art; REDRAW its complete scene for a native tall composition, not crop, stretch, borders or resized landscape. Preserve exact charcoal black, silver-gray, restrained pale-gold palette and dense watercolor/ink paper relief texture. Preserve the enormous gold-rimmed planet on LEFT, layered atmospheric mountain ridges, reflective winding waterways, cloudy sky and small traveler with a staff on a rocky outcrop at LOWER RIGHT. Recompose the planet's curved limb down the left edge beginning around y=48%, keep its readable spherical curvature; full traveler and staff inside the canvas near x=78%, y=81%. Upper central half is quiet dark watercolor sky for chapter content. Mountains become a long receding vertical valley toward the lower horizon. Retain all reference features. No text, typography, UI, logo, borders or watermark.",
+      "original": "default-dark-field.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "dark",
+      "scene": "surface",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-ba6bc0a7-d67c-4ef0-bbc3-026286bedfe5.png",
+      "prompt": "Use case: style-transfer. Production smartphone chapter background. Generate ONE new full-bleed 1:2 portrait painting (approximately 1024x2048). Reference 1 is existing landscape art; REDRAW its complete scene for a native tall composition, not crop, stretch, borders or resized landscape. Preserve exact charcoal black, silver-gray, restrained pale-gold palette and dense watercolor/ink paper relief texture. Preserve the enormous overhead planetary arc and its gold-lit rim, a small sun at the sea horizon, layered rippling ocean, the lit beacon tower at LOWER LEFT and its winding illuminated approach path, and dark foreground cliffs. Recompose the arc as a broad overhead curve through the lower-middle y=48%-60%, sun at x=66%, y=65%; full beacon tower visible at x=22%, y=82%; winding path continues toward bottom center. Keep upper 45% quiet clouded dark sky for text. Preserve all spatial storytelling landmarks. Retain all reference features. No text, typography, UI, logo, borders or watermark.",
+      "original": "default-dark-surface.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "light",
+      "scene": "home",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-2bb64651-7435-4af1-afa1-7dca449b80f2.png",
+      "prompt": "Use case: lighting-weather. Production smartphone chapter background. Output ONE full-bleed 1:2 portrait painting. Reference image 1 is the new PORTRAIT composition master: lock its framing, every landmark, character placement, proportions, quiet reading space, and all scene geometry. Reference image 2 is the existing DEFAULT LIGHT landscape painting: use ONLY its bright white paper, silver-gray watercolor, pale-gold accents, lighting, textures and theme details. Change the portrait master's dark mood into this exact light appearance, preserving its native tall composition and all objects, not cropping the landscape. All tall canvas filled with painting; no text, UI, frames, logos, watermark. Keep upper half quiet for overlaid copy.",
+      "original": "default-light-home.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "light",
+      "scene": "cores",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-7589f735-9198-432f-8a4a-ae75bd92fd48.png",
+      "prompt": "Use case: lighting-weather. Production smartphone chapter background. Output ONE full-bleed 1:2 portrait painting. Reference image 1 is the new PORTRAIT composition master: lock its framing, every landmark, character placement, proportions, quiet reading space, and all scene geometry. Reference image 2 is the existing DEFAULT LIGHT landscape painting: use ONLY its bright white paper, silver-gray watercolor, pale-gold accents, lighting, textures and theme details. Change the portrait master's dark mood into this exact light appearance, preserving its native tall composition and all objects, not cropping the landscape. All tall canvas filled with painting; no text, UI, frames, logos, watermark. Keep upper half quiet for overlaid copy.",
+      "original": "default-light-cores.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "light",
+      "scene": "systems",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-5751e6f7-2cae-4b91-9884-cd4284144b6a.png",
+      "prompt": "Use case: lighting-weather. Production smartphone chapter background. Output ONE full-bleed 1:2 portrait painting. Reference image 1 is the new PORTRAIT composition master: lock its framing, every landmark, character placement, proportions, quiet reading space, and all scene geometry. Reference image 2 is the existing DEFAULT LIGHT landscape painting: use ONLY its bright white paper, silver-gray watercolor, pale-gold accents, lighting, textures and theme details. Change the portrait master's dark mood into this exact light appearance, preserving its native tall composition and all objects, not cropping the landscape. All tall canvas filled with painting; no text, UI, frames, logos, watermark. Keep upper half quiet for overlaid copy.",
+      "original": "default-light-systems.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "light",
+      "scene": "chronology",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-c2570df2-a82a-4532-a5a4-c0e406222826.png",
+      "prompt": "Use case: lighting-weather. Production smartphone chapter background. Output ONE full-bleed 1:2 portrait painting. Reference image 1 is the new PORTRAIT composition master: lock its framing, every landmark, character placement, proportions, quiet reading space, and all scene geometry. Reference image 2 is the existing DEFAULT LIGHT landscape painting: use ONLY its bright white paper, silver-gray watercolor, pale-gold accents, lighting, textures and theme details. Change the portrait master's dark mood into this exact light appearance, preserving its native tall composition and all objects, not cropping the landscape. All tall canvas filled with painting; no text, UI, frames, logos, watermark. Keep upper half quiet for overlaid copy.",
+      "original": "default-light-chronology.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "light",
+      "scene": "field",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-0259eefe-d1d9-4572-98d9-827c005684a9.png",
+      "prompt": "Use case: lighting-weather. Production smartphone chapter background. Output ONE full-bleed 1:2 portrait painting. Reference image 1 is the new PORTRAIT composition master: lock its framing, every landmark, character placement, proportions, quiet reading space, and all scene geometry. Reference image 2 is the existing DEFAULT LIGHT landscape painting: use ONLY its bright white paper, silver-gray watercolor, pale-gold accents, lighting, textures and theme details. Change the portrait master's dark mood into this exact light appearance, preserving its native tall composition and all objects, not cropping the landscape. All tall canvas filled with painting; no text, UI, frames, logos, watermark. Keep upper half quiet for overlaid copy.",
+      "original": "default-light-field.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "default",
+      "mode": "light",
+      "scene": "surface",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-d93f21b9-5d40-4629-a456-08b2e5f0358a.png",
+      "prompt": "Use case: lighting-weather. Production smartphone chapter background. Output ONE full-bleed 1:2 portrait painting. Reference image 1 is the new PORTRAIT composition master: lock its framing, every landmark, character placement, proportions, quiet reading space, and all scene geometry. Reference image 2 is the existing DEFAULT LIGHT landscape painting: use ONLY its bright white paper, silver-gray watercolor, pale-gold accents, lighting, textures and theme details. Change the portrait master's dark mood into this exact light appearance, preserving its native tall composition and all objects, not cropping the landscape. All tall canvas filled with painting; no text, UI, frames, logos, watermark. Keep upper half quiet for overlaid copy.",
+      "original": "default-light-surface.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "dark",
+      "scene": "home",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-afcdf76d-922a-458c-be34-d34e50297ba9.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the portrait composition master: preserve exact framing, every landmark, character placement, proportions, quiet upper reading space and scene geometry. Reference 2 is existing FALL DARK landscape artwork: apply its exact charcoal/gray dark watercolor, amber/copper/orange illumination, autumn leaves and foliage, seasonal stars and rich paper texture. Only alter seasonal appearance, preserving the new tall master composition; do not crop or stretch landscape. Keep every architectural/celestial feature and figure. No text, letters, UI, borders, logos or watermark.",
+      "original": "fall-dark-home.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "dark",
+      "scene": "cores",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-b2579105-acb9-4f43-b20b-3709f333d795.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the portrait composition master: preserve exact framing, every landmark, character placement, proportions, quiet upper reading space and scene geometry. Reference 2 is existing FALL DARK landscape artwork: apply its exact charcoal/gray dark watercolor, amber/copper/orange illumination, autumn leaves and foliage, seasonal stars and rich paper texture. Only alter seasonal appearance, preserving the new tall master composition; do not crop or stretch landscape. Keep every architectural/celestial feature and figure. No text, letters, UI, borders, logos or watermark.",
+      "original": "fall-dark-cores.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "dark",
+      "scene": "systems",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-cac50626-9410-4de7-87cc-b1cd228fb369.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the portrait composition master: preserve exact framing, every landmark, character placement, proportions, quiet upper reading space and scene geometry. Reference 2 is existing FALL DARK landscape artwork: apply its exact charcoal/gray dark watercolor, amber/copper/orange illumination, autumn leaves and foliage, seasonal stars and rich paper texture. Only alter seasonal appearance, preserving the new tall master composition; do not crop or stretch landscape. Keep every architectural/celestial feature and figure. No text, letters, UI, borders, logos or watermark.",
+      "original": "fall-dark-systems.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "dark",
+      "scene": "chronology",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-03c5a48e-fd79-4167-9caa-dc1e7197259a.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the portrait composition master: preserve exact framing, every landmark, character placement, proportions, quiet upper reading space and scene geometry. Reference 2 is existing FALL DARK landscape artwork: apply its exact charcoal/gray dark watercolor, amber/copper/orange illumination, autumn leaves and foliage, seasonal stars and rich paper texture. Only alter seasonal appearance, preserving the new tall master composition; do not crop or stretch landscape. Keep every architectural/celestial feature and figure. No text, letters, UI, borders, logos or watermark.",
+      "original": "fall-dark-chronology.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "dark",
+      "scene": "field",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-2a1028df-a830-4ebe-9f76-f6f5fc313793.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the portrait composition master: preserve exact framing, every landmark, character placement, proportions, quiet upper reading space and scene geometry. Reference 2 is existing FALL DARK landscape artwork: apply its exact charcoal/gray dark watercolor, amber/copper/orange illumination, autumn leaves and foliage, seasonal stars and rich paper texture. Only alter seasonal appearance, preserving the new tall master composition; do not crop or stretch landscape. Keep every architectural/celestial feature and figure. No text, letters, UI, borders, logos or watermark.",
+      "original": "fall-dark-field.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "dark",
+      "scene": "surface",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-7086b7c2-ef4a-4dde-9ab2-598d7e1041e8.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the portrait composition master: preserve exact framing, every landmark, character placement, proportions, quiet upper reading space and scene geometry. Reference 2 is existing FALL DARK landscape artwork: apply its exact charcoal/gray dark watercolor, amber/copper/orange illumination, autumn leaves and foliage, seasonal stars and rich paper texture. Only alter seasonal appearance, preserving the new tall master composition; do not crop or stretch landscape. Keep every architectural/celestial feature and figure. No text, letters, UI, borders, logos or watermark.",
+      "original": "fall-dark-surface.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "light",
+      "scene": "home",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-60dddeed-6ae5-479b-bfe6-f2587d889a51.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new FALL DARK PORTRAIT master: lock composition, all landmarks, sizes, figures, foliage placement and tall framing. Reference 2 is the FALL LIGHT landscape color/material reference: change lighting to its bright ivory-white watercolor paper, gray ink outlines, soft amber/copper, orange autumn leaves and warm seasonal details. Maintain the native tall portrait geometry from reference 1 with quiet upper reading space. Preserve every object, no center-cropping or stretching landscape. No text, lettering, UI, border, logos or watermark.",
+      "original": "fall-light-home.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "light",
+      "scene": "cores",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-47ce2f46-df1b-4aef-96b0-808e11afd2f2.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new FALL DARK PORTRAIT master: lock composition, all landmarks, sizes, figures, foliage placement and tall framing. Reference 2 is the FALL LIGHT landscape color/material reference: change lighting to its bright ivory-white watercolor paper, gray ink outlines, soft amber/copper, orange autumn leaves and warm seasonal details. Maintain the native tall portrait geometry from reference 1 with quiet upper reading space. Preserve every object, no center-cropping or stretching landscape. No text, lettering, UI, border, logos or watermark.",
+      "original": "fall-light-cores.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "light",
+      "scene": "systems",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-e3ba6876-a59c-4331-a51b-430e1d2961c6.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new FALL DARK PORTRAIT master: lock composition, all landmarks, sizes, figures, foliage placement and tall framing. Reference 2 is the FALL LIGHT landscape color/material reference: change lighting to its bright ivory-white watercolor paper, gray ink outlines, soft amber/copper, orange autumn leaves and warm seasonal details. Maintain the native tall portrait geometry from reference 1 with quiet upper reading space. Preserve every object, no center-cropping or stretching landscape. No text, lettering, UI, border, logos or watermark.",
+      "original": "fall-light-systems.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "light",
+      "scene": "chronology",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-21f158bc-0672-4238-ab8e-b8eb26219b71.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new FALL DARK PORTRAIT master: lock composition, all landmarks, sizes, figures, foliage placement and tall framing. Reference 2 is the FALL LIGHT landscape color/material reference: change lighting to its bright ivory-white watercolor paper, gray ink outlines, soft amber/copper, orange autumn leaves and warm seasonal details. Maintain the native tall portrait geometry from reference 1 with quiet upper reading space. Preserve every object, no center-cropping or stretching landscape. No text, lettering, UI, border, logos or watermark.",
+      "original": "fall-light-chronology.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "light",
+      "scene": "field",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-0c80bb03-3d77-49a3-bbab-df945ab4238e.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new FALL DARK PORTRAIT master: lock composition, all landmarks, sizes, figures, foliage placement and tall framing. Reference 2 is the FALL LIGHT landscape color/material reference: change lighting to its bright ivory-white watercolor paper, gray ink outlines, soft amber/copper, orange autumn leaves and warm seasonal details. Maintain the native tall portrait geometry from reference 1 with quiet upper reading space. Preserve every object, no center-cropping or stretching landscape. No text, lettering, UI, border, logos or watermark.",
+      "original": "fall-light-field.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "fall",
+      "mode": "light",
+      "scene": "surface",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-cd35c8d8-1626-43c3-91fb-ca486c54519a.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new FALL DARK PORTRAIT master: lock composition, all landmarks, sizes, figures, foliage placement and tall framing. Reference 2 is the FALL LIGHT landscape color/material reference: change lighting to its bright ivory-white watercolor paper, gray ink outlines, soft amber/copper, orange autumn leaves and warm seasonal details. Maintain the native tall portrait geometry from reference 1 with quiet upper reading space. Preserve every object, no center-cropping or stretching landscape. No text, lettering, UI, border, logos or watermark.",
+      "original": "fall-light-surface.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "dark",
+      "scene": "home",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-b319b511-213e-41d1-b7de-91ae386383b4.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the SPRING DARK landscape palette/material reference: transfer its midnight ink-blue sky, silver-blue watercolor clouds and stone, restrained pale-gold rim light, pink cherry blossoms and petals, scattered white stars, rich watercolor paper relief. Preserve all objects in portrait positions; add spring foliage along corresponding edges and foreground as in landscape. No cropping/stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "spring-dark-home.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "dark",
+      "scene": "cores",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-45a25ab3-0e30-4b4f-8941-23bc189e2759.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the SPRING DARK landscape palette/material reference: transfer its midnight ink-blue sky, silver-blue watercolor clouds and stone, restrained pale-gold rim light, pink cherry blossoms and petals, scattered white stars, rich watercolor paper relief. Preserve all objects in portrait positions; add spring foliage along corresponding edges and foreground as in landscape. No cropping/stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "spring-dark-cores.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "dark",
+      "scene": "systems",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-0b8c573a-a20c-4392-a60f-5c45a8ead8a6.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the SPRING DARK landscape palette/material reference: transfer its midnight ink-blue sky, silver-blue watercolor clouds and stone, restrained pale-gold rim light, pink cherry blossoms and petals, scattered white stars, rich watercolor paper relief. Preserve all objects in portrait positions; add spring foliage along corresponding edges and foreground as in landscape. No cropping/stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "spring-dark-systems.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "dark",
+      "scene": "chronology",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-ff9ed6e4-2d2e-42c6-94ed-5acc68e3562b.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the SPRING DARK landscape palette/material reference: transfer its midnight ink-blue sky, silver-blue watercolor clouds and stone, restrained pale-gold rim light, pink cherry blossoms and petals, scattered white stars, rich watercolor paper relief. Preserve all objects in portrait positions; add spring foliage along corresponding edges and foreground as in landscape. No cropping/stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "spring-dark-chronology.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "dark",
+      "scene": "field",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-5eb743d7-e112-4969-ad1c-486385e9abd2.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the SPRING DARK landscape palette/material reference: transfer its midnight ink-blue sky, silver-blue watercolor clouds and stone, restrained pale-gold rim light, pink cherry blossoms and petals, scattered white stars, rich watercolor paper relief. Preserve all objects in portrait positions; add spring foliage along corresponding edges and foreground as in landscape. No cropping/stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "spring-dark-field.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "dark",
+      "scene": "surface",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-702a1030-8486-4863-97ac-e3ab601bc0a9.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the SPRING DARK landscape palette/material reference: transfer its midnight ink-blue sky, silver-blue watercolor clouds and stone, restrained pale-gold rim light, pink cherry blossoms and petals, scattered white stars, rich watercolor paper relief. Preserve all objects in portrait positions; add spring foliage along corresponding edges and foreground as in landscape. No cropping/stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "spring-dark-surface.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "light",
+      "scene": "home",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-2b6e0717-54c2-4978-8fd4-ea71fca2d243.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new SPRING DARK PORTRAIT master: lock tall framing, all landmarks, sizes, character positions and quiet reading space. Reference 2 is SPRING LIGHT landscape color/material reference: match its bright white paper, silver-gray/sage ink outlines, pink cherry blossoms and petals, subtle green growth, pale gold light, soft watercolor grain. Preserve native tall geometry from reference 1; transfer spring-light details from reference 2, including flowering vines on Home doors if present. Keep every object. No crop/stretch of landscape, no text, letters, UI, borders, logos, watermark.",
+      "original": "spring-light-home.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "light",
+      "scene": "cores",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-8942b334-4aa3-45cc-a8c7-42b340b1196f.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new SPRING DARK PORTRAIT master: lock tall framing, all landmarks, sizes, character positions and quiet reading space. Reference 2 is SPRING LIGHT landscape color/material reference: match its bright white paper, silver-gray/sage ink outlines, pink cherry blossoms and petals, subtle green growth, pale gold light, soft watercolor grain. Preserve native tall geometry from reference 1; transfer spring-light details from reference 2, including flowering vines on Home doors if present. Keep every object. No crop/stretch of landscape, no text, letters, UI, borders, logos, watermark.",
+      "original": "spring-light-cores.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "light",
+      "scene": "systems",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-3d15b352-503d-4399-99fd-75950c2dc967.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new SPRING DARK PORTRAIT master: lock tall framing, all landmarks, sizes, character positions and quiet reading space. Reference 2 is SPRING LIGHT landscape color/material reference: match its bright white paper, silver-gray/sage ink outlines, pink cherry blossoms and petals, subtle green growth, pale gold light, soft watercolor grain. Preserve native tall geometry from reference 1; transfer spring-light details from reference 2, including flowering vines on Home doors if present. Keep every object. No crop/stretch of landscape, no text, letters, UI, borders, logos, watermark.",
+      "original": "spring-light-systems.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "light",
+      "scene": "chronology",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-b143bcf9-57c1-44c5-89aa-a547c7e0b33a.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new SPRING DARK PORTRAIT master: lock tall framing, all landmarks, sizes, character positions and quiet reading space. Reference 2 is SPRING LIGHT landscape color/material reference: match its bright white paper, silver-gray/sage ink outlines, pink cherry blossoms and petals, subtle green growth, pale gold light, soft watercolor grain. Preserve native tall geometry from reference 1; transfer spring-light details from reference 2. Keep every object. No crop/stretch of landscape, no text, letters, UI, borders, logos, watermark.",
+      "original": "spring-light-chronology.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "light",
+      "scene": "field",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-e909bfe8-820d-4146-a02e-942670b47784.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new SPRING DARK PORTRAIT master: lock tall framing, all landmarks, sizes, character positions and quiet reading space. Reference 2 is SPRING LIGHT landscape color/material reference: match its bright white paper, silver-gray/sage ink outlines, pink cherry blossoms and petals, subtle green growth, pale gold light, soft watercolor grain. Preserve native tall geometry from reference 1; transfer spring-light details from reference 2. Keep every object. No crop/stretch of landscape, no text, letters, UI, borders, logos, watermark.",
+      "original": "spring-light-field.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "spring",
+      "mode": "light",
+      "scene": "surface",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-85d3ae2b-363e-4578-a1b4-5c53ad3967ad.png",
+      "prompt": "Use case: lighting-weather. ONE full-bleed 1:2 portrait production painting. Reference 1 is the new SPRING DARK PORTRAIT master: lock tall framing, all landmarks, sizes, character positions and quiet reading space. Reference 2 is SPRING LIGHT landscape color/material reference: match its bright white paper, silver-gray/sage ink outlines, pink cherry blossoms and petals, subtle green growth, pale gold light, soft watercolor grain. Preserve native tall geometry from reference 1; transfer spring-light details from reference 2. Keep every object. No crop/stretch of landscape, no text, letters, UI, borders, logos, watermark.",
+      "original": "spring-light-surface.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "dark",
+      "scene": "home",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-b759b73c-ec79-4ecf-b899-b988f3597c3b.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the WINTER DARK landscape palette/material reference: transfer cold deep ink-blue night, icy silver-blue watercolor, snow-covered stone and branches, snowflakes, pale gold-white celestial light, frosted and frozen water. Preserve all objects in their portrait positions from reference 1, including all figures, architecture, planets, rings, and terrain. Change only season and lighting to match reference 2. Maintain hand-painted watercolor/ink paper relief texture. No cropping or stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "winter-dark-home.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "dark",
+      "scene": "cores",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-35f6f4f6-d75a-4e27-8420-7c021cbfda8a.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the WINTER DARK landscape palette/material reference: transfer cold deep ink-blue night, icy silver-blue watercolor, snow-covered stone and branches, snowflakes, pale gold-white celestial light, frosted and frozen water. Preserve all objects in their portrait positions from reference 1, including all figures, architecture, planets, rings, and terrain. Change only season and lighting to match reference 2. Maintain hand-painted watercolor/ink paper relief texture. No cropping or stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "winter-dark-cores.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "dark",
+      "scene": "systems",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-5fe4bd67-26e0-420d-888d-685cafe3da1c.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the WINTER DARK landscape palette/material reference: transfer cold deep ink-blue night, icy silver-blue watercolor, snow-covered stone and branches, snowflakes, pale gold-white celestial light, frosted and frozen water. Preserve all objects in their portrait positions from reference 1, including all figures, architecture, planets, rings, and terrain. Change only season and lighting to match reference 2. Maintain hand-painted watercolor/ink paper relief texture. No cropping or stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "winter-dark-systems.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "dark",
+      "scene": "chronology",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-51c62fe1-74d0-4b79-b326-11480673a569.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the WINTER DARK landscape palette/material reference: transfer cold deep ink-blue night, icy silver-blue watercolor, snow-covered stone and branches, snowflakes, pale gold-white celestial light, frosted and frozen water. Preserve all objects in their portrait positions from reference 1, including all figures, architecture, planets, rings, and terrain. Change only season and lighting to match reference 2. Maintain hand-painted watercolor/ink paper relief texture. No cropping or stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "winter-dark-chronology.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "dark",
+      "scene": "field",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-c0e8f10a-c656-41fe-af5c-88766309dd27.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the WINTER DARK landscape palette/material reference: transfer cold deep ink-blue night, icy silver-blue watercolor, snow-covered stone and branches, snowflakes, pale gold-white celestial light, frosted and frozen water. Preserve all objects in their portrait positions from reference 1, including all figures, architecture, planets, rings, and terrain. Change only season and lighting to match reference 2. Maintain hand-painted watercolor/ink paper relief texture. No cropping or stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "winter-dark-field.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "dark",
+      "scene": "surface",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-48bb6e80-fb92-4a20-a748-b6741031b5a1.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the native portrait composition master: lock framing, proportions, every landmark, character positions, and quiet upper reading space. Reference 2 is the WINTER DARK landscape palette/material reference: transfer cold deep ink-blue night, icy silver-blue watercolor, snow-covered stone and branches, snowflakes, pale gold-white celestial light, frosted and frozen water. Preserve all objects in their portrait positions from reference 1, including all figures, architecture, planets, rings, and terrain. Change only season and lighting to match reference 2. Maintain hand-painted watercolor/ink paper relief texture. No cropping or stretching landscape, no text, UI, borders, logos or watermark.",
+      "original": "winter-dark-surface.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "light",
+      "scene": "home",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-a1cc8bb8-6000-4456-8ad2-5c3618b4e8c0.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the WINTER DARK native portrait composition master: lock framing, proportions, every landmark, character positions, quiet upper reading space. Reference 2 is the WINTER LIGHT landscape appearance reference: change lighting and palette to bright snowy winter daylight, predominantly white/silver paper sky with subtle pale blue-gray ink clouds, icy blue shadows, restrained golden celestial accents, snow-covered terrain and frosted water. Preserve every feature and exact portrait placement from reference 1, including figures, structures, planets, rings, terrain. The upper reading region must be predominantly light like reference 2, not night blue. Maintain densely textured painted watercolor/ink paper relief. Do not crop or stretch landscape; no text, UI, borders, logos or watermark.",
+      "original": "winter-light-home.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "light",
+      "scene": "cores",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-3f30905a-815b-4687-aef7-c230aa339791.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the WINTER DARK native portrait composition master: lock framing, proportions, every landmark, character positions, quiet upper reading space. Reference 2 is the WINTER LIGHT landscape appearance reference: change lighting and palette to bright snowy winter daylight, predominantly white/silver paper sky with subtle pale blue-gray ink clouds, icy blue shadows, restrained golden celestial accents, snow-covered terrain and frosted water. Preserve every feature and exact portrait placement from reference 1, including figures, structures, planets, rings, terrain. The upper reading region must be predominantly light like reference 2, not night blue. Maintain densely textured painted watercolor/ink paper relief. Do not crop or stretch landscape; no text, UI, borders, logos or watermark.",
+      "original": "winter-light-cores.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "light",
+      "scene": "systems",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-23b6a12f-e5bd-46dd-98f6-a9202234c725.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the WINTER DARK native portrait composition master: lock framing, proportions, every landmark, character positions, quiet upper reading space. Reference 2 is the WINTER LIGHT landscape appearance reference: change lighting and palette to bright snowy winter daylight, predominantly white/silver paper sky with subtle pale blue-gray ink clouds, icy blue shadows, restrained golden celestial accents, snow-covered terrain and frosted water. Preserve every feature and exact portrait placement from reference 1, including figures, structures, planets, rings, terrain. The upper reading region must be predominantly light like reference 2, not night blue. Maintain densely textured painted watercolor/ink paper relief. Do not crop or stretch landscape; no text, UI, borders, logos or watermark.",
+      "original": "winter-light-systems.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "light",
+      "scene": "chronology",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-1638452b-5e03-4807-95ef-1c38e6ca149c.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the WINTER DARK native portrait composition master: lock framing, proportions, every landmark, character positions, quiet upper reading space. Reference 2 is the WINTER LIGHT landscape appearance reference: change lighting and palette to bright snowy winter daylight, predominantly white/silver paper sky with subtle pale blue-gray ink clouds, icy blue shadows, restrained golden celestial accents, snow-covered terrain and frosted water. Preserve every feature and exact portrait placement from reference 1, including figures, structures, planets, rings, terrain. The upper reading region must be predominantly light like reference 2, not night blue. Maintain densely textured painted watercolor/ink paper relief. Do not crop or stretch landscape; no text, UI, borders, logos or watermark.",
+      "original": "winter-light-chronology.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "light",
+      "scene": "field",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-e912f67f-1465-41ef-9b5b-267d7bdad2c8.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the WINTER DARK native portrait composition master: lock framing, proportions, every landmark, character positions, quiet upper reading space. Reference 2 is the WINTER LIGHT landscape appearance reference: change lighting and palette to bright snowy winter daylight, predominantly white/silver paper sky with subtle pale blue-gray ink clouds, icy blue shadows, restrained golden celestial accents, snow-covered terrain and frosted water. Preserve every feature and exact portrait placement from reference 1, including figures, structures, planets, rings, terrain. The upper reading region must be predominantly light like reference 2, not night blue. Maintain densely textured painted watercolor/ink paper relief. Do not crop or stretch landscape; no text, UI, borders, logos or watermark.",
+      "original": "winter-light-field.png",
+      "width": 887,
+      "height": 1774
+    },
+    {
+      "theme": "winter",
+      "mode": "light",
+      "scene": "surface",
+      "source": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-e242a801-0f65-4235-9777-c4b00e6589f5.png",
+      "prompt": "Use case: lighting-weather. ONE production full-bleed 1:2 portrait painting. Reference 1 is the WINTER DARK native portrait composition master: lock framing, proportions, every landmark, character positions, quiet upper reading space. Reference 2 is the WINTER LIGHT landscape appearance reference: change lighting and palette to bright snowy winter daylight, predominantly white/silver paper sky with subtle pale blue-gray ink clouds, icy blue shadows, restrained golden celestial accents, snow-covered terrain and frosted water. Preserve every feature and exact portrait placement from reference 1, including figures, structures, planets, rings, terrain. The upper reading region must be predominantly light like reference 2, not night blue. Maintain densely textured painted watercolor/ink paper relief. Do not crop or stretch landscape; no text, UI, borders, logos or watermark.",
+      "original": "winter-light-surface.png",
+      "width": 887,
+      "height": 1774
+    }
+  ]
+}

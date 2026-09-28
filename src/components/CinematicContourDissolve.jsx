@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
+import { getSceneCoverProjection } from '../data/cinematicViewport.js';
 import * as THREE from 'three';
 import {
   GATEWAY_FRAME_COUNT,
@@ -331,15 +332,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       renderer.setPixelRatio(pixelRatio);
       renderer.setSize(width, height, false);
       material.uniforms.uViewport.value.set(width, height);
-      const stageWidth = Math.max(width, height * 16 / 9);
-      const stageHeight = stageWidth * 9 / 16;
-      fallbackProjection = {
-        left: (width - stageWidth) / 2,
-        top: (height - stageHeight) / 2,
-        width: stageWidth,
-        height: stageHeight,
-        viewportWidth: width,
-      };
+      fallbackProjection = getSceneCoverProjection(width, height);
       themeTransitionProjection = null;
     };
 

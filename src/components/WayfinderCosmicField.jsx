@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
+import { getSceneCoverProjection } from '../data/cinematicViewport.js';
 import {
   GATEWAY_FRAME_COUNT,
   getCinematicGeometryAsset,
@@ -135,15 +136,7 @@ export const BoundaryFilamentField = memo(function BoundaryFilamentField({
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       const viewportWidth = Math.max(1, window.innerWidth);
       const viewportHeight = Math.max(1, window.innerHeight);
-      const stageWidth = Math.max(viewportWidth, viewportHeight * 16 / 9);
-      const stageHeight = stageWidth * 9 / 16;
-      fallbackProjection = {
-        left: (viewportWidth - stageWidth) / 2,
-        top: (viewportHeight - stageHeight) / 2,
-        width: stageWidth,
-        height: stageHeight,
-        viewportWidth,
-      };
+      fallbackProjection = getSceneCoverProjection(viewportWidth, viewportHeight);
     };
 
     const getProjectionNode = (activeSceneIndex) => {

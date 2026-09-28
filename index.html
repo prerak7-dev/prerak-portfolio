@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" sizes="192x192" href="./lore-guide-favicon-watercolor-v2.png" />
-    <link rel="preload" as="image" href="./cinematic/painted-v1/default/light/home.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="./cinematic/painted-v1/default/light/home.webp" media="not all and (max-width: 1100px) and (orientation: portrait)" fetchpriority="high" />
+    <link rel="preload" as="image" href="./cinematic/painted-v1/default/light/portrait/home.webp" media="(max-width: 1100px) and (orientation: portrait)" fetchpriority="high" />
     <link rel="preload" as="image" href="./cinematic/painted-v1/ui/loader-brush.webp" />
     <meta name="theme-color" content="#080806" />
     <meta name="description" content="Prerak Pandey - backend and full-stack engineer building game-technology systems, Unreal tooling, pipelines, and telemetry platforms." />
@@ -126,8 +127,11 @@
     <div id="boot-loader" aria-label="Loading the Aegis systems archive">
       <div class="boot-scene" aria-hidden="true">
         <div class="boot-image-stage">
-          <img id="boot-gateway-frame" class="boot-frame"
-            src="./cinematic/painted-v1/default/light/home.webp" fetchpriority="high" alt="" />
+          <picture>
+            <source media="(max-width: 1100px) and (orientation: portrait)" srcset="./cinematic/painted-v1/default/light/portrait/home.webp" />
+            <img id="boot-gateway-frame" class="boot-frame"
+              src="./cinematic/painted-v1/default/light/home.webp" fetchpriority="high" alt="" />
+          </picture>
         </div>
       </div>
       <div class="boot-ritual">

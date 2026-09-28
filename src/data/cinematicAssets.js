@@ -1,3 +1,4 @@
+import { usesPortraitArtwork } from './cinematicViewport.js';
 import { APPEARANCE_IDS, getSeason, hasPaintedScene, paintedAsset } from './themeAppearance.js';
 
 export const GATEWAY_FRAME_COUNT = 24;
@@ -47,53 +48,53 @@ function manifestItem(filename, decode = false, priority = 'auto') {
   return filename ? { filename, decode, priority } : null;
 }
 
-function gatewayFrames(theme) {
+function gatewayFrames(theme, options) {
   return Array.from(
     { length: GATEWAY_FRAME_COUNT },
-    () => paintedAsset(theme, 'home'),
+    () => paintedAsset(theme, 'home', options),
   );
 }
 
-function compactGatewayFrames(theme) {
+function compactGatewayFrames(theme, options) {
   return Array.from(
     { length: GATEWAY_FRAME_COUNT },
-    () => paintedAsset(theme, 'home'),
+    () => paintedAsset(theme, 'home', options),
   );
 }
 
-function gatewayGeometryFrames(theme) {
+function gatewayGeometryFrames(theme, options) {
   return Array.from(
     { length: GATEWAY_FRAME_COUNT },
-    () => paintedAsset(theme, 'geometry/home'),
+    () => paintedAsset(theme, 'geometry/home', options),
   );
 }
 
-function geometryAssets(theme) {
+function geometryAssets(theme, options) {
   const field = scene => hasPaintedScene(theme, scene)
-    ? paintedAsset(theme, `geometry/${scene}`)
+    ? paintedAsset(theme, `geometry/${scene}`, options)
     : `cinematic/${getSeason(theme)}/geometry/${scene}-flow.webp`;
   return Object.freeze({
-    gatewayFrames: Object.freeze(gatewayGeometryFrames(theme)),
+    gatewayFrames: Object.freeze(gatewayGeometryFrames(theme, options)),
     cores: field('cores'), systems: field('systems'), chronology: field('chronology'),
     field: field('field'), surface: field('surface'),
   });
 }
 
-function themeAssets(theme) {
+function themeAssets(theme, options) {
   const season = getSeason(theme);
   const scene = name => hasPaintedScene(theme, name)
-    ? paintedAsset(theme, name) : `cinematic/${season}/${name}.webp`;
+    ? paintedAsset(theme, name, options) : `cinematic/${season}/${name}.webp`;
 
   return Object.freeze({
-    gatewayFrames: gatewayFrames(theme),
-    gatewayCompactFrames: Object.freeze(compactGatewayFrames(theme)),
+    gatewayFrames: gatewayFrames(theme, options),
+    gatewayCompactFrames: Object.freeze(compactGatewayFrames(theme, options)),
     seasonalVines: null,
     cores: scene('cores'), coresCompact: scene('cores'),
     systems: scene('systems'), chronology: scene('chronology'),
     field: scene('field'), surface: scene('surface'),
     particles: `cinematic/${season}/particles-watercolor.webp`,
     topologyRope: `cinematic/${season}/topology-rope-segment-watercolor-v2.webp`,
-    geometry: geometryAssets(theme),
+    geometry: geometryAssets(theme, options),
   });
 }
 
@@ -101,12 +102,17 @@ export const CINEMATIC_THEMES = Object.freeze(Object.fromEntries(
   APPEARANCE_IDS.map(theme => [theme, themeAssets(theme)]),
 ));
 
-export function getCinematicAssets(theme) {
-  return CINEMATIC_THEMES[theme] || CINEMATIC_THEMES.default;
+export const CINEMATIC_PORTRAIT_THEMES = Object.freeze(Object.fromEntries(
+  APPEARANCE_IDS.map(theme => [theme, themeAssets(theme, { portrait: true })]),
+));
+
+export function getCinematicAssets(theme, { portrait = usesPortraitArtwork() } = {}) {
+  const themes = portrait ? CINEMATIC_PORTRAIT_THEMES : CINEMATIC_THEMES;
+  return themes[theme] || themes.default;
 }
 
-export function getThemePreloadAssets(theme) {
-  const assets = getCinematicAssets(theme);
+export function getThemePreloadAssets(theme, { portrait = usesPortraitArtwork() } = {}) {
+  const assets = getCinematicAssets(theme, { portrait });
   return [...new Set([
     assets.gatewayFrames[0],
     ...SCENE_KEYS.map((key) => assets[key]).filter(Boolean),
@@ -128,8 +134,8 @@ function getResponsiveSceneAsset(assets, key, compact) {
   return assets[key];
 }
 
-export function getCriticalPreloadManifest(theme, { compact = false } = {}) {
-  const assets = getCinematicAssets(theme);
+export function getCriticalPreloadManifest(theme, { compact = false, portrait = usesPortraitArtwork() } = {}) {
+  const assets = getCinematicAssets(theme, { portrait });
   const responsiveGatewayFrames = getResponsiveGatewayFrames(assets, compact);
   return uniqueManifest([
     ...GLOBAL_PRELOAD_ASSETS.map((filename) => manifestItem(filename, false, 'high')),
@@ -154,8 +160,8 @@ export function getCriticalPreloadManifest(theme, { compact = false } = {}) {
   ]);
 }
 
-export function getThemeWarmPreloadManifest(theme, { compact = false } = {}) {
-  const assets = getCinematicAssets(theme);
+export function getThemeWarmPreloadManifest(theme, { compact = false, portrait = usesPortraitArtwork() } = {}) {
+  const assets = getCinematicAssets(theme, { portrait });
   const responsiveGatewayFrames = getResponsiveGatewayFrames(assets, compact);
   const gatewayGeometry = GATEWAY_GEOMETRY_KEYFRAME_INDICES
     .map((index) => assets.geometry.gatewayFrames[index]);
@@ -171,8 +177,8 @@ export function getThemeWarmPreloadManifest(theme, { compact = false } = {}) {
   ]);
 }
 
-export function getThemePreviewPreloadManifest(theme) {
-  const assets = getCinematicAssets(theme);
+export function getThemePreviewPreloadManifest(theme, { portrait = usesPortraitArtwork() } = {}) {
+  const assets = getCinematicAssets(theme, { portrait });
   return uniqueManifest([
     ...assets.gatewayFrames
       .slice(0, PREVIEW_GATEWAY_FRAME_COUNT)
@@ -184,8 +190,8 @@ export function getThemePreviewPreloadManifest(theme) {
   ]);
 }
 
-export function getThemeTransitionPreloadManifest(theme, chapterId = 'intro', { compact = false } = {}) {
-  const assets = getCinematicAssets(theme);
+export function getThemeTransitionPreloadManifest(theme, chapterId = 'intro', { compact = false, portrait = usesPortraitArtwork() } = {}) {
+  const assets = getCinematicAssets(theme, { portrait });
   const sceneKey = {
     cores: 'cores',
     projects: 'systems',
@@ -223,21 +229,21 @@ export function getCompletePreloadManifest(initialTheme) {
   ]);
 }
 
-export function getGatewayFrameAsset(theme, index, { compact = false } = {}) {
-  const assets = getCinematicAssets(theme);
+export function getGatewayFrameAsset(theme, index, { compact = false, portrait = usesPortraitArtwork() } = {}) {
+  const assets = getCinematicAssets(theme, { portrait });
   return getResponsiveGatewayFrames(assets, compact)[0];
 }
 
 export function getCinematicSceneAsset(theme, sceneIndex, gatewayFrameIndex = 0, options = {}) {
-  const assets = getCinematicAssets(theme);
+  const assets = getCinematicAssets(theme, options);
   const safeSceneIndex = Math.min(5, Math.max(0, Math.round(sceneIndex || 0)));
   if (safeSceneIndex === 0) return getGatewayFrameAsset(theme, gatewayFrameIndex, options);
   const sceneKey = ['cores', 'systems', 'chronology', 'field', 'surface'][safeSceneIndex - 1];
   return getResponsiveSceneAsset(assets, sceneKey, Boolean(options.compact));
 }
 
-export function getCinematicGeometryAsset(theme, sceneIndex, gatewayFrameIndex = 0) {
-  const geometry = getCinematicAssets(theme).geometry;
+export function getCinematicGeometryAsset(theme, sceneIndex, gatewayFrameIndex = 0, options = {}) {
+  const geometry = getCinematicAssets(theme, options).geometry;
   const safeSceneIndex = Math.min(5, Math.max(0, Math.round(sceneIndex || 0)));
   if (safeSceneIndex === 0) {
     const safeFrameIndex = Math.min(

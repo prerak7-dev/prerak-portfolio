@@ -24,11 +24,11 @@ def blurred_array(image: Image.Image, radius: float) -> np.ndarray:
     return np.asarray(image.filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32) / 255.0
 
 
-def build_geometry_field(source: Path, target: Path, force: bool = False) -> bool:
+def build_geometry_field(source: Path, target: Path, force: bool = False, field_size: tuple[int, int] = FIELD_SIZE) -> bool:
     if target.exists() and not force:
         return False
     with Image.open(source) as raw:
-        rgb = raw.convert("RGB").resize(FIELD_SIZE, Image.Resampling.LANCZOS)
+        rgb = raw.convert("RGB").resize(field_size, Image.Resampling.LANCZOS)
 
     rgb_array = np.asarray(rgb, dtype=np.float32) / 255.0
     luminance = (
@@ -76,7 +76,7 @@ def build_geometry_field(source: Path, target: Path, force: bool = False) -> boo
     tangent_x[weak] = 1.0
     tangent_y[weak] = 0.0
 
-    field = np.zeros((FIELD_SIZE[1], FIELD_SIZE[0], 4), dtype=np.uint8)
+    field = np.zeros((field_size[1], field_size[0], 4), dtype=np.uint8)
     field[:, :, 0] = np.uint8(np.clip(tangent_x * 0.5 + 0.5, 0.0, 1.0) * 255)
     field[:, :, 1] = np.uint8(np.clip(tangent_y * 0.5 + 0.5, 0.0, 1.0) * 255)
     field[:, :, 2] = np.uint8(np.clip(edge_energy, 0.0, 1.0) * 255)

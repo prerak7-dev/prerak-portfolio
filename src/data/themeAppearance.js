@@ -20,6 +20,6 @@ export function appearanceId(season, light) {
   return `${getSeason(season)}${light ? '-light' : ''}`;
 }
 
-export function paintedAsset(theme, name) {
-  return `cinematic/painted-v1/${getSeason(theme)}/${isLightAppearance(theme) ? 'light' : 'dark'}/${name}.webp`;
+export function paintedAsset(theme, name, { portrait = false } = {}) {
+  return `cinematic/painted-v1/${getSeason(theme)}/${isLightAppearance(theme) ? 'light' : 'dark'}/${portrait ? 'portrait/' : ''}${name}.webp`;
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getSceneCoverProjection } from '../data/cinematicViewport.js';
 import { CONTOUR_HANDOFF_GLSL, CONTOUR_NOISE_GLSL } from './contourDissolveShader.js';
 import { getTracerSceneField } from '../data/tracerSceneFields.js';
 
@@ -149,8 +150,7 @@ export function createTextContourRenderer() {
 export function warmChapterTextField(image, theme, sceneIndex) {
   const width = window.innerWidth;
   const height = window.innerHeight;
-  const cover = Math.max(width, height * 16 / 9);
-  const projection = { left: (width - cover) / 2, top: (height - cover * 9 / 16) / 2, width: cover, height: cover * 9 / 16 };
+  const projection = getSceneCoverProjection(width, height, image.naturalWidth / image.naturalHeight);
   const source = getTracerSceneField(theme, sceneIndex);
   if (bakedFields.has(fieldKey(image, projection, source, width, height))) return;
   try {

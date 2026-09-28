@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { usePortraitArtwork } from '../hooks/usePortraitArtwork.js';
 import { CinematicAtmosphereField } from './CinematicAtmosphereField.jsx';
 import { CinematicContourDissolve } from './CinematicContourDissolve.jsx';
 import {
@@ -86,7 +87,8 @@ function setSectionScrollParallax(node, scenePosition) {
 }
 
 function EnvironmentPlate({ filename, className, plateRef, imageRef, eager = false }) {
-  const { width, height } = CINEMATIC_ASSET_GEOMETRY.scene;
+  const { width, height } = filename.includes('/portrait/')
+    ? { width: 887, height: 1774 } : CINEMATIC_ASSET_GEOMETRY.scene;
   const source = assetPath(filename);
   return (
     <div ref={plateRef} className={`environment-plate ${className}`} aria-hidden="true">
@@ -109,7 +111,8 @@ function EnvironmentPlate({ filename, className, plateRef, imageRef, eager = fal
 }
 
 function GatewaySequence({ filenames, imageRefs, plateRef }) {
-  const { width, height } = CINEMATIC_ASSET_GEOMETRY.scene;
+  const { width, height } = filenames[0].includes('/portrait/')
+    ? { width: 887, height: 1774 } : CINEMATIC_ASSET_GEOMETRY.scene;
   const source = assetPath(filenames[0]);
   return (
     <div ref={plateRef} className="environment-plate gateway-sequence-plate gateway-static-plate" aria-hidden="true">
@@ -171,7 +174,8 @@ export function CinematicEnvironment({
   gatewayOverlay = null,
   systemsOverlay = null,
 }) {
-  const assets = getCinematicAssets(theme);
+  const portrait = usePortraitArtwork();
+  const assets = getCinematicAssets(theme, { portrait });
   const compactGatewayRef = useRef(window.matchMedia(GATEWAY_COMPACT_MEDIA_QUERY).matches);
   const gatewayFilenames = compactGatewayRef.current
     ? assets.gatewayCompactFrames
@@ -686,6 +690,7 @@ export function CinematicEnvironment({
       <div
         ref={rootRef}
         className={`cinematic-environment theme-${theme} direction-forward transition-idle`}
+        data-artwork-layout={portrait ? 'portrait' : 'landscape'}
         aria-hidden="true"
       >
         <div className="cinematic-image-stage">
