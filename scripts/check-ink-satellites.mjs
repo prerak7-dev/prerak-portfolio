@@ -70,7 +70,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   await init(page);
   await open(page);
-  await page.locator('.lore-toggle').click();
+  await page.locator('.lore-medallion').click();
   await page.waitForFunction(() => document.querySelector('.archive-viewport').dataset.textContentPhase === 'exiting');
   assert.equal(await page.locator('.text-contour-ghosts img[data-contour-visual]').count(), 1, 'Avatar missing from contour exit');
   await idle(page);
@@ -100,7 +100,7 @@ try {
     await open(mobile);
     await inspect(mobile);
     await mobile.screenshot({ path: `${output}/open-${width}.png` });
-    await mobile.locator('.lore-toggle').click();
+    await mobile.locator('.lore-medallion').click();
     await idle(mobile);
     await inspect(mobile);
     await mobile.screenshot({ path: `${output}/closed-${width}.png` });

@@ -140,6 +140,12 @@ export function createTextContourRenderer() {
       svgElement('rect', { x: -4, y: -4, width: rect.width / scaleX + 8, height: rect.height / scaleY + 8, fill: `url(#${id}-field)`, filter: `url(#${prefix}-${channel}-${direction}-filter)` }, mask);
       return `url("#${id}")`;
     },
+    releaseMask(mask) {
+      const id = mask?.match(/#([^"')]+)/)?.[1];
+      if (!id?.startsWith(`${prefix}-mask-`)) return;
+      defs.querySelector(`#${id}`)?.remove();
+      defs.querySelector(`#${id}-field`)?.remove();
+    },
     dispose() {
       svg.remove();
       texture?.dispose(); material.dispose(); geometry.dispose(); renderer.dispose(); renderer.forceContextLoss();

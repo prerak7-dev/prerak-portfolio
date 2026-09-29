@@ -18,6 +18,7 @@ import { useChapterRailScroll } from '../hooks/useChapterRailScroll.js';
 import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
 import { useHomeCompositionLayout } from '../hooks/useHomeCompositionLayout.js';
 import { useTextMaterials } from '../hooks/useTextMaterials.js';
+import { useTextBrushHover } from '../hooks/useTextBrushHover.js';
 import { useChapterTextTransition } from '../hooks/useChapterTextTransition.js';
 import { useContourReading } from '../hooks/useContourReading.js';
 import { HOME_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
@@ -573,11 +574,22 @@ function SpatialHud({ theme, onThemeChange, onThemeChosen }) {
 function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }) {
   const [collapsed, setCollapsed] = useState(true);
   const collapsedRef = useRef(collapsed);
+  const avatarButtonRef = useRef(null);
+  const openButtonRef = useRef(null);
   collapsedRef.current = collapsed;
-  const changeCollapsed = useCallback(value => changeTextContent(() => setCollapsed(value),
-    window.matchMedia(HOME_COMPACT_QUERY).matches ? '.archive-scene-stack, .lore-parchment, .lore-avatar-image' : '.lore-parchment, .lore-avatar-image', {
-      key: 'lore-visibility', shouldUpdate: () => collapsedRef.current !== value,
-    }), []);
+  const changeCollapsed = useCallback(async value => {
+    const previousFocus = document.activeElement;
+    const restoreFocus = [avatarButtonRef.current, openButtonRef.current].includes(previousFocus);
+    const scope = '.lore-parchment, .lore-avatar-image, .lore-toggle';
+    await changeTextContent(() => setCollapsed(value),
+      window.matchMedia(HOME_COMPACT_QUERY).matches ? `.archive-scene-stack, ${scope}` : scope, {
+        key: 'lore-visibility', shouldUpdate: () => collapsedRef.current !== value,
+      });
+    if (restoreFocus && collapsedRef.current === value
+      && (document.activeElement === previousFocus || document.activeElement === document.body)) {
+      (value ? openButtonRef : avatarButtonRef).current?.focus({ preventScroll: true });
+    }
+  }, []);
   const textAnimationReady = introGuideReady;
   const [pointerReading, setPointerReading] = useState(false);
   const [focusReading, setFocusReading] = useState(false);
@@ -620,22 +632,29 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
       onMouseEnter={() => setPointerReading(true)} onMouseLeave={() => setPointerReading(false)}
       onFocus={() => setFocusReading(true)}
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocusReading(false); }}>
-      <div className="lore-medallion" aria-hidden="true">
+      <button ref={avatarButtonRef} type="button" className="lore-medallion"
+        aria-label="Close lore guide" aria-controls="lore-passage" aria-expanded={!collapsed}
+        aria-hidden={collapsed || !introGuideReady} disabled={collapsed || !introGuideReady}
+        title="Close lore guide" onClick={() => changeCollapsed(true)}>
         <div className="lore-avatar-figure">
           <img className="lore-avatar-image is-current" data-contour-visual src={avatarState.src} alt="" />
         </div>
-      </div>
-      <div className="lore-parchment tracer-slab" data-lenis-prevent data-contour-reading data-tracer-prop="lore" aria-hidden={collapsed} {...(collapsed ? { inert: '' } : {})} tabIndex={collapsed ? -1 : 0} aria-label="Lore passage"><p>{message}</p></div>
+      </button>
+      <div id="lore-passage" className="lore-parchment tracer-slab" data-lenis-prevent data-contour-reading data-tracer-prop="lore" aria-hidden={collapsed} {...(collapsed ? { inert: '' } : {})} tabIndex={collapsed ? -1 : 0} aria-label="Lore passage"><p><ScenicText>{message}</ScenicText></p></div>
       <button
+        ref={openButtonRef}
         type="button"
         className="lore-toggle"
-        aria-label={!introGuideReady ? 'Lore guide waiting for introduction' : collapsed ? 'Expand lore guide' : 'Collapse lore guide'}
+        data-contour-visual
+        hidden={!collapsed}
+        aria-label={!introGuideReady ? 'Lore guide waiting for introduction' : 'Open lore guide'}
+        aria-controls="lore-passage"
         aria-expanded={!collapsed}
-        title={collapsed ? 'Open lore guide' : 'Close lore guide'}
+        title="Open lore guide"
         disabled={!introGuideReady}
-        onClick={() => changeCollapsed(!collapsed)}
+        onClick={() => changeCollapsed(false)}
       >
-        {collapsed ? <BookOpen aria-hidden="true" /> : <TrianglePointer direction="right" />}
+        <BookOpen aria-hidden="true" />
       </button>
     </aside>
   );
@@ -816,16 +835,16 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
         </div>
         <div className="intro-manifesto">
           {copy.slice(0, 4).map((phrase, index) => (
-            <p className="intro-coordinate intro-manifesto-line has-copy" key={phrase} style={{ '--manifesto-index': index }}><span>{phrase}</span></p>
+            <p className="intro-coordinate intro-manifesto-line has-copy" key={phrase} style={{ '--manifesto-index': index }}><ScenicText>{phrase}</ScenicText></p>
           ))}
         </div>
         <div className="intro-actions">
-          <a className="tracer-action" data-tracer-prop="action" href={profile.resume} download><span>{copy[7]}</span></a>
+          <a className="tracer-action" data-tracer-prop="action" href={profile.resume} download><ScenicText>{copy[7]}</ScenicText></a>
         </div>
       </div>
       <div className="intro-gate-entry">
         <div className="intro-gate-scroll-shell">
-          <button className="intro-gate-cta tracer-action" data-tracer-prop="action" type="button" onClick={onEnter}><span>Enter the archive</span></button>
+          <button className="intro-gate-cta tracer-action" data-tracer-prop="action" type="button" onClick={onEnter}><ScenicText>Enter the archive</ScenicText></button>
         </div>
       </div>
     </div>
@@ -1325,6 +1344,7 @@ export function SpatialExperience({
   const sceneRefs = useRef([]);
   const viewportRef = useRef(null);
   useTextMaterials(viewportRef);
+  useTextBrushHover(viewportRef);
   useContourReading(viewportRef);
   const chapterCopy = useChapterTextTransition(viewportRef, activeIndex, experienceVisible, theme);
   const displayedContentIndex = chapterCopy.index;

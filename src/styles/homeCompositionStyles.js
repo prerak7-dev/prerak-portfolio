@@ -15,19 +15,45 @@ export const homeCompositionStyles = `
     content: none !important; display: none !important;
   }
   .archive-app .archive-viewport .chapter-rail button:focus-visible strong { outline: 1px solid currentColor; outline-offset: 4px; }
+  .archive-app .archive-viewport .spatial-lore-guide,
+  .archive-app .archive-viewport .spatial-lore-guide.is-collapsed {
+    --lore-dock-right: max(24px, env(safe-area-inset-right));
+    --lore-dock-bottom: clamp(88px, 14dvh, 160px);
+    --lore-avatar-size: 90px;
+    --lore-text-scale: .3;
+    position: fixed; inset: 0 !important; width: 100%; height: 100%; min-height: 0;
+    padding: 0; scale: 1; transform: none !important; translate: none; animation: none; pointer-events: none;
+  }
+  .archive-app .archive-viewport .spatial-lore-guide .lore-medallion {
+    position: absolute; inset: auto var(--lore-dock-right) var(--lore-dock-bottom) auto;
+    width: var(--lore-avatar-size); height: var(--lore-avatar-size); padding: 0;
+    appearance: none; background: none; border: 0; box-shadow: none;
+    transform: none; transition: none; pointer-events: auto; cursor: pointer;
+  }
+  .archive-app .archive-viewport .spatial-lore-guide .lore-toggle {
+    position: absolute;
+    inset: auto calc(var(--lore-dock-right) + (var(--lore-avatar-size) - 48px) / 2) calc(var(--lore-dock-bottom) + (var(--lore-avatar-size) - 48px) / 2) auto;
+    width: 48px; height: 48px; padding: 0; transform: none; pointer-events: auto;
+  }
+  .archive-app .archive-viewport .lore-toggle[hidden] { display: none !important; }
+  .archive-app .archive-viewport .spatial-lore-guide :is(.lore-medallion, .lore-toggle):focus-visible {
+    outline: 1px solid var(--type-accent); outline-offset: 4px;
+  }
+  .archive-app .archive-viewport .lore-avatar-figure { animation: none; transition: none; }
   .archive-app .archive-viewport .spatial-lore-guide:is(.is-collapsed, .is-awaiting) .lore-medallion {
     visibility: hidden !important; pointer-events: none;
   }
   .archive-app .archive-viewport .lore-avatar-image { animation: none !important; transition: none !important; }
   .archive-app .archive-viewport .lore-toggle svg { width: 22px; height: 22px; stroke-width: 1.5; }
-  .archive-app .lore-parchment p { font-family: var(--font-engraved) !important; font-weight: 400; font-style: normal; font-size: 24.225px; line-height: 1.45; }
+  .archive-app .lore-parchment p { font-size: calc(24.225px * var(--lore-text-scale)); line-height: 1.45; }
   .archive-app .archive-viewport .spatial-lore-guide .lore-parchment {
-    position: fixed; inset: auto max(24px, env(safe-area-inset-right)) 144px auto;
+    position: fixed; inset: auto var(--lore-dock-right) calc(var(--lore-dock-bottom) + var(--lore-avatar-size) + 14px) auto;
     width: min(440px, calc(100vw - 48px)); height: auto;
-    min-height: 0; max-height: calc(100dvh - 250px);
+    min-height: 0; max-height: calc(100dvh - var(--lore-dock-bottom) - var(--lore-avatar-size) - 110px);
     display: block; padding: 8px; margin: 0; overflow: hidden;
-    transform: none; text-align: left; transform-origin: initial;
+    transform: none; text-align: left; transform-origin: initial; pointer-events: auto;
   }
+  .archive-app .archive-viewport .spatial-lore-guide.is-collapsed .lore-parchment { pointer-events: none; }
   .archive-app .archive-viewport .spatial-lore-guide .lore-parchment p {
     width: 100%; margin: 0; padding: 0; text-align: left; text-indent: 0;
     overflow-wrap: anywhere; white-space: normal;
@@ -232,26 +258,18 @@ export const homeCompositionStyles = `
     .home-beat-controls span { font: 13px/1 var(--font-navigation); min-width: 34px; text-align: center; }
     .archive-app .archive-viewport .spatial-lore-guide,
     .archive-app .archive-viewport .spatial-lore-guide.is-collapsed {
-      position: fixed; inset: 0 !important; width: 100%; height: 100%; min-height: 0;
-      padding: 0; scale: 1; transform: none !important; translate: none; animation: none; pointer-events: none;
+      --lore-dock-right: max(16px, env(safe-area-inset-right));
+      --lore-dock-bottom: max(clamp(56px, 9dvh, 64px), env(safe-area-inset-bottom));
+      --lore-avatar-size: 64px;
     }
-    .archive-app .archive-viewport .spatial-lore-guide .lore-medallion {
-      position: absolute; left: auto; right: max(12px, env(safe-area-inset-right)); top: auto; bottom: var(--mobile-dock-bottom);
-      width: 64px; height: 64px; transform: none;
-    }
-    .archive-app .archive-viewport .spatial-lore-guide .lore-toggle {
-      position: absolute; inset: auto max(12px, env(safe-area-inset-right)) var(--mobile-dock-bottom) auto;
-      width: 64px; height: 64px; transform: none; pointer-events: auto;
-    }
-    .archive-app .archive-viewport .spatial-lore-guide .lore-toggle .triangle-pointer { position: absolute; left: 0; top: 26px; }
     .archive-app .archive-viewport .spatial-lore-guide .lore-parchment {
-      position: absolute; left: auto; right: max(20px, env(safe-area-inset-right)); top: calc(var(--mobile-header-top) + 72px); bottom: calc(var(--mobile-dock-bottom) + 82px);
+      position: absolute; left: auto; right: max(20px, env(safe-area-inset-right)); top: calc(var(--mobile-header-top) + 72px); bottom: calc(var(--lore-dock-bottom) + var(--lore-avatar-size) + 14px);
       width: min(440px, calc(100% - 40px)); max-height: none; min-height: 0; height: auto;
       display: flex; flex-direction: column;
       padding: 6px 8px 12px; overflow: auto; overscroll-behavior: contain;
       scrollbar-width: thin; transform: none; clip-path: none;
     }
-    .archive-app .archive-viewport .spatial-lore-guide .lore-parchment p { flex: none; margin-top: auto; font-size: 19.38px; line-height: 1.45; }
+    .archive-app .archive-viewport .spatial-lore-guide .lore-parchment p { flex: none; margin-top: auto; font-size: calc(19.38px * var(--lore-text-scale)); line-height: 1.45; }
     .archive-app .archive-viewport:has(.spatial-lore-guide:not(.is-collapsed)) .archive-scene-stack {
       opacity: 0; visibility: hidden; pointer-events: none;
     }
@@ -274,6 +292,10 @@ export const homeCompositionStyles = `
   @media ${NAV_LANDSCAPE_QUERY} {
     .archive-viewport .home-composition .intro-copy-stage { top: calc(var(--mobile-header-top) + 72px); right: calc(38% + 16px); bottom: calc(var(--mobile-dock-bottom) + 138px); }
     .archive-viewport .home-composition .intro-gate-entry { left: 20px; right: auto; bottom: calc(var(--mobile-dock-bottom) + 78px); }
+    .archive-app .archive-viewport .spatial-lore-guide .lore-parchment {
+      top: calc(var(--mobile-header-top) + 72px); left: max(20px, env(safe-area-inset-left)); right: auto;
+      width: min(440px, calc(50% - 32px));
+    }
   }
   @media (max-height: 700px) {
     .archive-viewport .contour-content { gap: 4px; }

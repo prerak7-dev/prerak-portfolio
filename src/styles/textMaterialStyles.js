@@ -1,6 +1,8 @@
 import { TEXT_MATERIALS } from '../data/textMaterials.js';
+import { textBrushStyles } from './textBrushStyles.js';
 
 export const textMaterialStyles = `
+  ${textBrushStyles}
   ${Object.entries(TEXT_MATERIALS).map(([theme, tokens]) => `
     .archive-app.theme-${theme} {
       ${Object.entries(tokens).filter(([key]) => key !== 'name').map(([key, value]) => `--type-${key}: ${value};`).join('\n')}
@@ -34,7 +36,12 @@ export const textMaterialStyles = `
   .archive-app .archive-viewport :is(.contour-eyebrow, [aria-pressed="true"]).material-text {
     --type-ink-color: var(--type-accent);
   }
-  .archive-app .archive-viewport :is(.intro-role > .scenic-text, .chapter-rail.is-orbit-rail .chapter-rail-list button strong.material-text) {
+  .archive-app .archive-viewport :is(
+    :is(.intro-role, .intro-manifesto-line) > .scenic-text,
+    .intro-actions a, .intro-gate-cta, .lore-parchment p,
+    :is(.intro-actions a, .intro-gate-cta, .lore-parchment p) > .scenic-text,
+    .chapter-rail.is-orbit-rail .chapter-rail-list button strong.material-text
+  ) {
     font-family: var(--font-display) !important; font-weight: 600; font-style: normal;
     font-synthesis: none; text-transform: uppercase; letter-spacing: 0;
     text-shadow: none !important; box-shadow: none !important; filter: none !important;

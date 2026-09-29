@@ -1,7 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { APPEARANCE_IDS } from './themeAppearance.js';
-import { TEXT_MATERIALS } from './textMaterials.js';
+import { TEXT_DISPLAY_SELECTOR, TEXT_MATERIALS } from './textMaterials.js';
+
+test('Home role and manifesto share the display-ink material', () => {
+  const selectors = TEXT_DISPLAY_SELECTOR.split(',').map(selector => selector.trim());
+  assert(selectors.includes('.intro-role'));
+  assert(selectors.includes('.intro-manifesto-line'));
+});
+
+test('Home actions and lore use the same display ink as the title', () => {
+  const selectors = TEXT_DISPLAY_SELECTOR.split(',').map(selector => selector.trim());
+  for (const selector of ['.intro-role', '.intro-actions a', '.intro-gate-cta', '.lore-parchment p']) {
+    assert(selectors.includes(selector), selector);
+  }
+});
 
 test('every appearance has a distinct, complete text material', () => {
   assert.deepEqual(Object.keys(TEXT_MATERIALS).sort(), [...APPEARANCE_IDS].sort());
