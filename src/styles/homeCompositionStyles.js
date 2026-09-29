@@ -5,7 +5,22 @@ export const homeCompositionStyles = `
   .archive-header :is(button, a) { pointer-events: auto; }
   .archive-viewport .chapter-rail .chapter-rail-list { scroll-snap-type: none !important; scroll-behavior: auto !important; }
   .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong { scale: 1 !important; }
-  .archive-app .lore-parchment p { font-size: 24.225px; line-height: 1.45; }
+  .archive-app .archive-viewport .chapter-rail .chapter-celestial-marker,
+  .archive-app .archive-viewport .chapter-rail .chapter-celestial-marker * {
+    filter: none !important; box-shadow: none !important; text-shadow: none !important;
+    background: none !important; border: 0 !important;
+  }
+  .archive-app .archive-viewport .chapter-rail .chapter-celestial-marker::before,
+  .archive-app .archive-viewport .chapter-rail .chapter-celestial-marker::after {
+    content: none !important; display: none !important;
+  }
+  .archive-app .archive-viewport .chapter-rail button:focus-visible strong { outline: 1px solid currentColor; outline-offset: 4px; }
+  .archive-app .archive-viewport .spatial-lore-guide:is(.is-collapsed, .is-awaiting) .lore-medallion {
+    visibility: hidden !important; pointer-events: none;
+  }
+  .archive-app .archive-viewport .lore-avatar-image { animation: none !important; transition: none !important; }
+  .archive-app .archive-viewport .lore-toggle svg { width: 22px; height: 22px; stroke-width: 1.5; }
+  .archive-app .lore-parchment p { font-family: var(--font-engraved) !important; font-weight: 400; font-style: normal; font-size: 24.225px; line-height: 1.45; }
   .archive-app .archive-viewport .spatial-lore-guide .lore-parchment {
     position: fixed; inset: auto max(24px, env(safe-area-inset-right)) 144px auto;
     width: min(440px, calc(100vw - 48px)); height: auto;

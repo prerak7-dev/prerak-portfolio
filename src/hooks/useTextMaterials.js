@@ -17,6 +17,7 @@ const SCENE_IMAGES = ['.gateway-sequence-preloads img', '.cores-plate img', '.sy
 const APPEARANCE_PROPERTIES = ['display', 'box-sizing', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-transform', 'text-align', 'text-indent', 'white-space', 'word-spacing', 'word-break', 'overflow-wrap', 'color', '-webkit-text-fill-color', '-webkit-text-stroke', 'text-shadow', 'background-image', 'background-size', 'background-position', 'background-repeat', 'background-blend-mode', 'background-clip', '-webkit-background-clip', 'filter', 'padding', 'margin', 'vertical-align', 'text-decoration', 'gap', 'align-items', 'justify-content'];
 APPEARANCE_PROPERTIES.push('opacity', 'text-wrap-mode', 'text-wrap-style', 'flex-direction', 'flex-wrap', 'align-self', 'flex-grow', 'flex-shrink', 'flex-basis');
 APPEARANCE_PROPERTIES.push('background-color', 'border', 'border-radius', 'appearance', 'outline', 'box-shadow');
+APPEARANCE_PROPERTIES.push('object-fit', 'object-position');
 
 function layoutBox(node) {
   const style = getComputedStyle(node);
@@ -31,11 +32,12 @@ function layoutBox(node) {
 
 function visibleBounds(node, root) {
   if (!node.getClientRects().length) return null;
+  const visual = node.hasAttribute('data-contour-visual');
   const rect = node.getBoundingClientRect();
   const bounds = { left: Math.max(0, rect.left), top: Math.max(0, rect.top), right: Math.min(innerWidth, rect.right), bottom: Math.min(innerHeight, rect.bottom) };
   for (let parent = node; parent && parent !== root; parent = parent.parentElement) {
     const style = getComputedStyle(parent);
-    if (style.visibility === 'hidden' || Number(style.opacity) < .02 || parent.getAttribute('aria-hidden') === 'true') return null;
+    if (style.visibility === 'hidden' || Number(style.opacity) < .02 || (!visual && parent.getAttribute('aria-hidden') === 'true')) return null;
     if (parent !== node && /(auto|scroll|hidden|clip)/.test(`${style.overflowX} ${style.overflowY}`)) {
       const clip = parent.getBoundingClientRect();
       bounds.left = Math.max(bounds.left, clip.left); bounds.right = Math.min(bounds.right, clip.right);
@@ -90,8 +92,10 @@ export function useTextMaterials(ref) {
 
     const scan = () => {
       scanFrame = 0;
-      targets = findTextTargets(root);
+      targets = [...findTextTargets(root), ...root.querySelectorAll('[data-contour-visual]')];
       targets.forEach(node => {
+        // Opt-in artwork shares the dissolve clock without becoming ink-styled text.
+        if (node.hasAttribute('data-contour-visual')) return;
         if (!node.classList.contains('material-text')) node.classList.add('material-text');
         const material = node.matches(TEXT_DISPLAY_SELECTOR) ? 'display-ink' : 'ink';
         if (node.dataset.textMaterial !== material) node.dataset.textMaterial = material;

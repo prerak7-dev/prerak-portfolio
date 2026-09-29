@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePortraitArtwork } from '../hooks/usePortraitArtwork.js';
-import { Moon, Sun, Leaf, Flower2, Snowflake, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Moon, Sun, Leaf, Flower2, Snowflake, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { getSeason, isLightAppearance, appearanceId } from '../data/themeAppearance.js';
 import {
   projectArchitectures,
@@ -38,7 +38,6 @@ import {
   toggleCachedClass,
 } from '../utils/motionPerformance.js';
 import { CinematicEnvironment } from './CinematicEnvironment.jsx';
-import { LoreAvatarContourField } from './LoreAvatarContourField.jsx';
 import { ProfileAvatar } from './primitives.jsx';
 import { SpatialWorld } from './SpatialWorld.jsx';
 import { BoundaryFilamentField } from './WayfinderCosmicField.jsx';
@@ -576,7 +575,7 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
   const collapsedRef = useRef(collapsed);
   collapsedRef.current = collapsed;
   const changeCollapsed = useCallback(value => changeTextContent(() => setCollapsed(value),
-    window.matchMedia(HOME_COMPACT_QUERY).matches ? '.archive-scene-stack, .lore-parchment' : '.lore-parchment', {
+    window.matchMedia(HOME_COMPACT_QUERY).matches ? '.archive-scene-stack, .lore-parchment, .lore-avatar-image' : '.lore-parchment, .lore-avatar-image', {
       key: 'lore-visibility', shouldUpdate: () => collapsedRef.current !== value,
     }), []);
   const textAnimationReady = introGuideReady;
@@ -584,20 +583,6 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
   const [focusReading, setFocusReading] = useState(false);
   const chapterId = spatialChapters[activeIndex]?.id || 'intro';
   const avatarState = getLoreAvatarState(theme, chapterId);
-  const avatarSourceRef = useRef(avatarState.src);
-  const [currentAvatar, setCurrentAvatar] = useState(avatarState.src);
-  const [leavingAvatar, setLeavingAvatar] = useState(null);
-
-  useEffect(() => {
-    const previousAvatar = avatarSourceRef.current;
-    if (previousAvatar === avatarState.src) return undefined;
-
-    avatarSourceRef.current = avatarState.src;
-    setLeavingAvatar(previousAvatar);
-    setCurrentAvatar(avatarState.src);
-    const timer = window.setTimeout(() => setLeavingAvatar(null), 760);
-    return () => window.clearTimeout(timer);
-  }, [avatarState.src]);
 
   useLayoutEffect(() => {
     if (!introGuideReady) {
@@ -637,9 +622,7 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocusReading(false); }}>
       <div className="lore-medallion" aria-hidden="true">
         <div className="lore-avatar-figure">
-          {leavingAvatar && <img className="lore-avatar-image is-leaving" src={leavingAvatar} alt="" />}
-          <img key={currentAvatar} className="lore-avatar-image is-current" src={currentAvatar} alt="" />
-          <LoreAvatarContourField theme={theme} imageSrc={currentAvatar} />
+          <img className="lore-avatar-image is-current" data-contour-visual src={avatarState.src} alt="" />
         </div>
       </div>
       <div className="lore-parchment tracer-slab" data-lenis-prevent data-contour-reading data-tracer-prop="lore" aria-hidden={collapsed} {...(collapsed ? { inert: '' } : {})} tabIndex={collapsed ? -1 : 0} aria-label="Lore passage"><p>{message}</p></div>
@@ -648,10 +631,11 @@ function LoreGuide({ activeIndex, introGuideReady, themePromptCompleted, theme }
         className="lore-toggle"
         aria-label={!introGuideReady ? 'Lore guide waiting for introduction' : collapsed ? 'Expand lore guide' : 'Collapse lore guide'}
         aria-expanded={!collapsed}
+        title={collapsed ? 'Open lore guide' : 'Close lore guide'}
         disabled={!introGuideReady}
         onClick={() => changeCollapsed(!collapsed)}
       >
-        <TrianglePointer direction={collapsed ? 'left' : 'right'} />
+        {collapsed ? <BookOpen aria-hidden="true" /> : <TrianglePointer direction="right" />}
       </button>
     </aside>
   );

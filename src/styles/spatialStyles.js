@@ -1,6 +1,7 @@
 import { THEME_CONTOUR_TRANSITION_DURATION_MS } from '../utils/cinematicTiming.js';
 import { homeCompositionStyles } from './homeCompositionStyles.js';
 import { textMaterialStyles } from './textMaterialStyles.js';
+import { coresCompositionStyles } from './coresCompositionStyles.js';
 
 export const spatialStyles = `
   @font-face {
@@ -7924,4 +7925,5 @@ export const spatialStyles = `
   }
   ${homeCompositionStyles}
   ${textMaterialStyles}
+  ${coresCompositionStyles}
 `;

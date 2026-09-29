@@ -1,0 +1,63 @@
+{
+  "generator": "Built-in image_gen",
+  "purpose": "Transparent matte brush satellites for all eight navigation appearances",
+  "conversion": "Resize to 128px and lossless WebP, preserving the generated alpha channel",
+  "entries": [
+    {
+      "season": "default",
+      "mode": "dark",
+      "source": "exec-177073e0-64b4-4f83-954b-5e92c82af1e0.png",
+      "output": "cinematic/painted-v1/default/dark/satellite-ink-v2.webp",
+      "prompt": "Use case: stylized-concept. Asset type: a single small navigation satellite icon for a hand-painted cosmic portfolio. Create a flat artisanal ink celestial satellite, a broken circular brush ring with a short crescent arc nested inside, genuinely transparent empty center and generous transparent exterior. Ragged watercolor dry-brush texture with holes through the ink; about 70 percent of the image is empty transparent negative space. Strong simple silhouette legible at 24 pixels. Centered, square 1024x1024, ring occupies 80 percent of canvas. Palette for monochrome DARK website: matte warm ivory and pale antique gold ink, no black disk or filled globe. Flat matte pigment only. Absolutely no shadow, glow, highlight, bevel, lighting, solid background, gradient background, checkerboard illustration, text, numbers, stars, sparkles, border or watermark. Real alpha transparency, not white background. This is a new standalone asset; do not reproduce the solid moon from any earlier image."
+    },
+    {
+      "season": "default",
+      "mode": "light",
+      "source": "exec-567d5a33-2427-411b-9cb8-fdabc656f175.png",
+      "output": "cinematic/painted-v1/default/light/satellite-ink-v2.webp",
+      "prompt": "Create the LIGHT monochrome counterpart of the supplied generated navigation satellite. Keep the exact centered broken brush ring and nested crescent silhouette, open transparent center, textured dry ink edges and genuine transparent alpha exterior. Change only pigment palette to matte dark graphite charcoal and muted bronze ink, high legibility against a light painted scene. Flat ink, no shadow, no glow, no highlights, no bevel, no lighting or solid disk. No background or checkerboard painting. No text. Asset type: transparent small navigation icon; 1024 square. Preserve extensive transparent holes and negative space."
+    },
+    {
+      "season": "fall",
+      "mode": "dark",
+      "source": "exec-f7a5fd5f-8316-4e40-9605-dde17c711de1.png",
+      "output": "cinematic/painted-v1/fall/dark/satellite-ink-v2.webp",
+      "prompt": "Use case: stylized-concept. Generate the FALL DARK season variant of the provided navigation ink satellite reference. Same open broken circular dry-brush ring with a slender crescent tucked inside, generous transparent center and outside. Warm pale copper and muted apricot with small ivory pigment flecks, luminous in COLOR ONLY, not lighting, for legibility over a dark autumn painting. Flat handmade ink on transparent alpha, matte ragged edges and tiny holes, readable at 24px. Preserve shape and scale; no filled moon or solid disk. Absolutely no shadow, glow, shine, lighting highlights, bevel, background, checkerboard depiction, text, border or watermark. Square image."
+    },
+    {
+      "season": "fall",
+      "mode": "light",
+      "source": "exec-88a73c57-b21d-4432-8f6c-53be7439116f.png",
+      "output": "cinematic/painted-v1/fall/light/satellite-ink-v2.webp",
+      "prompt": "Generate FALL LIGHT counterpart of supplied open ink satellite icon. Keep exactly the broken brush circle and nested slender crescent, transparent center and transparent exterior, same scale and shape. Recolor to matte deep burgundy with dark terracotta and muted rust ink suitable on a pale autumn painted background. 2D dry pigment, NOT metal, not embossed, no shiny areas or directional shading. Retain transparent holes and rough hand-painted boundaries. Genuine alpha background. No solid circle, no fill in the empty center, no shadows, no halo, no highlights, no glow, no backdrop, no text, no border or watermark. Small navigation asset, square."
+    },
+    {
+      "season": "spring",
+      "mode": "dark",
+      "source": "exec-e3189d8c-cbbc-442f-a1f5-2ae2670cf9e5.png",
+      "output": "cinematic/painted-v1/spring/dark/satellite-ink-v2.webp",
+      "prompt": "Generate SPRING DARK counterpart of the supplied open ink navigation satellite. Preserve the broken circular brush ring and nested slender crescent, exact scale, large empty center, genuine transparent alpha exterior and holes. Palette: soft pale sage and celadon green ink with pale rose-pink accents, readable against a dark spring painted landscape. Matte flat dry pigment, organic ragged brushwork, not metal or three-dimensional. No solid disk, backdrop, gradients, shadows, glow, highlight, bevel, text, decorative stars or watermark. Small navigation icon on transparent background, square."
+    },
+    {
+      "season": "spring",
+      "mode": "light",
+      "source": "exec-c43a082d-05e9-43b0-8d04-8790d4158201.png",
+      "output": "cinematic/painted-v1/spring/light/satellite-ink-v2.webp",
+      "prompt": "Generate SPRING LIGHT counterpart of the supplied open ink navigation satellite. Preserve exact centered broken circular brush ring and nested slender crescent shape with broad transparent center, genuine transparent alpha exterior and small holes in the dry-brush marks. Recolor into matte deep forest green and muted dark rose ink, clearly visible over a light spring landscape. Flat printed pigment, rough artistic brush edges. Not metallic, no highlights or shadows, no glowing rim, no shine, no dimensional bevel, no filled circle, no solid background, no checkerboard depiction, no text or watermark. Square transparent small navigation asset."
+    },
+    {
+      "season": "winter",
+      "mode": "dark",
+      "source": "exec-c797c787-d9f0-4211-928a-173e476f9e73.png",
+      "output": "cinematic/painted-v1/winter/dark/satellite-ink-v2.webp",
+      "prompt": "Generate WINTER DARK counterpart of the supplied open ink navigation satellite. Preserve centered broken circular brush ring with a nested crescent, exact silhouette and scale, wide transparent interior and genuine alpha exterior. Colors: matte pale ice blue, silvery white pigment and a restrained cool lavender accent, readable over dark winter scenes. Rough flat watercolor ink with distressed holes, not metallic or shiny. No solid moon, no solid fill, no background, no glow, no shadows, no highlights, no bevel, no light source, no text or watermark. Square transparent small navigation icon."
+    },
+    {
+      "season": "winter",
+      "mode": "light",
+      "source": "exec-bdcb7502-f3a0-4727-8086-f24753259c01.png",
+      "output": "cinematic/painted-v1/winter/light/satellite-ink-v2.webp",
+      "prompt": "Generate WINTER LIGHT counterpart of supplied open ink navigation satellite. Keep centered broken dry-brush circular ring, nested slender crescent, same silhouette, generous transparent center and genuine transparent exterior. Use matte midnight indigo and deep muted teal pigment with cool blue variation, readable against light snow-white winter landscape. Flat handmade ink, distressed edges with transparency holes, not metal or embossed. No shine, highlight, cast shadow, glow, halo, dimensional lighting, solid moon or disk, filled background, checkerboard illustration, text or watermark. Square transparent navigation asset."
+    }
+  ]
+}

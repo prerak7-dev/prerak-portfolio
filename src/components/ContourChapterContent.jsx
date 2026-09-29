@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ExternalLink, GitBranch, Layers, FileText, ListChecks } from 'lucide-react';
 import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
+import { useCoresCompositionLayout } from '../hooks/useCoresCompositionLayout.js';
 import { projectArchitectures, spatialPortfolio } from '../data/spatialPortfolioData.js';
 import { getSafeLinkProps } from '../security/contentSecurity.js';
 import { changeTextContent } from '../utils/changeTextContent.js';
@@ -13,13 +14,54 @@ const cores = [
 
 export function ContourCores({ isActive, onContinue }) {
   const ref = useRef(null);
-  useContourContentLayout(ref, 'cores', isActive);
+  const detailRef = useRef(null);
+  const [selected, setSelected] = useState(null);
+  const desired = useRef(null);
+  const latest = useRef({ selected, isActive });
+  latest.current = { selected, isActive };
+  useCoresCompositionLayout(ref, isActive);
+  useEffect(() => {
+    if (!isActive) { desired.current = null; setSelected(null); }
+  }, [isActive]);
+  const select = index => {
+    desired.current = index;
+    changeTextContent(() => setSelected(desired.current), detailRef.current, {
+      key: 'cores-detail',
+      shouldUpdate: () => latest.current.isActive && latest.current.selected !== desired.current,
+    });
+  };
+  useEffect(() => {
+    if (!isActive) return undefined;
+    const dismiss = event => {
+      if (event.key !== 'Escape' || event.defaultPrevented || desired.current === null) return;
+      desired.current = null;
+      changeTextContent(() => setSelected(desired.current), detailRef.current, {
+        key: 'cores-detail',
+        shouldUpdate: () => latest.current.isActive && latest.current.selected !== desired.current,
+      });
+    };
+    window.addEventListener('keydown', dismiss);
+    return () => window.removeEventListener('keydown', dismiss);
+  }, [isActive]);
   return <div ref={ref} data-lenis-prevent className={`contour-content contour-cores ${isActive ? 'is-present' : ''}`}>
-    <header><p className="contour-eyebrow">Cores</p><h2>Three cores.<br />One connected practice.</h2></header>
-    <div className="contour-reading-list" data-contour-reading tabIndex={0} aria-label="Engineering disciplines">
-      {cores.map(([title, text]) => <article className="contour-record" key={title}><h3>{title}</h3><p>{text}</p></article>)}
+    <header className="cores-chapter-heading"><h2>Three cores.</h2><p className="cores-chapter-subtitle">One connected practice.</p></header>
+    <div className="core-suns" role="group" aria-label="Engineering disciplines">
+      {cores.map(([title], index) => <button key={title} id={`core-sun-${index}`} className="core-sun" type="button"
+        aria-label={title} aria-expanded={selected === index} aria-controls="core-details"
+        onPointerEnter={event => { if (event.pointerType === 'mouse' || event.pointerType === 'pen') select(index); }}
+        onFocus={() => select(index)} onClick={() => select(index)}>
+        <span className="core-sun-ordinal" aria-hidden="true">{['I', 'II', 'III'][index]}</span>
+        <span className="core-sun-name">{title}</span>
+      </button>)}
     </div>
-    <footer><button className="contour-link" onClick={onContinue}><span>Case studies</span> <ArrowRight aria-hidden="true" /></button></footer>
+    <section ref={detailRef} className="core-detail" id="core-details" aria-live="polite" aria-atomic="true"
+      aria-labelledby={selected === null ? undefined : `core-sun-${selected}`}>
+      {selected !== null && <>
+        <p className="core-detail-ordinal" aria-hidden="true">{['I', 'II', 'III'][selected]}</p>
+        <p className="core-detail-copy">{cores[selected][1]}</p>
+      </>}
+    </section>
+    <footer><button className="contour-link" aria-label="Case studies" title="Case studies" onClick={onContinue}><span>Case studies</span> <ArrowRight aria-hidden="true" /></button></footer>
   </div>;
 }
 

@@ -111,11 +111,11 @@ try {
       assert(Math.max(...points.map(point => point.y)) - Math.min(...points.map(point => point.y)) < 25, 'Cores did not use its desktop horizon contour');
       assert(Math.max(...points.map(point => point.x)) - Math.min(...points.map(point => point.x)) > width * .3, 'Landscape is still restricted to a side strip');
       const clearance = await page.evaluate(() => {
-        const copy = document.querySelector('.contour-cores').getBoundingClientRect();
+        const copyBottom = Math.max(...[...document.querySelectorAll('.cores-chapter-heading, .core-sun')].map(node => node.getBoundingClientRect().bottom));
         const lore = document.querySelector('.lore-toggle').getBoundingClientRect();
         return [...document.querySelectorAll('.chapter-rail-list > button')].filter(node => !node.inert).every(node => {
           const rect = node.getBoundingClientRect();
-          return rect.top >= copy.bottom && rect.right <= lore.left;
+          return rect.top >= copyBottom && rect.right <= lore.left;
         });
       });
       assert(clearance, 'Cores rail crosses the copy or lore control');

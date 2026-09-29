@@ -2,7 +2,7 @@ import { APPEARANCE_IDS, paintedAsset } from './themeAppearance.js';
 import { createAssetPath } from '../security/contentSecurity.js';
 
 const chapterCelestialByTheme = Object.freeze(Object.fromEntries(
-  APPEARANCE_IDS.map(theme => [theme, createAssetPath(import.meta.env.BASE_URL, paintedAsset(theme, 'satellite'))]),
+  APPEARANCE_IDS.map(theme => [theme, createAssetPath(import.meta.env.BASE_URL, paintedAsset(theme, 'satellite-ink-v2'))]),
 ));
 
 export const chapterCelestialSources = Object.freeze(Object.values(chapterCelestialByTheme));

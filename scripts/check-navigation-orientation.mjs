@@ -40,7 +40,7 @@ try {
         count: Number(rail.dataset.visibleCount),
         drift: Math.abs(nodes[0].getBoundingClientRect().x - x),
         selectedVisible: selected.left >= bounds.left - 1 && selected.right <= bounds.right + 1,
-        contentTop: document.querySelector('.contour-content').getBoundingClientRect().top,
+        contentTop: document.querySelector('.cores-chapter-heading, .contour-content:not(.contour-cores)').getBoundingClientRect().top,
         railBottom: rail.getBoundingClientRect().bottom,
       };
     });

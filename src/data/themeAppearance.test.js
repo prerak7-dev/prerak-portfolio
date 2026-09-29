@@ -19,11 +19,22 @@ test('season selection preserves the independent light or dark appearance', () =
 
 test('all appearances have final Home art and alpha-preserving UI assets', () => {
   for (const theme of APPEARANCE_IDS) {
-    for (const asset of ['home', 'avatar', 'satellite', 'geometry/home']) {
+    for (const asset of ['home', 'avatar', 'satellite-ink-v2', 'geometry/home']) {
       const filename = paintedAsset(theme, asset);
       assert.ok(existsSync(new URL(filename, publicRoot)), filename);
     }
     assert.equal(getCinematicSceneAsset(theme, 0), paintedAsset(theme, 'home'));
+  }
+});
+
+test('all eight ink satellites retain their generated source and prompt', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../scripts/cinematic-source/satellite-ink-v2.json', import.meta.url), 'utf8'));
+  assert.equal(manifest.generator, 'Built-in image_gen');
+  assert.equal(manifest.entries.length, 8);
+  assert.equal(new Set(manifest.entries.map(entry => entry.output)).size, 8);
+  for (const theme of APPEARANCE_IDS) {
+    const entry = manifest.entries.find(asset => asset.output === paintedAsset(theme, 'satellite-ink-v2'));
+    assert.ok(entry?.source && entry.prompt);
   }
 });
 
