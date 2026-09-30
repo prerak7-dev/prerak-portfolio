@@ -123,7 +123,8 @@ export function useTextBrushHover(ref) {
       const node = document.createElement('div');
       node.className = 'text-brush-wash';
       const style = getComputedStyle(root);
-      node.style.setProperty('--brush-pigment', style.getPropertyValue('--brush-pigment'));
+      const ink = target.matches('[data-adaptive-ink]') ? target : target.querySelector('[data-adaptive-ink]');
+      node.style.setProperty('--brush-pigment', (ink && getComputedStyle(ink).getPropertyValue('--adaptive-ink-paper')) || style.getPropertyValue('--brush-pigment'));
       node.style.setProperty('--brush-grain', style.getPropertyValue('--type-grain'));
       const mask = !reduced.matches && renderer ? renderer.mask({ left: 0, top: 0, width: innerWidth, height: innerHeight }, 'incoming', 1, 1, channel) : null;
       if (mask) { node.style.maskImage = mask; renderer.draw(0, channel); }

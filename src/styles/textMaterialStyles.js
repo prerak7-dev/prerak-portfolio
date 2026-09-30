@@ -1,5 +1,6 @@
 import { TEXT_MATERIALS } from '../data/textMaterials.js';
 import { textBrushStyles } from './textBrushStyles.js';
+import { adaptiveInkStyles } from './adaptiveInkStyles.js';
 
 export const textMaterialStyles = `
   ${textBrushStyles}
@@ -47,6 +48,11 @@ export const textMaterialStyles = `
     text-shadow: none !important; box-shadow: none !important; filter: none !important;
     text-decoration: none;
   }
+  /* Morrison ships one face; synthesize weight only for navigation labels. */
+  .archive-app .archive-viewport .chapter-rail.is-orbit-rail .chapter-rail-list button strong.material-text {
+    font-weight: 700;
+    font-synthesis: weight;
+  }
   .archive-app .archive-viewport .chapter-rail .chapter-rail-list > button {
     background: transparent !important; box-shadow: none !important;
     text-shadow: none !important; filter: none !important;
@@ -66,16 +72,21 @@ export const textMaterialStyles = `
         url('${import.meta.env.BASE_URL}cinematic/ui/watercolor-paper-fiber-overlay-v1.webp'),
         radial-gradient(ellipse at 18% 32%, currentColor 0%, transparent 52%),
         radial-gradient(ellipse at 82% 74%, currentColor 0%, transparent 46%),
-        linear-gradient(var(--type-angle), currentColor 4%, color-mix(in srgb, currentColor var(--type-ink-load), transparent) 29%, currentColor 47%, color-mix(in srgb, currentColor var(--type-ink-load), transparent) 68%, currentColor 93%);
-      background-size: 100% 100%, calc(var(--type-grain) * var(--type-fiber-scale)) auto, 73% 100%, 89% 100%, 100% 100%;
-      background-position: 0 0, 0 0, 0 0, 100% 0, 0 0;
-      background-repeat: no-repeat, repeat, no-repeat, no-repeat, no-repeat;
-      background-blend-mode: normal, multiply, normal, normal, normal;
-      background-clip: text;
-      -webkit-background-clip: text;
+        linear-gradient(var(--type-angle), currentColor 4%, color-mix(in srgb, currentColor var(--type-ink-load), transparent) 29%, currentColor 47%, color-mix(in srgb, currentColor var(--type-ink-load), transparent) 68%, currentColor 93%), var(--ink-wash-images, none);
+      background-size: 100% 100%, calc(var(--type-grain) * var(--type-fiber-scale)) auto, 73% 100%, 89% 100%, 100% 100%, var(--ink-wash-sizes, auto);
+      background-position: 0 0, 0 0, 0 0, 100% 0, 0 0, var(--ink-wash-positions, 0 0);
+      background-repeat: no-repeat, repeat, no-repeat, no-repeat, no-repeat, var(--ink-wash-repeats, no-repeat);
+      background-blend-mode: normal, multiply, normal, normal, normal, var(--ink-wash-blends, normal);
+      background-origin: border-box;
+      background-clip: text, text, text, text, text, var(--ink-wash-clips, border-box);
+      -webkit-background-clip: text, text, text, text, text, var(--ink-wash-clips, border-box);
     }
     .archive-app .archive-viewport .material-text:has(> .scenic-text) {
-      background: none;
+      background-image: var(--ink-wash-images, none);
+      background-size: var(--ink-wash-sizes, auto);
+      background-position: var(--ink-wash-positions, 0 0);
+      background-repeat: no-repeat; background-blend-mode: normal;
+      background-clip: border-box; -webkit-background-clip: border-box;
       text-shadow: none !important;
     }
   }
@@ -146,4 +157,5 @@ export const textMaterialStyles = `
       color: CanvasText !important; filter: none !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;
     }
   }
+  ${adaptiveInkStyles}
 `;

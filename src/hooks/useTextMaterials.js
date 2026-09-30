@@ -18,6 +18,7 @@ const APPEARANCE_PROPERTIES = ['display', 'box-sizing', 'font-family', 'font-siz
 APPEARANCE_PROPERTIES.push('opacity', 'text-wrap-mode', 'text-wrap-style', 'flex-direction', 'flex-wrap', 'align-self', 'flex-grow', 'flex-shrink', 'flex-basis');
 APPEARANCE_PROPERTIES.push('background-color', 'border', 'border-radius', 'appearance', 'outline', 'box-shadow');
 APPEARANCE_PROPERTIES.push('object-fit', 'object-position');
+APPEARANCE_PROPERTIES.push('background-origin', 'font-synthesis');
 
 function layoutBox(node) {
   const style = getComputedStyle(node);

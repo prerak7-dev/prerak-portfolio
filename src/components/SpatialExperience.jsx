@@ -19,6 +19,7 @@ import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
 import { useHomeCompositionLayout } from '../hooks/useHomeCompositionLayout.js';
 import { useTextMaterials } from '../hooks/useTextMaterials.js';
 import { useTextBrushHover } from '../hooks/useTextBrushHover.js';
+import { useAdaptiveTextContrast } from '../hooks/useAdaptiveTextContrast.js';
 import { useChapterTextTransition } from '../hooks/useChapterTextTransition.js';
 import { useContourReading } from '../hooks/useContourReading.js';
 import { HOME_COMPACT_QUERY } from '../utils/homeCompositionLayout.js';
@@ -1345,6 +1346,7 @@ export function SpatialExperience({
   const viewportRef = useRef(null);
   useTextMaterials(viewportRef);
   useTextBrushHover(viewportRef);
+  useAdaptiveTextContrast(viewportRef);
   useContourReading(viewportRef);
   const chapterCopy = useChapterTextTransition(viewportRef, activeIndex, experienceVisible, theme);
   const displayedContentIndex = chapterCopy.index;
