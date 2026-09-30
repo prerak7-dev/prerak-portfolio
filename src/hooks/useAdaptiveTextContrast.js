@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { TEXT_MATERIALS } from '../data/textMaterials.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
-import { chooseReadableInk, inkRgb, sampleInkField, washOpacity } from '../utils/adaptiveInk.js';
+import { chooseReadableInk, inkRgb, sampleInkField, stabilizeInkWash, washOpacity } from '../utils/adaptiveInk.js';
 import { mergeBrushLines } from '../utils/textBrushGeometry.js';
 
 const IMAGES = {
@@ -10,6 +10,16 @@ const IMAGES = {
 };
 const EXCLUDED = '.text-brush-layer, .text-contour-ghosts, .cinematic-environment, .spatial-world, svg';
 const rgb = color => `rgb(${color.join(' ')})`;
+const registeredWashes = new Set();
+const washProperty = index => {
+  const name = `--adaptive-wash-${index}`;
+  if (!registeredWashes.has(name)) {
+    try { CSS.registerProperty({ name, syntax: '<number>', inherits: false, initialValue: '0' }); }
+    catch { /* HMR may leave the property registered from the previous module. */ }
+    registeredWashes.add(name);
+  }
+  return name;
+};
 
 export function useAdaptiveTextContrast(ref) {
   useLayoutEffect(() => {
@@ -20,17 +30,22 @@ export function useAdaptiveTextContrast(ref) {
     const pigments = new Map();
     const applied = new Map();
     const forced = matchMedia('(forced-colors: active)');
+    const crossFade = CSS.supports('background-image', 'cross-fade(url("") 50%, transparent)') ? 'standard'
+      : CSS.supports('background-image', '-webkit-cross-fade(url(""), url(""), .5)') ? 'webkit' : null;
+    const blendWashes = crossFade && typeof CSS.registerProperty === 'function';
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d', { willReadFrequently: true });
     if (!context) return undefined;
     let frame = 0;
     let disposed = false;
     let refreshCount = 0;
+    let settleTimer = 0;
+    let scrollingUntil = 0;
     const brush = new Image();
     brush.src = `${import.meta.env.BASE_URL}cinematic/painted-v1/ui/loader-brush.webp`;
 
     const pigmentFor = (color, opacity) => {
-      const alpha = Math.ceil(opacity * 20) / 20;
+      const alpha = Math.ceil(opacity * 100) / 100;
       const key = `${color}:${alpha}`;
       if (pigments.has(key)) return pigments.get(key);
       canvas.width = 160; canvas.height = 32;
@@ -71,7 +86,9 @@ export function useAdaptiveTextContrast(ref) {
     };
     const clear = node => {
       node.removeAttribute('data-adaptive-ink');
-      for (const property of ['--type-ink-color', '--adaptive-ink-paper', '--ink-wash-images', '--ink-wash-sizes', '--ink-wash-positions', '--ink-wash-clips', '--ink-wash-repeats', '--ink-wash-blends']) node.style.removeProperty(property);
+      node.removeAttribute('data-ink-blend');
+      for (let index = 0; index < (applied.get(node)?.opacities.length || 0); index++) node.style.removeProperty(`--adaptive-wash-${index}`);
+      for (const property of ['--type-ink-color', '--adaptive-ink-paper', '--ink-wash-images', '--ink-wash-sizes', '--ink-wash-positions', '--ink-wash-clips', '--ink-wash-repeats', '--ink-wash-blends', '--ink-wash-transition']) node.style.removeProperty(property);
       applied.delete(node);
     };
     const refresh = () => {
@@ -111,42 +128,63 @@ export function useAdaptiveTextContrast(ref) {
         const style = getComputedStyle(node);
         if (style.visibility === 'hidden' || style.display === 'none') return [];
         const kind = node.matches('[aria-pressed="true"], .contour-eyebrow') ? 'accent' : node.dataset.textMaterial === 'display-ink' ? 'face' : 'ink';
-        const key = `${sceneKey}:${kind}:${node.textContent}:${[rect.left, rect.top, rect.width, rect.height].map(Math.round).join(':')}`;
-        if (applied.get(node) === key) return [];
+        const identity = `${theme}:${kind}:${node.textContent}`;
+        const key = `${sceneKey}:${identity}:${[rect.left, rect.top, rect.width, rect.height].map(Math.round).join(':')}`;
+        const previous = applied.get(node);
+        if (previous?.key === key) return [];
+        // A compositor-driven flight must not trigger new contrast decisions at
+        // arbitrary intermediate poses. The moving flag schedules the final pose.
+        if (previous?.identity === identity && (performance.now() < scrollingUntil
+          || node.closest('.chapter-rail[data-moving="true"]'))) return [];
         const icon = !node.matches('.material-text');
         range.selectNodeContents(node);
         const lines = icon ? [{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }]
           : mergeBrushLines([...range.getClientRects()].filter(line => line.bottom > 0 && line.top < innerHeight));
-        return lines.length ? [{ node, rect, kind, key, icon, lines, samples: lines.map(sampleLines) }] : [];
+        return lines.length ? [{ node, rect, kind, key, identity, previous, icon, lines, samples: lines.map(sampleLines) }] : [];
       });
       const paintStart = performance.now();
       let painted = 0;
-      for (const { node, rect, kind, key, icon, lines, samples } of measurements) {
+      for (const { node, rect, kind, key, identity, previous, icon, lines, samples } of measurements) {
         if (painted && performance.now() - paintStart > 6) { schedule(); break; }
-        const choice = chooseReadableInk(samples.flat(), inkRgb(palette[kind]), inkRgb(opposite[kind]),
+        const continuing = previous?.identity === identity;
+        const choice = continuing ? previous.choice : chooseReadableInk(samples.flat(), inkRgb(palette[kind]), inkRgb(opposite[kind]),
           inkRgb(TEXT_MATERIALS[`${season}-light`].halo), inkRgb(TEXT_MATERIALS[season].halo));
+        // New content/theme ink is prepared under its existing contour mask.
+        // Only subsequent backing adjustments blend; no extra text animation.
+        if (continuing && blendWashes) node.dataset.inkBlend = '';
+        else node.removeAttribute('data-ink-blend');
         node.style.setProperty('--type-ink-color', rgb(choice.ink));
         node.style.setProperty('--adaptive-ink-paper', rgb(choice.paper));
         node.dataset.adaptiveInk = icon ? 'control' : 'text';
-        const images = [], sizes = [], positions = [];
+        const images = [], sizes = [], positions = [], opacities = [], transitions = [];
         const sx = rect.width / (node.offsetWidth || rect.width);
         const sy = rect.height / (node.offsetHeight || rect.height);
         lines.forEach((line, index) => {
-          const opacity = washOpacity(samples[index], choice.ink, choice.paper);
-          if (opacity < .02) return;
+          const opacity = stabilizeInkWash(washOpacity(samples[index], choice.ink, choice.paper),
+            continuing && previous.opacities.length === lines.length ? previous.opacities[index] : undefined);
+          opacities.push(opacity);
           const left = Math.max(rect.left, line.left), top = Math.max(rect.top, line.top);
           const right = Math.min(rect.right, line.left + line.width), bottom = Math.min(rect.bottom, line.top + line.height);
-          images.push(pigmentFor(choice.paper, Math.min(1, opacity + .06)));
+          if (blendWashes) {
+            const property = washProperty(index);
+            node.style.setProperty(property, String(opacity));
+            transitions.push(`${property} 700ms cubic-bezier(.22, .61, .36, 1)`);
+            const pigment = pigmentFor(choice.paper, 1);
+            images.push(crossFade === 'standard' ? `cross-fade(${pigment} calc(var(${property}) * 100%), transparent)`
+              : `-webkit-cross-fade(${pigmentFor(choice.paper, 0)}, ${pigment}, var(${property}))`);
+          } else images.push(pigmentFor(choice.paper, opacity));
           sizes.push(`${(right - left) / sx}px ${(bottom - top) / sy}px`);
           positions.push(`${(left - rect.left) / sx}px ${(top - rect.top) / sy}px`);
         });
+        for (let index = lines.length; index < (previous?.opacities.length || 0); index++) node.style.removeProperty(`--adaptive-wash-${index}`);
+        node.style.setProperty('--ink-wash-transition', transitions.join(',') || 'none');
         node.style.setProperty('--ink-wash-images', images.join(',') || 'none');
         node.style.setProperty('--ink-wash-sizes', sizes.join(',') || '100% 100%');
         node.style.setProperty('--ink-wash-positions', positions.join(',') || '0 0');
         for (const [property, value] of [['clips', 'border-box'], ['repeats', 'no-repeat'], ['blends', 'normal']]) {
           node.style.setProperty(`--ink-wash-${property}`, images.map(() => value).join(',') || value);
         }
-        applied.set(node, key);
+        applied.set(node, { key, identity, choice, opacities });
         painted++;
       }
       for (const node of applied.keys()) if (!node.isConnected) applied.delete(node);
@@ -163,10 +201,15 @@ export function useAdaptiveTextContrast(ref) {
         && (record.type !== 'attributes' || record.oldValue !== record.target.getAttribute(record.attributeName)))) schedule();
     });
     observer.observe(root, { subtree: true, childList: true, characterData: true, attributes: true, attributeOldValue: true,
-      attributeFilter: ['class', 'data-text-material', 'data-reading-hidden', 'aria-hidden', 'aria-selected', 'aria-pressed', 'data-chapter', 'data-chapter-copy-phase', 'data-chapter-copy-ready', 'data-text-content-phase', 'data-home-intro-stage', 'data-home-awaiting'] });
+      attributeFilter: ['class', 'data-text-material', 'data-reading-hidden', 'aria-hidden', 'aria-selected', 'aria-pressed', 'data-chapter', 'data-chapter-copy-phase', 'data-chapter-copy-ready', 'data-text-content-phase', 'data-home-intro-stage', 'data-home-awaiting', 'data-moving'] });
+    const settle = () => {
+      scrollingUntil = performance.now() + 140;
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(schedule, 150);
+    };
     const preference = () => { if (forced.matches) [...applied.keys()].forEach(clear); else schedule(); };
     root.addEventListener('load', schedule, true);
-    root.addEventListener('scroll', schedule, true);
+    root.addEventListener('scroll', settle, true);
     root.addEventListener('contour-reading-refresh', schedule);
     window.addEventListener('resize', schedule);
     forced.addEventListener('change', preference);
@@ -174,9 +217,9 @@ export function useAdaptiveTextContrast(ref) {
     brush.onload = schedule;
     schedule();
     return () => {
-      disposed = true; brush.onload = null; cancelAnimationFrame(frame); observer.disconnect();
+      disposed = true; brush.onload = null; cancelAnimationFrame(frame); clearTimeout(settleTimer); observer.disconnect();
       root.removeEventListener('load', schedule, true);
-      root.removeEventListener('scroll', schedule, true);
+      root.removeEventListener('scroll', settle, true);
       root.removeEventListener('contour-reading-refresh', schedule);
       window.removeEventListener('resize', schedule); forced.removeEventListener('change', preference);
       [...applied.keys()].forEach(clear); delete root.dataset.inkRefresh;

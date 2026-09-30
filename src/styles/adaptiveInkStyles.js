@@ -3,6 +3,9 @@ export const adaptiveInkStyles = `
     --type-pigment-cover: 94% !important;
     --type-ink-load: 100% !important;
   }
+  .archive-app .archive-viewport [data-adaptive-ink][data-ink-blend] {
+    transition: var(--ink-wash-transition, none) !important;
+  }
   .archive-app .archive-viewport [data-adaptive-ink="control"],
   .archive-app .archive-viewport [data-adaptive-ink="control"] svg {
     color: var(--type-ink-color) !important;
@@ -22,6 +25,11 @@ export const adaptiveInkStyles = `
     .archive-app .archive-viewport [data-adaptive-ink] {
       background: none !important; color: CanvasText !important;
       -webkit-text-fill-color: CanvasText !important;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .archive-app .archive-viewport [data-adaptive-ink][data-ink-blend] {
+      transition: none !important;
     }
   }
 `;

@@ -67,6 +67,16 @@ export function chooseReadableInk(samples, preferred, opposite, lightPaper, dark
   return options.sort((a, b) => cost(a) - cost(b))[0];
 }
 
+// Keep a passage's pigment for its lifetime. Moving across a light/dark boundary
+// changes only the supporting wash, never the polarity of the letters themselves.
+export function stabilizeInkWash(opacity, previous) {
+  const padded = opacity < .02 ? 0 : Math.min(1, opacity + .08);
+  if (previous == null) return padded;
+  // Retain a little extra paint until the backdrop changes meaningfully. The
+  // retained value still covers the newly required contrast, including at zero.
+  return previous >= opacity && Math.abs(padded - previous) < .08 ? previous : padded;
+}
+
 export function sampleInkField(field, projection, x, y) {
   const column = Math.max(0, Math.min(field.width - 1, Math.floor((x - projection.left) / projection.width * field.width)));
   const row = Math.max(0, Math.min(field.height - 1, Math.floor((y - projection.top) / projection.height * field.height)));
