@@ -4,34 +4,28 @@ import { createPigmentSeeds, MAX_PIGMENT_QUIET_RECTS, PIGMENT_COMPACT_COUNT, PIG
 import { getPigmentSubjects } from '../data/livingPigmentArt.js';
 
 const VERTEX_SHADER = `
-  attribute vec2 aPaintingUv, aCenter, aRadius;
-  attribute vec3 aNormal;
+  attribute vec2 aPaintingUv, aCenter, aRadius, aLocal;
   attribute vec4 aSeed, aLoop;
   uniform sampler2D uGeometry;
   uniform vec4 uProjection;
   uniform vec2 uViewport;
   uniform float uTime, uTravel;
   varying vec2 vSprite, vPaintingUv, vContourUv, vScreen;
-  varying float vTile, vDepth, vFacing;
+  varying float vTile;
   void main() {
     float phase = clamp(uTravel, 0., 1.);
     float angle = uTime * aLoop.y + aLoop.w + phase * aLoop.z;
     float c = cos(angle), s = sin(angle);
-    vec3 surface = aNormal;
-    vFacing = 1.;
-    if (aLoop.x > 1.5 && aLoop.x < 2.5) {
-      surface = vec3(aNormal.x * c + aNormal.z * s, aNormal.y, aNormal.z * c - aNormal.x * s);
-      vFacing = smoothstep(-.16, .18, surface.z);
-    } else if (aLoop.x > .5 && aLoop.x < 1.5) {
-      surface.xy = vec2(aNormal.x * c - aNormal.y * s, aNormal.x * s + aNormal.y * c);
+    vec2 surface = aLocal;
+    if (aLoop.x > .5 && aLoop.x < 2.5) {
+      surface = vec2(aLocal.x * c - aLocal.y * s, aLocal.x * s + aLocal.y * c);
     } else if (aLoop.x > 2.5) {
-      surface.xy += vec2(sin(angle + aNormal.x * 6.) * .035, sin(angle * 2. + aNormal.x * 8.) * .08);
+      surface += vec2(sin(angle + aLocal.x * 6.) * .035, sin(angle * 2. + aLocal.x * 8.) * .08);
     } else {
-      surface.xy += vec2(sin(angle + aNormal.y * 2.) * .022, sin(angle) * .035);
+      surface += vec2(sin(angle + aLocal.y * 2.) * .022, sin(angle) * .035);
     }
-    vec2 anchoredUv = aCenter + surface.xy * aRadius;
+    vec2 anchoredUv = aCenter + surface * aRadius;
     vec2 origin = uProjection.xy + anchoredUv * uProjection.zw;
-    float depth = aLoop.x > 1.5 && aLoop.x < 2.5 ? clamp(surface.z, 0., 1.) : aSeed.y;
     float idleDrift = aLoop.x > 1.5 && aLoop.x < 2.5 ? .12 : 1.;
     vec2 flow = texture2D(uGeometry, vec2(anchoredUv.x, 1. - anchoredUv.y)).rg * 2. - 1.;
     flow /= max(.18, length(flow));
@@ -40,18 +34,17 @@ const VERTEX_SHADER = `
     vec2 lift = vec2(cos(theta), sin(theta)) * reach;
     lift.x += sin(uTime * .22 + aSeed.x * 9.) * (1. + aSeed.y * 3.) * idleDrift;
     lift.y -= phase * (8. + aSeed.w * 34.);
-    lift += flow * phase * (12. + depth * 22.);
-    lift += vec2(cos(uTime * .17 + aSeed.w * 7.), sin(uTime * .19 + aSeed.z * 6.)) * (2.5 + depth * 7.) * idleDrift;
-    float size = aSeed.z > .97 ? 7. + depth * 3. : 2. + aSeed.z * aSeed.z * 4.6;
+    lift += flow * phase * (12. + aSeed.y * 16.);
+    lift += vec2(cos(uTime * .17 + aSeed.w * 7.), sin(uTime * .19 + aSeed.z * 6.)) * (2.5 + aSeed.y * 5.) * idleDrift;
+    float size = aSeed.z > .97 ? 7. : 2. + aSeed.z * aSeed.z * 4.6;
     size *= .75 + min(uViewport.x, uViewport.y) / 1600.;
-    size *= 1. + phase * depth * .9;
     float turn = aSeed.w * 6.283185 + sin(uTime * .21 + aSeed.x * 8.) * .3 + phase * 1.3;
     vec2 card = position.xy * size;
     vec2 turned = vec2(cos(turn) * card.x - sin(turn) * card.y, sin(turn) * card.x + cos(turn) * card.y);
     vec2 point = origin + lift + turned;
     vSprite = uv; vPaintingUv = aLoop.x > .5 && aLoop.x < 1.5 ? anchoredUv : aPaintingUv;
     vContourUv = (point - uProjection.xy) / uProjection.zw;
-    vScreen = point; vDepth = depth;
+    vScreen = point;
     vTile = aSeed.w < .70 ? floor(aSeed.x * 4.) : aSeed.w < .9 ? 4. + floor(aSeed.x * 4.) : 8. + floor(aSeed.x * 8.);
     gl_Position = vec4(point.x / uViewport.x * 2. - 1., 1. - point.y / uViewport.y * 2., 0., 1.);
   }
@@ -64,7 +57,7 @@ const FRAGMENT_SHADER = `
   uniform vec4 uQuietRects[${MAX_PIGMENT_QUIET_RECTS}];
   uniform int uQuietCount;
   varying vec2 vSprite, vPaintingUv, vContourUv, vScreen;
-  varying float vTile, vDepth, vFacing;
+  varying float vTile;
   ${CONTOUR_NOISE_GLSL}
   void main() {
     vec2 spriteUv = vec2((mod(vTile, 4.) + mix(.01, .99, vSprite.x)) / 4.,
@@ -85,9 +78,9 @@ const FRAGMENT_SHADER = `
     float coverage = mix(1., mix(1. - handoff, handoff, uRole), uTransition);
     vec3 native = texture2D(uPainting, vec2(vPaintingUv.x, 1. - vPaintingUv.y)).rgb;
     float grain = dot(stamp.rgb, vec3(.213, .715, .072));
-    float alpha = stamp.a * quiet * coverage * uOpacity * (.48 + vDepth * .30) * vFacing;
+    float alpha = stamp.a * quiet * coverage * uOpacity * .54;
     if (alpha < .002) discard;
-    gl_FragColor = vec4(native * (.84 + grain * .32), alpha);
+    gl_FragColor = vec4(native * (.96 + grain * .08), alpha);
     #include <colorspace_fragment>
   }
 `;
@@ -102,7 +95,7 @@ export function buildLivingPigmentGeometry(sceneIndex, portrait, count) {
   geometry.setAttribute('aCenter', new THREE.InstancedBufferAttribute(seeds.center, 2));
   geometry.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds.seed, 4));
   geometry.setAttribute('aRadius', new THREE.InstancedBufferAttribute(seeds.radius, 2));
-  geometry.setAttribute('aNormal', new THREE.InstancedBufferAttribute(seeds.normal, 3));
+  geometry.setAttribute('aLocal', new THREE.InstancedBufferAttribute(seeds.local, 2));
   geometry.setAttribute('aLoop', new THREE.InstancedBufferAttribute(seeds.loop, 4));
   geometry.instanceCount = seeds.count;
   return geometry;
@@ -168,7 +161,7 @@ export function createLivingPigmentRenderer(canvas) {
         u.uViewport.value.set(width, height); u.uProjection.value.set(p.left, p.top, p.width, p.height);
         u.uTime.value = time; u.uProgress.value = layer.progress; u.uTravel.value = layer.travel;
         u.uRole.value = layer.role; u.uTransition.value = Number(layer.transitioning);
-        u.uOpacity.value = entrance * (layer.transitioning ? .92 : .82);
+        u.uOpacity.value = entrance * (layer.opacity ?? 1) * (layer.transitioning ? .92 : .82);
         u.uQuietCount.value = quietRects.length;
         quietRects.forEach((rect, i) => u.uQuietRects.value[i].set(rect.left, rect.top, rect.right, rect.bottom));
         entries.delete(layer.key); entries.set(layer.key, entry);

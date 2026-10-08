@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { publishSpatialMotion } from '../state/spatialMotionStore.js';
 import { getThemeContourTransition } from '../state/themeContourTransitionStore.js';
+import { getCinematicPaintings } from '../state/cinematicPaintingStore.js';
+import { createPaintedMotionGate } from '../utils/paintedSceneMotion.js';
 import {
   CHAPTER_NAVIGATION_BASE_DURATION_MS,
   CHAPTER_NAVIGATION_DURATION_PER_CHAPTER_MS,
@@ -64,6 +66,7 @@ export function useSpatialNarrative(chapterCount) {
     let disposed = false;
     let metricsInitialized = false;
     const scroller = createCinematicScroller();
+    const paintingGate = createPaintedMotionGate(previousFrameRef.current.scenePosition);
     scrollerRef.current = scroller;
 
     const updateMetrics = () => {
@@ -98,8 +101,15 @@ export function useSpatialNarrative(chapterCount) {
         ? scroller.animatedScroll
         : window.scrollY;
       const next = getNarrativeState(chapterCount, maxScrollRef.current, scrollY);
+      const requestedPosition = next.scenePosition;
+      next.scenePosition = paintingGate.update(next.scenePosition, getCinematicPaintings(), elapsed, getThemeContourTransition().active);
+      next.activeIndex = Math.min(chapterCount - 1, Math.max(0, Math.round(next.scenePosition)));
+      if (next.scenePosition !== requestedPosition) next.progress = next.scenePosition / Math.max(1, chapterCount - 1);
       const scrollDelta = scrollY - previous.scrollY;
-      const direction = Math.abs(scrollDelta) > 0.01
+      const visualDelta = next.scenePosition - previous.scenePosition;
+      const direction = Math.abs(visualDelta) > MOTION_EPSILON
+        ? (visualDelta > 0 ? 1 : -1)
+        : Math.abs(scrollDelta) > 0.01
         ? (scrollDelta > 0 ? 1 : -1)
         : previous.direction;
       const velocity = (next.scenePosition - previous.scenePosition)

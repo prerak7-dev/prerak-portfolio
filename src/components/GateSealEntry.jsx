@@ -58,13 +58,13 @@ export function GateSealEntry({ isActive, theme, onEnter }) {
       latched = false;
       if (immediate || !available() || reduced.matches) {
         stop(); settleGateSeal(0, theme, portrait); setPhase('idle');
-      } else if (phase === 'turning') {
+      } else if (phase === 'turning' || phase === 'unlocked') {
         setPhase('returning');
         run(0, 1100, () => setPhase('idle'));
       }
     };
     const begin = (automatic = false) => {
-      if (!available() || phase === 'unlocked') return;
+      if (restWaiters.size || !available() || phase === 'unlocked') return;
       latched ||= automatic;
       if (phase === 'turning') return;
       // Explicit activation is immediate for reduced-motion readers. Hover/hold
@@ -83,8 +83,8 @@ export function GateSealEntry({ isActive, theme, onEnter }) {
         });
       });
     };
-    const unregisterReturn = registerGateSealReturn(() => {
-      if (!getGateSealPose().dissolving || phase === 'idle' || phase === 'unlocked') return Promise.resolve();
+    const unregisterReturn = registerGateSealReturn(({ force = false } = {}) => {
+      if (!getGateSealPose().dissolving || phase === 'idle' || (phase === 'unlocked' && !force)) return Promise.resolve();
       return new Promise(resolve => { restWaiters.add(resolve); cancel(); });
     });
     const measure = () => {

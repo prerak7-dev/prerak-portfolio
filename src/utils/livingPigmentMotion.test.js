@@ -6,32 +6,32 @@ import { getPigmentSubjects } from '../data/livingPigmentArt.js';
 
 test('every chapter has a continuous subject loop that remains active at zero scroll progress', () => {
   for (let scene = 0; scene < 6; scene++) for (const subject of getPigmentSubjects(scene)) {
-    const normal = [.4, .35, Math.sqrt(1 - .4 ** 2 - .35 ** 2)];
+    const normal = [.4, .35];
     const first = samplePigmentSubject(subject, normal, 0, 0);
     const later = samplePigmentSubject(subject, normal, subject.period / 4, 0);
-    assert(Math.hypot(later.x - first.x, later.y - first.y, later.z - first.z) > .01);
+    assert(Math.hypot(later.x - first.x, later.y - first.y) > .01);
     const wrap = samplePigmentSubject(subject, normal, subject.period, 0);
-    for (const axis of ['x', 'y', 'z']) assert(Math.abs(wrap[axis] - first[axis]) < 1e-12, 'No loop-end reset');
+    for (const axis of ['x', 'y']) assert(Math.abs(wrap[axis] - first[axis]) < 1e-12, 'No loop-end reset');
     const before = samplePigmentSubject(subject, normal, subject.period - .001, 0);
     const after = samplePigmentSubject(subject, normal, subject.period + .001, 0);
-    assert(Math.hypot(after.x - before.x, after.y - before.y, after.z - before.z) < .001);
+    assert(Math.hypot(after.x - before.x, after.y - before.y) < .001);
   }
 });
 
-test('the Education moon spins around its own center and shares one pose with its scroll handoff', () => {
+test('the Education moon carries a flat painted wash and shares one pose with its scroll handoff', () => {
   const moon = getPigmentSubjects(3).find(subject => subject.name === 'left moon');
-  assert.equal(moon.kind, 'sphere');
-  const normal = [.5, .2, Math.sqrt(.71)];
+  assert.equal(moon.kind, 'wash');
+  const normal = [.5, .2];
   const reading = samplePigmentSubject(moon, normal, 8, 0);
   const starting = samplePigmentSubject(moon, normal, 8, .000001);
-  assert(Math.hypot(starting.x - reading.x, starting.z - reading.z) < .00001, 'Transition starts from the visible loop pose');
+  assert(Math.hypot(starting.x - reading.x, starting.y - reading.y) < .00001, 'Transition starts from the visible loop pose');
   const during = samplePigmentSubject(moon, normal, 8, .4);
-  assert(Math.hypot(during.x - reading.x, during.z - reading.z) > .2, 'Scroll adds a visible angular response');
+  assert(Math.hypot(during.x - reading.x, during.y - reading.y) > .2, 'Scroll adds a visible angular response');
   assert.deepEqual(samplePigmentSubject(moon, normal, 8, .4), during, 'Reversed progress returns to the same angular offset');
   for (let time = 0; time < moon.period; time += .1) {
     const pose = samplePigmentSubject(moon, normal, time, 0);
-    assert(Math.abs(Math.hypot(pose.x, pose.y, pose.z) - 1) < 1e-12);
-    assert.equal(pose.y, normal[1]);
+    assert(Math.abs(Math.hypot(pose.x, pose.y) - Math.hypot(...normal)) < 1e-12);
+    assert.equal(pose.z, undefined, 'No depth, hemisphere reveal, or simulated 3D normal');
   }
 });
 
@@ -39,20 +39,18 @@ test('cropped orbital subjects seed their complete route instead of rotating all
   const seeds = createPigmentSeeds(4, false, 2000);
   const angles = new Set();
   for (let i = 0; i < seeds.count; i++) if (seeds.loop[i * 4] === 1) {
-    const angle = Math.atan2(seeds.normal[i * 3 + 1], seeds.normal[i * 3]);
+    const angle = Math.atan2(seeds.local[i * 2 + 1], seeds.local[i * 2]);
     angles.add(Math.floor((angle + Math.PI) / (Math.PI * 2) * 8));
   }
   assert.equal(angles.size, 8);
 });
 
-test('sphere seeds include front and back hemispheres for a fully populated, endless rotation', () => {
+test('painted sun seeds stay in a two-dimensional disc throughout their loop', () => {
   const seeds = createPigmentSeeds(1, true, 600);
-  let front = 0, back = 0;
+  assert.equal(seeds.normal, undefined);
   for (let i = 0; i < seeds.count; i++) {
-    assert(Math.abs(Math.hypot(...seeds.normal.slice(i * 3, i * 3 + 3)) - 1) < 1e-6);
-    if (seeds.normal[i * 3 + 2] > 0) front++; else back++;
+    assert(Math.hypot(...seeds.local.slice(i * 2, i * 2 + 2)) <= 1.000001);
   }
-  assert(front > 200 && back > 200);
 });
 
 test('all painted motifs have bounded, deterministic seeds in their native portrait and landscape composition', () => {
@@ -73,7 +71,9 @@ test('GPU geometry fits a two-draw fixed budget without per-particle scene objec
     assert.equal(geometry.getAttribute('position').count, 4);
     assert.equal(geometry.index.count, 6);
     assert.equal(geometry.getAttribute('aPaintingUv').count, count);
-    assert.equal(geometry.getAttribute('aNormal').count, count);
+    assert.equal(geometry.getAttribute('aLocal').count, count);
+    assert.equal(geometry.getAttribute('aLocal').itemSize, 2);
+    assert.equal(geometry.getAttribute('aNormal'), undefined);
     assert.equal(geometry.getAttribute('aRadius').count, count);
     assert.equal(geometry.getAttribute('aLoop').count, count);
     assert(count * 2 < 11000);

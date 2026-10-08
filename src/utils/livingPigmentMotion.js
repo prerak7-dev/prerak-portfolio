@@ -13,7 +13,7 @@ export function createPigmentSeeds(sceneIndex, portrait = false, count = PIGMENT
   const subjects = getPigmentSubjects(sceneIndex);
   const totalWeight = shapes.reduce((sum, shape) => sum + shape[5], 0);
   const values = { position: new Float32Array(count * 2), center: new Float32Array(count * 2), seed: new Float32Array(count * 4),
-    radius: new Float32Array(count * 2), normal: new Float32Array(count * 3), loop: new Float32Array(count * 4) };
+    radius: new Float32Array(count * 2), local: new Float32Array(count * 2), loop: new Float32Array(count * 4) };
   let written = 0;
   for (let attempt = 0; written < count && attempt < count * 50; attempt++) {
     let selection = fract((attempt + 1) * .754877666) * totalWeight;
@@ -30,8 +30,7 @@ export function createPigmentSeeds(sceneIndex, portrait = false, count = PIGMENT
     values.position.set([clamp(x), clamp(y)], written * 2);
     values.center.set([cx, cy], written * 2);
     values.radius.set([rx, ry], written * 2);
-    const back = fract(attempt * .547193 + .17) < .5 ? -1 : 1;
-    values.normal.set([Math.cos(angle) * radial, Math.sin(angle) * radial, Math.sqrt(Math.max(0, 1 - radial * radial)) * back], written * 3);
+    values.local.set([Math.cos(angle) * radial, Math.sin(angle) * radial], written * 2);
     values.loop.set([subject.mode, Math.PI * 2 / subject.period, subject.scrollTurn, subject.phase], written * 4);
     values.seed.set([fract(attempt * .438579 + .1), fract(attempt * .716937 + .2),
       fract(attempt * .327193 + .3), fract(attempt * .913721 + .4)], written * 4);
@@ -42,15 +41,14 @@ export function createPigmentSeeds(sceneIndex, portrait = false, count = PIGMENT
 
 // The loop clock never restarts on a chapter, theme, or scroll handoff. Scroll
 // adds a reversible angular offset to the same subject pose used while reading.
-export function samplePigmentSubject(subject, normal, time, travel = 0) {
+export function samplePigmentSubject(subject, local, time, travel = 0) {
   const angle = time * Math.PI * 2 / subject.period + subject.phase + clamp(travel) * subject.scrollTurn;
   const c = Math.cos(angle), s = Math.sin(angle);
-  if (subject.kind === 'sphere') return { x: normal[0] * c + normal[2] * s, y: normal[1], z: normal[2] * c - normal[0] * s };
-  if (subject.kind === 'orbit') return { x: normal[0] * c - normal[1] * s, y: normal[0] * s + normal[1] * c, z: 1 };
-  if (subject.kind === 'ripple') return { x: normal[0] + Math.sin(angle + normal[0] * 6) * .035,
-    y: normal[1] + Math.sin(angle * 2 + normal[0] * 8) * .08, z: 1 };
-  return { x: normal[0] + Math.sin(angle + normal[1] * 2) * .022,
-    y: normal[1] + Math.sin(angle) * .035, z: 1 };
+  if (subject.kind === 'wash' || subject.kind === 'orbit') return { x: local[0] * c - local[1] * s, y: local[0] * s + local[1] * c };
+  if (subject.kind === 'ripple') return { x: local[0] + Math.sin(angle + local[0] * 6) * .035,
+    y: local[1] + Math.sin(angle * 2 + local[0] * 8) * .08 };
+  return { x: local[0] + Math.sin(angle + local[1] * 2) * .022,
+    y: local[1] + Math.sin(angle) * .035 };
 }
 
 export function resolvePigmentPassage(theme, motion, transition, seal) {

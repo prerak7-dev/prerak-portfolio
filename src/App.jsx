@@ -364,6 +364,7 @@ export default function App() {
     const geometryFilename = getCinematicGeometryAsset(theme, sceneIndex, gatewayFrameIndex);
     const nearbySceneFilenames = new Set();
     if (sceneIndex === 0) {
+      nearbySceneFilenames.add(getCinematicSceneAsset(nextTheme, 1, 0, { compact: compactViewport }));
       const gatewayFrameIndices = [
         Math.max(0, gatewayFrameIndex - 1),
         gatewayFrameIndex,
@@ -402,7 +403,11 @@ export default function App() {
       if (themeRequestRef.current !== requestId) return;
       document.documentElement.classList.remove('theme-assets-preparing');
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduceMotion || !fromImage || !toImage || !geometryImage) {
+      if (!fromImage || !toImage || !geometryImage) {
+        themeTransitionBusyRef.current = false;
+        return;
+      }
+      if (reduceMotion) {
         setTheme(nextTheme);
         themeTransitionBusyRef.current = false;
       } else {
@@ -432,17 +437,13 @@ export default function App() {
     }).catch(() => {
       if (themeRequestRef.current !== requestId) return;
       document.documentElement.classList.remove('theme-assets-preparing');
-      setTheme(nextTheme);
       themeTransitionBusyRef.current = false;
     });
   }, [activeIndex, theme]);
   const handleChapterSelect = useCallback(async (index, { gateEntry = false } = {}) => {
     if (!Number.isInteger(index) || index < 0 || index >= spatialChapters.length
       || index === activeIndex || themeTransitionBusyRef.current) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      goToChapter(index, 'auto');
-      return;
-    }
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     themeTransitionBusyRef.current = true;
     const compact = isCompactViewport();
     const sceneIndex = CHAPTER_SCENE_INDICES[activeIndex];
@@ -451,6 +452,10 @@ export default function App() {
     const finish = () => {
       setChapterNavigationActive(false);
       themeTransitionBusyRef.current = false;
+    };
+    const abandon = async () => {
+      try { if (gateEntry) await returnGateSealToRest({ force: true }); } catch { /* The current painting remains the fallback. */ }
+      finish();
     };
     try {
       const [fromImage, toImage, geometryImage] = await Promise.all([
@@ -468,15 +473,21 @@ export default function App() {
         preloadImageUrl(getLoreAvatarState(theme, spatialChapters[index]?.id).src),
         gateEntry ? Promise.resolve() : returnGateSealToRest(),
       ]);
-      if (!fromImage || !toImage || !geometryImage) {
+      if (!fromImage || !toImage || (!geometryImage && !reducedMotion)) {
+        await abandon();
+        return;
+      }
+      if (reducedMotion) {
         goToChapter(index, 'auto');
         finish();
         return;
       }
       setChapterNavigationActive(true);
       const seal = getGateSealPose();
+      const previewCanvas = document.querySelector('.cinematic-environment > .cinematic-contour-dissolve');
+      const renderedSealPreview = previewCanvas?.dataset.dissolveSource === 'seal';
       const initialProgress = gateEntry && activeIndex === 0 && index === 1
-        && seal.dissolving && seal.theme === theme ? gateSealDissolveProgress(seal.angle) : 0;
+        && seal.dissolving && seal.theme === theme && renderedSealPreview ? gateSealDissolveProgress(seal.angle) : 0;
       startThemeContourTransition({
         kind: 'chapter',
         targetChapterIndex: index,
@@ -494,7 +505,7 @@ export default function App() {
         onComplete: finish,
       });
     } catch {
-      finish();
+      await abandon();
     }
   }, [activeIndex, goToChapter, theme]);
 

@@ -14,6 +14,7 @@ import { createLivingPigmentRenderer } from '../utils/livingPigmentRenderer.js';
 import { preloadImageUrl } from '../utils/preloadAssets.js';
 import { findTextTargets } from '../utils/textTargets.js';
 import { createTracerAnimation } from '../utils/tracerAnimation.js';
+import { retryAssetLoad } from '../utils/assetLoadRetry.js';
 
 const asset = filename => createAssetPath(import.meta.env.BASE_URL, filename);
 const smooth = t => { const p = Math.max(0, Math.min(1, t)); return p * p * p * (p * (p * 6 - 15) + 10); };
@@ -37,19 +38,23 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
     let drawnFrames = 0;
     const motion = { ...getSpatialMotion() }, transition = { ...getThemeContourTransition() };
     const resources = new Map(), lastProjections = new Map();
+    const retryAt = new Map();
     const projection = index => readSceneImageProjection(root.querySelector(PIGMENT_SCENE_SELECTORS[index]), getSceneCoverProjection(width, height), width);
     const request = (appearance, sceneIndex, portrait) => {
       const key = `${appearance}:${sceneIndex}:${portrait}:${width <= 1100 || height <= 500}`;
+      if (resources.get(key) === false && performance.now() >= retryAt.get(key)) resources.delete(key);
       if (!resources.has(key)) {
         resources.set(key, null);
         Promise.all([
           preloadImageUrl(asset(getCinematicSceneAsset(appearance, sceneIndex, 0, { portrait }))),
-          loadCinematicGeometryField(getCinematicGeometryAsset(appearance, sceneIndex, 0, { portrait })),
+          retryAssetLoad(() => loadCinematicGeometryField(getCinematicGeometryAsset(appearance, sceneIndex, 0, { portrait })).catch(() => null),
+            { loaded: field => Boolean(field?.image) }),
         ]).then(([image, field]) => {
           if (disposed || !resources.has(key)) return;
-          resources.set(key, image && field?.image ? { image, field } : false);
+          resources.set(key, image && field?.image ? { image, field, firstDraw: null } : false);
+          if (!image || !field?.image) retryAt.set(key, performance.now() + 5000);
           animation?.invalidate();
-        }).catch(() => { if (!disposed) resources.set(key, false); });
+        }).catch(() => { if (!disposed) { resources.set(key, false); retryAt.set(key, performance.now() + 5000); } });
       }
       const resource = resources.get(key);
       if (resource && atlasReady) renderer.prepare(key, sceneIndex, portrait, resource.image, resource.field.image, getTracerSceneField(appearance, sceneIndex, { portrait }));
@@ -93,7 +98,8 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
         if (transition.active && layer.role === 1 && incomingOrigin) pose = mixProjection(incomingOrigin, pose, smooth(transition.linearProgress));
         lastProjections.set(layer.sceneIndex, pose);
         if (resource) { resources.delete(key); resources.set(key, resource); }
-        return { ...layer, key, projection: pose };
+        if (resource) resource.firstDraw ??= time;
+        return { ...layer, key, projection: pose, opacity: resource ? smooth((time - resource.firstDraw) / .8) : 0 };
       });
       measureQuiet(time, layers.some(layer => layer.transitioning) || Math.abs(motion.velocity) > .01);
       const quality = document.documentElement.classList.contains('motion-quality-low') ? .48
@@ -106,7 +112,10 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
       canvas.dataset.pigmentProgress = layers[0].progress.toFixed(6);
       canvas.dataset.pigmentDirection = String(motion.direction);
       canvas.dataset.pigmentFrame = String(++drawnFrames);
-      while (resources.size > 8) resources.delete(resources.keys().next().value);
+      while (resources.size > 8) {
+        const key = resources.keys().next().value;
+        resources.delete(key); retryAt.delete(key);
+      }
     };
     const unsubscribeMotion = subscribeSpatialMotion(next => { Object.assign(motion, next); animation?.invalidate(); });
     const unsubscribeTransition = subscribeThemeContourTransition(next => {

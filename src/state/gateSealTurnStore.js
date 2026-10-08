@@ -28,6 +28,6 @@ export function registerGateSealReturn(handler) {
   return () => { if (returnToRest === handler) returnToRest = null; };
 }
 
-export function returnGateSealToRest() {
-  return returnToRest?.() || Promise.resolve();
+export function returnGateSealToRest(options) {
+  return returnToRest?.(options) || Promise.resolve();
 }

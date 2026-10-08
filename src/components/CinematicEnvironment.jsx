@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { usePortraitArtwork } from '../hooks/usePortraitArtwork.js';
+import { useDecodedPaintingSource } from '../hooks/useDecodedPaintingSource.js';
 import { CinematicAtmosphereField } from './CinematicAtmosphereField.jsx';
 import { CinematicContourDissolve } from './CinematicContourDissolve.jsx';
 import { LivingPigmentField } from './LivingPigmentField.jsx';
@@ -21,6 +22,7 @@ import {
   publishGatewayTransition,
 } from '../state/gatewayTransitionStore.js';
 import { publishCinematicReadiness } from '../state/cinematicReadinessStore.js';
+import { publishCinematicPaintings, clearCinematicPaintings } from '../state/cinematicPaintingStore.js';
 import { subscribeSpatialMotion } from '../state/spatialMotionStore.js';
 import {
   setCachedInlineStyle,
@@ -90,15 +92,16 @@ function setSectionScrollParallax(node, scenePosition) {
 }
 
 function EnvironmentPlate({ filename, className, plateRef, imageRef, eager = false }) {
-  const { width, height } = filename.includes('/portrait/')
-    ? { width: 887, height: 1774 } : CINEMATIC_ASSET_GEOMETRY.scene;
   const source = assetPath(filename);
+  const displayedSource = useDecodedPaintingSource(source, imageRef);
+  const { width, height } = displayedSource.includes('/portrait/')
+    ? { width: 887, height: 1774 } : CINEMATIC_ASSET_GEOMETRY.scene;
   return (
     <div ref={plateRef} className={`environment-plate ${className}`} aria-hidden="true">
       <div className="environment-living-layer">
         <img
           ref={imageRef}
-          src={eager ? source : undefined}
+          src={displayedSource}
           data-src={source}
           alt=""
           width={width}
@@ -114,15 +117,17 @@ function EnvironmentPlate({ filename, className, plateRef, imageRef, eager = fal
 }
 
 function GatewaySequence({ filenames, imageRefs, plateRef, theme }) {
-  const { width, height } = filenames[0].includes('/portrait/')
-    ? { width: 887, height: 1774 } : CINEMATIC_ASSET_GEOMETRY.scene;
+  const imageRef = useRef(null);
   const source = assetPath(filenames[0]);
+  const displayedSource = useDecodedPaintingSource(source, imageRef);
+  const { width, height } = displayedSource.includes('/portrait/')
+    ? { width: 887, height: 1774 } : CINEMATIC_ASSET_GEOMETRY.scene;
   return (
     <div ref={plateRef} className="environment-plate gateway-sequence-plate gateway-static-plate" aria-hidden="true">
       <div className="environment-living-layer gateway-living-layer">
         <div className="gateway-sequence-preloads">
-          <img ref={(node) => { imageRefs.current[0] = node; }}
-            src={source} data-src={source} data-frame-index="0"
+          <img ref={(node) => { imageRefs.current[0] = node; imageRef.current = node; }}
+            src={displayedSource} data-src={source} data-frame-index="0"
             width={width} height={height} alt="" decoding="async" fetchpriority="high" />
         </div>
         <GateSealPainting portrait={filenames[0].includes('/portrait/')} theme={theme} />
@@ -307,7 +312,7 @@ export function CinematicEnvironment({
 
   useLayoutEffect(() => {
     const gatewayFrameReady = imageRefs.current.map((image) => Boolean(
-      image?.complete && image.naturalWidth,
+      image?.complete && image.naturalWidth && image.getAttribute('src') === image.dataset.src,
     ));
     imageRefs.current.forEach((image, frameIndex) => {
       if (!image) return;
@@ -339,6 +344,7 @@ export function CinematicEnvironment({
     let readinessFrame = 0;
     let readinessConfirmFrame = 0;
     let pendingReadyChapter = -1;
+    const paintingOwner = {};
 
     const cancelReadiness = () => {
       window.cancelAnimationFrame(readinessFrame);
@@ -364,6 +370,20 @@ export function CinematicEnvironment({
         && image.getAttribute('src') === image.dataset.src,
       );
     };
+    const refreshPaintingAvailability = () => {
+      const available = [isImageReady({ current: imageRefs.current[0] }), ...sectionImageRefs.slice(1).map(isImageReady)];
+      publishCinematicPaintings(paintingOwner, available);
+      rootRef.current.dataset.paintingsReady = available.map((ready, index) => ready ? index : null).filter(index => index !== null).join(',');
+    };
+    const paintingLoaded = () => {
+      gatewayFrameReady[0] = isImageReady({ current: imageRefs.current[0] });
+      refreshPaintingAvailability();
+      scheduleGatewayFrame();
+    };
+    const paintingRoot = rootRef.current;
+    paintingRoot.addEventListener('load', paintingLoaded, true);
+    paintingRoot.addEventListener('error', paintingLoaded, true);
+    refreshPaintingAvailability();
 
     const updateChapterReadiness = () => {
       const nearestChapter = Math.round(gatewayScenePosition);
@@ -434,12 +454,15 @@ export function CinematicEnvironment({
       if (sceneIndex < 1 || sceneIndex >= sectionImageRefs.length) return;
       const image = sectionImageRefs[sceneIndex].current;
       const source = image?.dataset.src;
-      if (!image || !source || image.getAttribute('src') === source) return;
+      if (!image || !source || isImageReady(sectionImageRefs[sceneIndex])) return;
       const requestKey = `${sceneIndex}:${source}`;
       if (requestedSceneImages.has(requestKey)) return;
       requestedSceneImages.add(requestKey);
       preloadImageUrl(source, 'high').then((decodedImage) => {
-        if (cancelled || !decodedImage || image.dataset.src !== source) return;
+        if (cancelled || !decodedImage || image.dataset.src !== source) {
+          requestedSceneImages.delete(requestKey);
+          return;
+        }
         image.src = source;
         decodeImage(image).then(() => {
           if (!cancelled) scheduleGatewayFrame();
@@ -466,7 +489,7 @@ export function CinematicEnvironment({
       if (requestedGatewayFrames.has(requestKey)) return;
       requestedGatewayFrames.add(requestKey);
 
-      const load = image.getAttribute('src') === source
+      const load = image.getAttribute('src') === source && image.complete && image.naturalWidth
         ? Promise.resolve(image)
         : preloadImageUrl(source, priority).then((decodedImage) => {
           if (!decodedImage || cancelled || image.dataset.src !== source) return null;
@@ -684,6 +707,9 @@ export function CinematicEnvironment({
     const unsubscribe = subscribeSpatialMotion(applyMotion);
     return () => {
       cancelled = true;
+      paintingRoot.removeEventListener('load', paintingLoaded, true);
+      paintingRoot.removeEventListener('error', paintingLoaded, true);
+      clearCinematicPaintings(paintingOwner);
       cancelReadiness();
       unsubscribe();
       if (gatewayAnimationFrame) window.cancelAnimationFrame(gatewayAnimationFrame);

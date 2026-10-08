@@ -1,22 +1,31 @@
+import { retryAssetLoad } from './assetLoadRetry.js';
+
 const pendingImageLoads = new Map();
 const pendingAssetFetches = new Map();
 const decodedImageCache = new Map();
 const MAX_DECODED_IMAGE_CACHE = 36;
+const MAX_DECODED_IMAGE_PIXELS = 24000000;
+let decodedImagePixels = 0;
+const imagePixels = image => (image?.naturalWidth || 0) * (image?.naturalHeight || 0);
 
 function retainDecodedImage(url, image) {
+  decodedImagePixels -= imagePixels(decodedImageCache.get(url));
   decodedImageCache.delete(url);
   decodedImageCache.set(url, image);
-  while (decodedImageCache.size > MAX_DECODED_IMAGE_CACHE) {
+  decodedImagePixels += imagePixels(image);
+  while (decodedImageCache.size > MAX_DECODED_IMAGE_CACHE
+    || (decodedImagePixels > MAX_DECODED_IMAGE_PIXELS && decodedImageCache.size > 1)) {
     const oldestUrl = decodedImageCache.keys().next().value;
+    decodedImagePixels -= imagePixels(decodedImageCache.get(oldestUrl));
     decodedImageCache.delete(oldestUrl);
   }
 }
 
 function requestAsset(url, priority = 'auto') {
   if (pendingAssetFetches.has(url)) return pendingAssetFetches.get(url);
-  const pending = fetch(url, { cache: 'default', priority })
+  const pending = retryAssetLoad(() => fetch(url, { cache: 'default', priority })
     .then((response) => ({ image: null, loaded: response.ok }))
-    .catch(() => ({ image: null, loaded: false }));
+    .catch(() => ({ image: null, loaded: false })));
   pendingAssetFetches.set(url, pending);
   pending.finally(() => pendingAssetFetches.delete(url));
   return pending;
@@ -29,7 +38,7 @@ function requestImage(url, priority = 'auto') {
     return Promise.resolve({ image: cached, loaded: true });
   }
   if (pendingImageLoads.has(url)) return pendingImageLoads.get(url);
-  const pending = new Promise((resolve) => {
+  const pending = retryAssetLoad(() => new Promise((resolve) => {
     const image = new Image();
     image.decoding = 'async';
     image.fetchPriority = priority;
@@ -39,7 +48,7 @@ function requestImage(url, priority = 'auto') {
     };
     image.onerror = () => resolve({ image, loaded: false });
     image.src = url;
-  });
+  }));
   pendingImageLoads.set(url, pending);
   pending.finally(() => pendingImageLoads.delete(url));
   return pending;

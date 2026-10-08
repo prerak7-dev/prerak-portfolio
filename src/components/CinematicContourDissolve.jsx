@@ -23,9 +23,12 @@ import { CONTOUR_NOISE_GLSL, CONTOUR_HANDOFF_GLSL } from '../utils/contourDissol
 import { gateSealFaceBounds, gateSealDissolveProgress } from '../utils/gateSealMotion.js';
 import { GATE_SEAL_SHAPE_GLSL, GATE_SEAL_ART_EXTENT } from '../utils/gateSealArtwork.js';
 import { getGateSealPose, subscribeGateSealTurn } from '../state/gateSealTurnStore.js';
+import { retryAssetLoad } from '../utils/assetLoadRetry.js';
 
 const MAX_PIXEL_RATIO = 2;
-const MAX_RENDER_PIXELS = 3840 * 2160;
+const MAX_RENDER_PIXELS = 2560 * 1440;
+const MAX_SCENE_TEXTURES = 6;
+const MAX_GEOMETRY_TEXTURES = 12;
 const DISSOLVE_ENTRY_RAMP = 0.1;
 const DISSOLVE_EXIT_RAMP = 0.08;
 // The gate already owns the opening and closing choreography. Restrict the
@@ -277,6 +280,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     }
 
     const resources = new Map();
+    const resourceRetryAt = new Map();
     const sceneTextures = new Map();
     const geometryTextures = new Map();
     const projectionNodes = new Array(SCENE_PROJECTION_SELECTORS.length).fill(null);
@@ -344,16 +348,24 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
 
     const requestResource = (filename) => {
       const existing = resources.get(filename);
-      if (existing !== undefined) return existing;
+      if (existing !== undefined && (existing !== false || performance.now() < resourceRetryAt.get(filename))) {
+        resources.delete(filename); resources.set(filename, existing);
+        return existing;
+      }
       resources.set(filename, null);
-      loadCinematicGeometryField(filename)
+      retryAssetLoad(() => loadCinematicGeometryField(filename).catch(() => null), { loaded: value => Boolean(value?.image) })
         .then((resource) => {
           if (disposed) return;
-          resources.set(filename, resource);
-          scheduleDraw();
+          resources.set(filename, resource || false);
+          if (resource) { resourceRetryAt.delete(filename); scheduleDraw(); }
+          else resourceRetryAt.set(filename, performance.now() + 5000);
+          while (resources.size > MAX_GEOMETRY_TEXTURES) {
+            const oldest = resources.keys().next().value;
+            resources.delete(oldest); resourceRetryAt.delete(oldest);
+          }
         })
         .catch(() => {
-          if (!disposed) resources.set(filename, false);
+          if (!disposed) { resources.set(filename, false); resourceRetryAt.set(filename, performance.now() + 5000); }
         });
       return null;
     };
@@ -366,7 +378,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       const pixelRatio = Math.min(
         window.devicePixelRatio || 1,
         MAX_PIXEL_RATIO,
-        Math.max(1, Math.sqrt(MAX_RENDER_PIXELS / (width * height))),
+        Math.sqrt(MAX_RENDER_PIXELS / (width * height)),
       );
       if (
         Math.abs(canvas.width - width * pixelRatio) < 1
@@ -408,7 +420,20 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         cached.source = source;
         cached.texture.needsUpdate = true;
       }
+      sceneTextures.delete(image); sceneTextures.set(image, cached);
       return cached.texture;
+    };
+    const trimTextures = () => {
+      while (sceneTextures.size > MAX_SCENE_TEXTURES) {
+        const key = sceneTextures.keys().next().value;
+        sceneTextures.get(key).texture.dispose(); sceneTextures.delete(key);
+      }
+      while (geometryTextures.size > MAX_GEOMETRY_TEXTURES) {
+        const key = geometryTextures.keys().next().value;
+        geometryTextures.get(key).dispose(); geometryTextures.delete(key);
+      }
+      canvas.dataset.sceneTextures = String(sceneTextures.size);
+      canvas.dataset.geometryTextures = String(geometryTextures.size);
     };
 
     const prepareGatePainting = () => {
@@ -428,6 +453,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       const incoming = getProjectionNode(1);
       if (incoming?.complete && incoming.naturalWidth) renderer.initTexture(getSceneTexture(incoming));
       requestResource(getCinematicGeometryAsset(themeRef.current, 0, 0));
+      trimTextures();
       canvas.dataset.sealPrepared = image.currentSrc || image.src;
     };
 
@@ -584,6 +610,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         || !outgoingImage.naturalWidth
         || !incomingImage?.complete
         || !incomingImage.naturalWidth
+        || (outgoingImage.dataset?.src && outgoingImage.getAttribute('src') !== outgoingImage.dataset.src)
+        || (incomingImage.dataset?.src && incomingImage.getAttribute('src') !== incomingImage.dataset.src)
       ) {
         clear('painting-loading');
         return;
@@ -594,6 +622,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       if (!geometryTextures.has(geometryImage)) {
         geometryTextures.set(geometryImage, createTexture(geometryImage));
       }
+      const geometryTexture = geometryTextures.get(geometryImage);
+      geometryTextures.delete(geometryImage); geometryTextures.set(geometryImage, geometryTexture);
 
       let projection;
       let incomingProjection;
@@ -696,6 +726,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       canvas.dataset.sealState = 'rendering';
 
       renderer.render(scene, camera);
+      trimTextures();
       canvas.dataset.sealRendering = 'background-dissolve';
       canvas.dataset.dissolveSource = sealPreviewActive ? 'seal' : themeTransitionActive ? themeTransition.kind : 'scroll';
       canvas.dataset.dissolveProgress = progress.toFixed(5);
@@ -737,7 +768,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     const unsubscribeSeal = subscribeGateSealTurn(scheduleDraw);
     const sceneRoot = canvas.parentElement;
     const paintingLoaded = event => {
-      if (event.target.matches?.(SCENE_PROJECTION_SELECTORS[0])) scheduleDraw();
+      if (event.target.matches?.(SCENE_PROJECTION_SELECTORS.join(','))) scheduleDraw();
     };
     sceneRoot.addEventListener('load', paintingLoaded, true);
     const preference = () => { reducedMotion = reducedQuery.matches; scheduleDraw(); };

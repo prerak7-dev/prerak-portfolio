@@ -31,16 +31,16 @@ export function getPigmentLandmarks(sceneIndex, portrait = false) {
   return (portrait ? PORTRAIT : LANDSCAPE)[Math.max(0, Math.min(5, sceneIndex))];
 }
 
-export const PIGMENT_LOOP_MODES = Object.freeze({ breathe: 0, orbit: 1, sphere: 2, ripple: 3 });
+export const PIGMENT_LOOP_MODES = Object.freeze({ breathe: 0, orbit: 1, wash: 2, ripple: 3 });
 const SUBJECTS = [
   [
     { name: 'gate mist', kind: 'breathe', period: 18, scrollTurn: .8, phase: .2 },
     { name: 'celestial arc', kind: 'orbit', period: 64, scrollTurn: 1.4, phase: .1 },
   ],
   [
-    { name: 'Services sun', kind: 'sphere', period: 36, scrollTurn: 1.8, phase: .1 },
-    { name: 'Unreal sun', kind: 'sphere', period: 44, scrollTurn: 1.6, phase: .3 },
-    { name: 'Telemetry sun', kind: 'sphere', period: 52, scrollTurn: 1.9, phase: .6 },
+    { name: 'Services sun', kind: 'wash', period: 36, scrollTurn: 1.8, phase: .1 },
+    { name: 'Unreal sun', kind: 'wash', period: 44, scrollTurn: 1.6, phase: .3 },
+    { name: 'Telemetry sun', kind: 'wash', period: 52, scrollTurn: 1.9, phase: .6 },
   ],
   [
     { name: 'planetary rim', kind: 'orbit', period: 68, scrollTurn: 1.5, phase: .4 },
@@ -48,7 +48,7 @@ const SUBJECTS = [
   ],
   [
     { name: 'orbital ribbons', kind: 'orbit', period: 72, scrollTurn: 1.4, phase: .7 },
-    { name: 'left moon', kind: 'sphere', period: 24, scrollTurn: 2.2, phase: .2 },
+    { name: 'left moon', kind: 'wash', period: 24, scrollTurn: 2.2, phase: .2 },
   ],
   [
     { name: 'near planetary rim', kind: 'orbit', period: 58, scrollTurn: 1.7, phase: .5 },
@@ -56,7 +56,7 @@ const SUBJECTS = [
   ],
   [
     { name: 'horizon arc', kind: 'orbit', period: 80, scrollTurn: 1.3, phase: .1 },
-    { name: 'distant moon', kind: 'sphere', period: 32, scrollTurn: 2, phase: .4 },
+    { name: 'distant moon', kind: 'wash', period: 32, scrollTurn: 2, phase: .4 },
   ],
 ].map(subjects => Object.freeze(subjects.map(subject => Object.freeze({ ...subject, mode: PIGMENT_LOOP_MODES[subject.kind] }))));
 

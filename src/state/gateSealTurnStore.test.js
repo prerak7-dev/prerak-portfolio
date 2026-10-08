@@ -31,3 +31,11 @@ test('unrelated navigation can await the gate returning without leaking a previo
   current();
   await returnGateSealToRest();
 });
+
+test('a rejected gate destination can explicitly recover an already-unlocked seal', async () => {
+  let received;
+  const unregister = registerGateSealReturn(options => { received = options; return Promise.resolve(); });
+  await returnGateSealToRest({ force: true });
+  assert.deepEqual(received, { force: true });
+  unregister();
+});
