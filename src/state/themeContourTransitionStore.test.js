@@ -91,6 +91,31 @@ test('theme transition completes even if the applyTheme callback never resolves'
   assert.equal(getThemeContourTransition().token, token);
 });
 
+test('a seal reveal continues without resetting background progress or skipping the navigation flight', () => {
+  const { advance } = installFakeWindow();
+  let visits = 0;
+  startThemeContourTransition({
+    kind: 'chapter', fromTheme: 'default', toTheme: 'default', sceneIndex: 0,
+    targetSceneIndex: 1, targetChapterIndex: 1,
+    fromImage: {}, toImage: {}, geometryImage: {},
+    initialProgress: .58, duration: 3000, applyProgress: 0,
+    applyTheme: () => { visits++; },
+  });
+  assert.equal(getThemeContourTransition().progress, .58);
+  assert.equal(getThemeContourTransition().linearProgress, 0, 'Satellites start at their actual Home pose');
+  assert(Math.abs(getThemeContourTransition().duration - 1260) < 1e-9);
+  advance(16);
+  assert.equal(getThemeContourTransition().progress, .58);
+  assert.equal(visits, 1);
+  advance(630);
+  assert(Math.abs(getThemeContourTransition().linearProgress - .5) < 1e-9);
+  assert(Math.abs(getThemeContourTransition().progress - .79) < 1e-9);
+  advance(631);
+  assert.equal(getThemeContourTransition().active, false);
+  assert.equal(getThemeContourTransition().progress, 1);
+  assert.equal(visits, 1);
+});
+
 test('direct chapter navigation commits one destination under the dissolve and finishes afterward', () => {
   const { advance } = installFakeWindow();
   const visits = [];

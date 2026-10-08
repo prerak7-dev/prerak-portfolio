@@ -7925,5 +7925,9 @@ export const spatialStyles = `
   }
   ${homeCompositionStyles}
   ${textMaterialStyles}
+  .living-pigment-field {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 8; visibility: hidden;
+  }
   ${coresCompositionStyles}
 `;

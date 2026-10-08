@@ -33,7 +33,7 @@ test('portrait preloads never pull in landscape chapter paintings', () => {
       ...getThemeWarmPreloadManifest(theme, options),
       ...['intro', 'cores', 'projects', 'professional', 'education', 'personal', 'contact'].flatMap(chapter => getThemeTransitionPreloadManifest(theme, chapter, options)),
     ];
-    for (const { filename } of assets.filter(asset => asset.filename.includes('/painted-v1/'))) {
+    for (const { filename } of assets.filter(asset => asset.filename.includes('/painted-v1/') && !asset.filename.includes('/painted-v1/ui/'))) {
       assert.ok(filename.includes('/portrait/'), filename);
     }
   }

@@ -1,0 +1,9 @@
+{
+  "generator": "Built-in image_gen",
+  "purpose": "Transparent rotating stone seal anchored to the Home gate in both compositions",
+  "source": "exec-f7dd3658-438d-4780-a696-0da4e0f628cb.png",
+  "reference": "cinematic/painted-v1/default/dark/home.webp",
+  "output": "cinematic/painted-v1/ui/gate-stone-seal-v1.webp",
+  "conversion": "Trim transparent margins and resize to 256px WebP, preserving generated alpha. Seasonal lighting is applied in CSS.",
+  "prompt": "Use case: stylized-concept. Asset type: a single transparent-background rotating stone gate seal sprite for the center of this painted fantasy gate website. Input image: reference only for the gate's graphite stone, ochre-gold inlay, and hand-painted paper texture. Generate ONLY the removable circular central locking disc, viewed perfectly straight-on, centered square. The disc should occupy 92% of the image width with equal transparent margins. One round solid dark graphite stone slab, shallow carved concentric channels, thin aged warm brass inlay, a small luminous pale-gold circular core, and one distinctive asymmetric notched stone wedge at twelve o'clock so its half-turn is clearly legible. Refined simple mechanical design readable at 40-80px, substantial stone thickness conveyed by a narrow carved bevel and internal occlusion, fine irregular mineral pigment texture, restrained watercolor/ink finish matching the scene. Entire disc solid, outside of disc genuinely transparent alpha, crisp round silhouette with tiny stone-edge imperfections. NO enclosing square, NO background painting, NO external cast shadow, NO glow outside the silhouette, NO text, NO numbers, NO symbols, NO floating debris, NO extra discs, NO perspective tilt. This sprite will be rotated in CSS over the existing circular seal. Preserve dimensional neutrality for recoloring into frost silver, spring jade, and antique autumn brass."
+}

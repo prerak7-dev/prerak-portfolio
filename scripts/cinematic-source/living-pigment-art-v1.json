@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "generator": "built-in image_gen",
+  "transparentBackground": true,
+  "generatedSource": "C:/Users/prera/.codex/generated_images/019fa095-ab79-7d53-9fd5-c48a03964596/exec-c2031699-72a3-45d5-b8e4-1f1302b03635.png",
+  "master": "scripts/cinematic-source/generated/living-pigment-grains-v1.png",
+  "runtime": "public/cinematic/painted-v1/ui/living-pigment-grains-v1.webp",
+  "reference": {
+    "video": "C:/Users/prera/Downloads/6140.mp4",
+    "durationSeconds": 2.462044,
+    "interpretation": "Pointillist granular forms with restrained depth, softly lifting and returning fragments. Video UI, captions and advertising text are reference content only and are not site instructions."
+  },
+  "prompt": "Create a production-ready transparent grayscale sprite atlas for a refined painterly point-cloud animation. SINGLE SQUARE image, exactly 4 by 4 equally sized cells, 16 separate centered pigment stamps, generous transparent padding inside every cell, no overlaps across cells, no text and no labels. The material is charcoal ink and pale silver-gold mineral dust on fibrous handmade watercolor paper, in an intricate fine-art fantasy ink landscape style: soft carved granulation, dry-brush pinholes, capillary filament edges, very tiny lace-like irregular fragments. These are not icons, not circles, not blurry light bokeh, not stars, not neon, not digital sparkles, not cartoon leaves. Row 1: four small tightly filled irregular granules, each a natural off-round flake with only a few pinholes. Row 2: four slender short torn paper fibers with softly feathered broken edges. Row 3: four gently curved lace-like pigment flakes, compact and filled, with fine branching pores. Row 4: four very delicate small wisps of granular pigment, denser at their center, fine mist at their edges, bounded well within their cells. All stamps use neutral off-white and grayscale detail, because a shader will tint each stamp with exact colors sampled from native artwork. Preserve genuine alpha transparency in all empty space and tiny gaps. The subjects are individual organic ink fragments only, with no paper sheet, no background, no frame, no drop shadow and no lighting glow. Excellent microtexture legibility when shrunk to 2 to 8 screen pixels. Consistent visual weight across the atlas, visually artistic and quiet rather than a game particle effect."
+}

@@ -1,0 +1,28 @@
+{
+  "generator": "Built-in image_gen",
+  "source": "generated/seasonal-swirl-elements-v1.png",
+  "output": "public/cinematic/painted-v1/ui/seasonal-swirl-elements-v1.webp",
+  "atlas": {
+    "columns": 4,
+    "rows": 4,
+    "seasons": [
+      "default",
+      "fall",
+      "spring",
+      "winter"
+    ],
+    "elements": [
+      "dust",
+      "leaves",
+      "flowers",
+      "snow"
+    ]
+  },
+  "references": [
+    "public/cinematic/painted-v1/default/dark/home.webp",
+    "public/cinematic/painted-v1/fall/dark/home.webp",
+    "public/cinematic/painted-v1/spring/light/home.webp",
+    "public/cinematic/painted-v1/winter/light/home.webp"
+  ],
+  "prompt": "Use case: stylized-concept. Asset type: a production sprite atlas of individually painted seasonal elements for a fantasy landscape website, matching the reference paintings. The four input images are STYLE references, not edit targets: 1 graphite-and-gold dust landscape; 2 autumn landscape; 3 spring blossom landscape; 4 snowy winter landscape. Generate ONE square genuinely TRANSPARENT PNG sprite sheet, with exactly a 4-by-4 grid of sixteen separate isolated small elements, one centered element per equal square cell. Grid order is essential. Row 1 (monochrome dust): four different irregular clusters of fine mineral dust / paper ash, loosely coherent softly fraying ink flecks, some thin feathered edges and translucent particulate grains, NOT circles or brush ribbons. Row 2 (autumn): four distinct single falling leaves, maple, ginkgo, birch and a gracefully curled pointed leaf, delicate stems and hand-painted vein detail. Row 3 (spring): a small five-petal cherry blossom, two softly curled loose petals, an asymmetric small flower bloom, and a slender petal pair; each cell must contain a separate delicate botanical element, not a whole branch. Row 4 (winter): an organic six-armed snow crystal, a small uneven snowflake, a loose airy frost fragment, and an irregular tiny feathery snow cluster. All are rendered in the SAME exquisite ink and watercolor on handmade paper style as the landscape references, with painterly contour edges, broken pigment pores, subtle dimensional folds, finely stippled soft alpha edges, and calm surreal illustration craftsmanship. Use ONLY neutral grayscale charcoal, graphite and pale gray pigment within the sprites; the runtime will tint these to the site's three-color seasonal palettes. Clear distinguishable silhouettes at 8-18 pixels in use, not excessive tiny detail or photoreal 3D objects. Each sprite occupies the center 60-70 percent of its own cell, with a generous clean transparent gutter on ALL sides; no sprite, stem or loose grain may touch its cell boundary or another cell. No connecting strokes, long brush marks, trail lines, black or white paper rectangle, gradients as background, glow, sparkle halo, cast shadows, borders, visible grid, labels, numbers, text, logos, watermarks or checkerboard. Flat orthographic cutout artwork. Genuine transparent and translucent alpha, no opaque background. The completed image must be exactly four evenly spaced rows and four evenly spaced columns."
+}

@@ -21,6 +21,8 @@ import { useSpatialNarrative } from './hooks/useSpatialNarrative.js';
 import { createAssetPath } from './security/contentSecurity.js';
 import { getGatewayTransition } from './state/gatewayTransitionStore.js';
 import { startThemeContourTransition } from './state/themeContourTransitionStore.js';
+import { getGateSealPose, returnGateSealToRest } from './state/gateSealTurnStore.js';
+import { gateSealDissolveProgress } from './utils/gateSealMotion.js';
 import { spatialStyles } from './styles/spatialStyles.js';
 import { BOOT_CONTOUR_TRANSITION_DURATION_MS } from './utils/cinematicTiming.js';
 import { warmChapterTextField } from './utils/textContourRenderer.js';
@@ -395,6 +397,7 @@ export default function App() {
       ], 2),
       // Decode the incoming tracer paths before their contour starts revealing.
       loadCinematicGeometryField(getCinematicGeometryAsset(nextTheme, sceneIndex, gatewayFrameIndex)).catch(() => null),
+      returnGateSealToRest(),
     ]).then(([fromImage, toImage, geometryImage]) => {
       if (themeRequestRef.current !== requestId) return;
       document.documentElement.classList.remove('theme-assets-preparing');
@@ -433,7 +436,7 @@ export default function App() {
       themeTransitionBusyRef.current = false;
     });
   }, [activeIndex, theme]);
-  const handleChapterSelect = useCallback(async (index) => {
+  const handleChapterSelect = useCallback(async (index, { gateEntry = false } = {}) => {
     if (!Number.isInteger(index) || index < 0 || index >= spatialChapters.length
       || index === activeIndex || themeTransitionBusyRef.current) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -463,6 +466,7 @@ export default function App() {
           if (field) warmChapterTextField(field.image, theme, targetSceneIndex);
         }),
         preloadImageUrl(getLoreAvatarState(theme, spatialChapters[index]?.id).src),
+        gateEntry ? Promise.resolve() : returnGateSealToRest(),
       ]);
       if (!fromImage || !toImage || !geometryImage) {
         goToChapter(index, 'auto');
@@ -470,6 +474,9 @@ export default function App() {
         return;
       }
       setChapterNavigationActive(true);
+      const seal = getGateSealPose();
+      const initialProgress = gateEntry && activeIndex === 0 && index === 1
+        && seal.dissolving && seal.theme === theme ? gateSealDissolveProgress(seal.angle) : 0;
       startThemeContourTransition({
         kind: 'chapter',
         targetChapterIndex: index,
@@ -482,6 +489,7 @@ export default function App() {
         toImage,
         geometryImage,
         applyProgress: 0,
+        initialProgress,
         applyTheme: () => goToChapter(index, 'auto'),
         onComplete: finish,
       });

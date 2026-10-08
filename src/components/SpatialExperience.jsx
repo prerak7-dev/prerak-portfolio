@@ -40,6 +40,7 @@ import {
   toggleCachedClass,
 } from '../utils/motionPerformance.js';
 import { CinematicEnvironment } from './CinematicEnvironment.jsx';
+import { GateSealEntry } from './GateSealEntry.jsx';
 import { ProfileAvatar } from './primitives.jsx';
 import { SpatialWorld } from './SpatialWorld.jsx';
 import { BoundaryFilamentField } from './WayfinderCosmicField.jsx';
@@ -822,7 +823,7 @@ function IntroGateName({ isActive, name }) {
   );
 }
 
-function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
+function IntroChapter({ isActive, profile, theme, onEnter, onGuideReady }) {
   const compositionRef = useRef(null);
   const compact = useHomeCompositionLayout(compositionRef);
   const copy = INTRO_NARRATION_PARTS;
@@ -843,11 +844,7 @@ function IntroChapter({ isActive, profile, onEnter, onGuideReady }) {
           <a className="tracer-action" data-tracer-prop="action" href={profile.resume} download><ScenicText>{copy[7]}</ScenicText></a>
         </div>
       </div>
-      <div className="intro-gate-entry">
-        <div className="intro-gate-scroll-shell">
-          <button className="intro-gate-cta tracer-action" data-tracer-prop="action" type="button" onClick={onEnter}><ScenicText>Enter the archive</ScenicText></button>
-        </div>
-      </div>
+      <GateSealEntry isActive={isActive} theme={theme} onEnter={onEnter} />
     </div>
   );
 }
@@ -1380,7 +1377,7 @@ export function SpatialExperience({
   }, [displayedProjectIndex]);
 
   const scenes = useMemo(() => [
-    <IntroChapter isActive={contentIsVisible && displayedContentIndex === 0} profile={profile} onEnter={() => onChapterSelect(1)} onGuideReady={handleIntroGuideReady} />,
+    <IntroChapter isActive={contentIsVisible && displayedContentIndex === 0} profile={profile} theme={theme} onEnter={() => onChapterSelect(1, { gateEntry: true })} onGuideReady={handleIntroGuideReady} />,
     <ContourCores isActive={contentIsVisible && displayedContentIndex === 1} onContinue={() => onChapterSelect(2)} />,
     <ContourCaseStudies
       cycle={projectCycle}
@@ -1434,6 +1431,7 @@ export function SpatialExperience({
     <div ref={viewportRef} data-chapter={spatialChapters[activeIndex]?.id} data-chapter-copy-phase={chapterCopy.phase} data-chapter-copy-initial={chapterCopy.initial} className={`archive-viewport theme-${theme} rail-${railCollapsed ? 'collapsed' : 'expanded'} ${experienceVisible ? 'experience-visible' : 'experience-concealed'} ${chapterIsSettled ? 'chapter-settled' : 'chapter-transitioning'}`} style={environmentStyle}>
       <CinematicEnvironment
         theme={theme}
+        experienceVisible={experienceVisible}
         onReady={onEnvironmentReady}
         systemsOverlay={null}
       />

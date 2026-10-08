@@ -18,7 +18,7 @@ export function mergeBrushLines(rects) {
 export function getBrushTarget(element, root) {
   if (!(element instanceof Element) || !root.contains(element)) return null;
   const target = element.closest('button, a, [role="tab"]') || element.closest('.material-text');
-  if (!target || target.closest('[inert], [aria-hidden="true"], [data-reading-hidden], [data-home-awaiting]') || target.matches(':disabled')) return null;
+  if (!target || target.closest('[inert], [aria-hidden="true"], [data-reading-hidden], [data-home-awaiting], [data-brush-hover="off"]') || target.matches(':disabled')) return null;
   if (!target.matches('.material-text') && !target.querySelector('.material-text')) return null;
   const text = target.matches('.material-text') ? [target] : [...target.querySelectorAll('.material-text')];
   if (text.some(node => node.style.getPropertyPriority('mask-image') === 'important')) return null;

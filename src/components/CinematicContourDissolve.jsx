@@ -20,6 +20,9 @@ import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { gatewayDissolveProgress } from '../utils/cinematicTiming.js';
 import { CONTOUR_NOISE_GLSL, CONTOUR_HANDOFF_GLSL } from '../utils/contourDissolveShader.js';
+import { gateSealFaceBounds, gateSealDissolveProgress } from '../utils/gateSealMotion.js';
+import { GATE_SEAL_SHAPE_GLSL, GATE_SEAL_ART_EXTENT } from '../utils/gateSealArtwork.js';
+import { getGateSealPose, subscribeGateSealTurn } from '../state/gateSealTurnStore.js';
 
 const MAX_PIXEL_RATIO = 2;
 const MAX_RENDER_PIXELS = 3840 * 2160;
@@ -93,9 +96,13 @@ const FRAGMENT_SHADER = `
   uniform vec3 uPigment;
   uniform float uApplyGrade;
   uniform float uRevealLiveScene;
+  uniform vec4 uOutgoingSeal;
+  uniform vec4 uIncomingSeal;
+  uniform vec2 uSealAngles;
   varying vec2 vUv;
 
   ${CONTOUR_NOISE_GLSL}
+  ${GATE_SEAL_SHAPE_GLSL}
 
   vec3 linearToCssSpace(vec3 color) {
     vec3 safeColor = max(color, vec3(0.0));
@@ -143,6 +150,36 @@ const FRAGMENT_SHADER = `
     return cssSpaceToLinear(clamp(color, 0.0, 1.0));
   }
 
+  vec2 turnedSeal(vec2 local, vec4 bounds, float angle) {
+    vec2 offset = (local - bounds.xy) / bounds.zw;
+    float cosine = cos(angle), sine = sin(angle);
+    return bounds.xy + vec2(cosine * offset.x + sine * offset.y,
+      -sine * offset.x + cosine * offset.y) * bounds.zw;
+  }
+
+  vec4 paintedScene(sampler2D painting, vec2 local, vec4 bounds, float angle) {
+    vec4 original = texture2D(painting, vec2(local.x, 1.0 - local.y));
+    if (bounds.z <= 0.0) return original;
+    vec2 offset = (local - bounds.xy) / bounds.zw;
+    if (max(abs(offset.x), abs(offset.y)) > ${GATE_SEAL_ART_EXTENT}) return original;
+    vec2 turned = turnedSeal(local, bounds, angle);
+    vec2 turnedOffset = (turned - bounds.xy) / bounds.zw;
+    float coverage = sealShapeCoverage(turnedOffset);
+    float clean = max(0., sealFootprintCoverage(offset) - sealCircleCoverage(offset));
+    if (max(coverage, clean) <= 0.) return original;
+    vec2 repairOffset = abs(offset.y) > abs(offset.x) ? vec2(bounds.z * .28, 0.) : vec2(0., bounds.w * .28);
+    vec4 left = texture2D(painting, vec2(local.x - repairOffset.x, 1. - local.y + repairOffset.y));
+    vec4 right = texture2D(painting, vec2(local.x + repairOffset.x, 1. - local.y - repairOffset.y));
+    vec4 backing = mix(original, (left + right) * .5, clean);
+    vec4 carving = texture2D(painting, vec2(turned.x, 1. - turned.y));
+    vec2 mirrored = bounds.xy + vec2(turnedOffset.x, -turnedOffset.y) * bounds.zw;
+    vec4 upperTip = texture2D(painting, vec2(mirrored.x, 1. - mirrored.y));
+    carving = mix(carving, upperTip, sealTipMirrorWeight(turnedOffset));
+    float reliefLight = 1. - abs(sin(angle)) * .04 * clamp(.5 + (offset.x + offset.y) / ${4 * GATE_SEAL_ART_EXTENT}, 0., 1.);
+    carving.rgb = cssSpaceToLinear(linearToCssSpace(carving.rgb) * reliefLight);
+    return mix(backing, carving, coverage);
+  }
+
   void main() {
     vec2 viewportPixel = vec2(vUv.x * uViewport.x, (1.0 - vUv.y) * uViewport.y);
     vec2 local = (viewportPixel - uProjection.xy) / uProjection.zw;
@@ -162,8 +199,8 @@ const FRAGMENT_SHADER = `
       clamp(incomingLocal.x, 0.0, 1.0),
       1.0 - clamp(incomingLocal.y, 0.0, 1.0)
     );
-    vec4 sceneColor = texture2D(uScene, sampleUv);
-    vec4 incomingColor = texture2D(uIncomingScene, incomingSampleUv);
+    vec4 sceneColor = paintedScene(uScene, vec2(sampleUv.x, 1.0 - sampleUv.y), uOutgoingSeal, uSealAngles.x);
+    vec4 incomingColor = paintedScene(uIncomingScene, vec2(incomingSampleUv.x, 1.0 - incomingSampleUv.y), uIncomingSeal, uSealAngles.y);
     vec4 geometry = texture2D(uGeometry, sampleUv);
     ${CONTOUR_HANDOFF_GLSL}
 
@@ -246,7 +283,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     const motion = { ...getSpatialMotion() };
     const gatewayTransition = { ...getGatewayTransition() };
     const themeTransition = { ...getThemeContourTransition() };
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reducedMotion = reducedQuery.matches;
     const initialGrade = THEME_GRADES[themeRef.current] || THEME_GRADES.default;
     const initialPigment = THEME_PIGMENTS[themeRef.current] || THEME_PIGMENTS.default;
     let disposed = false;
@@ -258,6 +296,10 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     let fallbackProjection = { left: 0, top: 0, width: 1, height: 1, viewportWidth: 1 };
     let themeTransitionProjection = null;
     let themeTransitionProjectionToken = -1;
+    let themeSealPose = getGateSealPose();
+    let sealPreview = null;
+    let preparedSealTexture = null;
+    let preparedSealVersion = -1;
 
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -283,6 +325,9 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         uPigment: { value: new THREE.Vector3(...initialPigment) },
         uApplyGrade: { value: 0 },
         uRevealLiveScene: { value: 0 },
+        uOutgoingSeal: { value: new THREE.Vector4() },
+        uIncomingSeal: { value: new THREE.Vector4() },
+        uSealAngles: { value: new THREE.Vector2() },
       },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
@@ -366,8 +411,32 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       return cached.texture;
     };
 
-    const clear = () => {
+    const prepareGatePainting = () => {
+      if (className.includes('boot-contour-dissolve') || document.hidden) return;
+      const image = getProjectionNode(0);
+      if (!image?.complete || !image.naturalWidth) return;
+      const texture = getSceneTexture(image);
+      if (texture === preparedSealTexture && texture.version === preparedSealVersion) return;
+      // Upload and compile while the gate is resting, not on its first hover.
+      renderer.initTexture(texture);
+      material.uniforms.uScene.value = texture;
+      material.uniforms.uIncomingScene.value = texture;
+      material.uniforms.uGeometry.value = texture;
+      renderer.compile(scene, camera);
+      preparedSealTexture = texture;
+      preparedSealVersion = texture.version;
+      const incoming = getProjectionNode(1);
+      if (incoming?.complete && incoming.naturalWidth) renderer.initTexture(getSceneTexture(incoming));
+      requestResource(getCinematicGeometryAsset(themeRef.current, 0, 0));
+      canvas.dataset.sealPrepared = image.currentSrc || image.src;
+    };
+
+    const clear = (reason = 'idle') => {
       canvas.style.visibility = 'hidden';
+      canvas.dataset.sealState = reason;
+      delete canvas.dataset.sealRendering;
+      delete canvas.dataset.dissolveSource;
+      delete canvas.dataset.dissolveProgress;
       renderer.clear();
     };
 
@@ -416,10 +485,10 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       };
     };
 
-    const draw = () => {
+    const draw = (now = performance.now()) => {
       frame = 0;
       if (disposed || reducedMotion) {
-        clear();
+        clear('reduced-motion');
         return;
       }
 
@@ -444,6 +513,16 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       let outgoingTheme;
       let incomingTheme;
       let envelope;
+      const sealPose = getGateSealPose(now);
+      if (!themeTransitionActive && sealPose.dissolving && sealPose.moving
+        && sealPose.theme === themeRef.current && motion.scenePosition < .00001
+        && !document.hidden) scheduleDraw();
+      const sealPreviewActive = !themeTransitionActive && sealPose.dissolving
+        && sealPose.theme === themeRef.current && motion.scenePosition < .00001
+        && sealPose.angle > .00001 && !className.includes('boot-contour-dissolve');
+      const continuingSeal = themeTransitionActive && themeTransition.kind === 'chapter'
+        && themeTransition.sceneIndex === 0 && themeTransition.targetSceneIndex === 1
+        && themeTransition.initialProgress > 0 && sealPreview?.theme === themeTransition.fromTheme;
 
       if (themeTransitionActive) {
         progress = themeTransition.progress;
@@ -458,6 +537,16 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         incomingTheme = themeTransition.toTheme;
         envelope = 1;
         // keep using the main watercolor material during theme transitions
+      } else if (sealPreviewActive) {
+        const geometryResource = requestResource(getCinematicGeometryAsset(themeRef.current, 0, 0));
+        if (!geometryResource?.image) { clear('geometry-loading'); return; }
+        progress = gateSealDissolveProgress(sealPose.angle);
+        outgoingImage = getProjectionNode(0);
+        incomingImage = getProjectionNode(1);
+        geometryImage = geometryResource.image;
+        sourceField = getTracerSceneField(themeRef.current, 0);
+        outgoingTheme = incomingTheme = themeRef.current;
+        envelope = 1;
       } else {
         const { transition, blend, gatewayFrameIndex } = resolveTransition();
         progress = transition.mix;
@@ -466,7 +555,9 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
           || progress <= 0.00001
           || progress >= 0.99999
         ) {
-          clear();
+          if (blend.fromIndex === 0 && !themeTransition.active) prepareGatePainting();
+          sealPreview = null;
+          clear('idle');
           return;
         }
         outgoingImage = getProjectionNode(blend.fromIndex);
@@ -478,7 +569,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         );
         const geometryResource = requestResource(filename);
         if (!geometryResource?.image) {
-          clear();
+          clear('geometry-loading');
           return;
         }
         geometryImage = geometryResource.image;
@@ -494,7 +585,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         || !incomingImage?.complete
         || !incomingImage.naturalWidth
       ) {
-        clear();
+        clear('painting-loading');
         return;
       }
 
@@ -506,6 +597,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
 
       let projection;
       let incomingProjection;
+      const carriesSealPreview = continuingSeal && sealPreview.theme === outgoingTheme;
       if (themeTransitionActive) {
         if (themeTransitionProjectionToken !== themeTransition.token) {
           themeTransitionProjection = null;
@@ -515,7 +607,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
           ? document.getElementById('boot-gateway-frame')
           : getProjectionNode(themeTransition.sceneIndex);
         if (!themeTransitionProjection) {
-          themeTransitionProjection = readSceneImageProjection(
+          themeTransitionProjection = carriesSealPreview ? sealPreview.outgoingProjection : readSceneImageProjection(
             liveSceneImage,
             themeTransitionProjection || fallbackProjection,
             width,
@@ -525,6 +617,13 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         incomingProjection = readSceneImageProjection(
           getProjectionNode(themeTransition.targetSceneIndex), fallbackProjection, width,
         );
+        if (carriesSealPreview) {
+          const follow = smootherStep(themeTransition.linearProgress);
+          incomingProjection = { ...incomingProjection };
+          for (const key of ['left', 'top', 'width', 'height']) {
+            incomingProjection[key] = THREE.MathUtils.lerp(sealPreview.incomingProjection[key], incomingProjection[key], follow);
+          }
+        }
       } else {
         projection = readSceneImageProjection(outgoingImage, fallbackProjection, width);
         incomingProjection = readSceneImageProjection(
@@ -532,14 +631,28 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
           fallbackProjection,
           width,
         );
+        if (sealPreviewActive) sealPreview = { theme: outgoingTheme, outgoingProjection: projection, incomingProjection };
+        else sealPreview = null;
       }
       const source = sourceField?.source || [0.5, 0.5];
       applyThemeGrades(outgoingTheme, incomingTheme, progress);
       const outgoingIsHome = themeTransitionActive
         ? themeTransition.sceneIndex === 0
-        : sourceField?.motif === 'gateway';
+        : sealPreviewActive || sourceField?.motif === 'gateway';
       const incomingIsHome = themeTransitionActive
-        && (themeTransition.targetSceneIndex ?? themeTransition.sceneIndex) === 0;
+        ? (themeTransition.targetSceneIndex ?? themeTransition.sceneIndex) === 0
+        : incomingImage === getProjectionNode(0);
+      const setSealBounds = (uniform, image, enabled) => {
+        if (!enabled) { uniform.value.set(0, 0, 0, 0); return; }
+        const bounds = gateSealFaceBounds(image.naturalHeight > image.naturalWidth);
+        uniform.value.set(bounds.x, bounds.y, bounds.radiusX, bounds.radiusY);
+      };
+      const outgoingPose = themeTransitionActive ? themeSealPose : sealPose;
+      const outgoingAngle = outgoingIsHome && outgoingPose.theme === outgoingTheme ? outgoingPose.angle : 0;
+      const incomingAngle = incomingIsHome && sealPose.theme === incomingTheme ? sealPose.angle : 0;
+      setSealBounds(material.uniforms.uOutgoingSeal, outgoingImage, outgoingIsHome);
+      setSealBounds(material.uniforms.uIncomingSeal, incomingImage, incomingIsHome);
+      material.uniforms.uSealAngles.value.set(THREE.MathUtils.degToRad(outgoingAngle), THREE.MathUtils.degToRad(incomingAngle));
       // Authored watercolor plates already contain their final lighting. Match
       // the live DOM's unfiltered art instead of reapplying the legacy grade.
       if ((outgoingIsHome || outgoingImage.src.includes('/painted-v1/')) && outgoingTheme !== 'boot') {
@@ -553,7 +666,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       const liveThemeReady = themeTransitionActive && themeRef.current === incomingTheme
         && liveIncoming?.complete && liveIncoming.naturalWidth > 0
         && liveIncoming.src === incomingImage.src;
-      material.uniforms.uRevealLiveScene.value = liveThemeReady
+      material.uniforms.uRevealLiveScene.value = !carriesSealPreview && liveThemeReady
         || (incomingIsHome && outgoingTheme === 'boot') ? 1 : 0;
       material.uniforms.uScene.value = outgoingTexture;
       material.uniforms.uIncomingScene.value = incomingTexture;
@@ -580,8 +693,12 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       // before the settled background takes over.
       material.uniforms.uApplyGrade.value = 1;
       canvas.style.visibility = 'visible';
+      canvas.dataset.sealState = 'rendering';
 
       renderer.render(scene, camera);
+      canvas.dataset.sealRendering = 'background-dissolve';
+      canvas.dataset.dissolveSource = sealPreviewActive ? 'seal' : themeTransitionActive ? themeTransition.kind : 'scroll';
+      canvas.dataset.dissolveProgress = progress.toFixed(5);
     };
 
     const scheduleDraw = () => {
@@ -609,6 +726,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       scheduleDraw();
     });
     const unsubscribeThemeTransition = subscribeThemeContourTransition((next) => {
+      if (next.active && next.token !== themeTransition.token) themeSealPose = getGateSealPose();
       Object.assign(themeTransition, next);
       if (!next.active) {
         themeTransitionProjection = null;
@@ -616,6 +734,14 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       }
       scheduleDraw();
     });
+    const unsubscribeSeal = subscribeGateSealTurn(scheduleDraw);
+    const sceneRoot = canvas.parentElement;
+    const paintingLoaded = event => {
+      if (event.target.matches?.(SCENE_PROJECTION_SELECTORS[0])) scheduleDraw();
+    };
+    sceneRoot.addEventListener('load', paintingLoaded, true);
+    const preference = () => { reducedMotion = reducedQuery.matches; scheduleDraw(); };
+    reducedQuery.addEventListener('change', preference);
     const observer = new ResizeObserver(() => {
       resize();
       scheduleDraw();
@@ -623,6 +749,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     observer.observe(canvas);
     resize();
     clear();
+    scheduleDraw();
 
     return () => {
       disposed = true;
@@ -631,6 +758,9 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       unsubscribe();
       unsubscribeGateway();
       unsubscribeThemeTransition();
+      unsubscribeSeal();
+      sceneRoot.removeEventListener('load', paintingLoaded, true);
+      reducedQuery.removeEventListener('change', preference);
 
       sceneTextures.forEach(({ texture }) => texture.dispose());
       geometryTextures.forEach((texture) => texture.dispose());

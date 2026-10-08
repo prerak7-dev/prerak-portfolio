@@ -2,6 +2,9 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import { usePortraitArtwork } from '../hooks/usePortraitArtwork.js';
 import { CinematicAtmosphereField } from './CinematicAtmosphereField.jsx';
 import { CinematicContourDissolve } from './CinematicContourDissolve.jsx';
+import { LivingPigmentField } from './LivingPigmentField.jsx';
+import { InkFireworks } from './InkFireworks.jsx';
+import { GateSealPainting } from './GateSealPainting.jsx';
 import {
   CINEMATIC_ASSET_GEOMETRY,
   getCinematicAssets,
@@ -110,7 +113,7 @@ function EnvironmentPlate({ filename, className, plateRef, imageRef, eager = fal
   );
 }
 
-function GatewaySequence({ filenames, imageRefs, plateRef }) {
+function GatewaySequence({ filenames, imageRefs, plateRef, theme }) {
   const { width, height } = filenames[0].includes('/portrait/')
     ? { width: 887, height: 1774 } : CINEMATIC_ASSET_GEOMETRY.scene;
   const source = assetPath(filenames[0]);
@@ -122,6 +125,7 @@ function GatewaySequence({ filenames, imageRefs, plateRef }) {
             src={source} data-src={source} data-frame-index="0"
             width={width} height={height} alt="" decoding="async" fetchpriority="high" />
         </div>
+        <GateSealPainting portrait={filenames[0].includes('/portrait/')} theme={theme} />
       </div>
     </div>
   );
@@ -170,6 +174,7 @@ function decodeImage(image) {
 
 export function CinematicEnvironment({
   theme,
+  experienceVisible = false,
   onReady,
   gatewayOverlay = null,
   systemsOverlay = null,
@@ -695,6 +700,7 @@ export function CinematicEnvironment({
       >
         <div className="cinematic-image-stage">
           <GatewaySequence
+            theme={theme}
             canvasRef={gatewayCanvasRef}
             filenames={gatewayFilenames}
             imageRefs={imageRefs}
@@ -743,6 +749,8 @@ export function CinematicEnvironment({
           />
         </div>
         <CinematicContourDissolve theme={theme} />
+        <LivingPigmentField theme={theme} ready={experienceVisible} />
+        <InkFireworks theme={theme} ready={experienceVisible} />
         <div className="environment-volumetrics" />
         <div ref={vignetteRef} className="environment-vignette" />
       </div>

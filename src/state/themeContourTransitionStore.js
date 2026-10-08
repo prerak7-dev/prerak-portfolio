@@ -21,6 +21,7 @@ const transitionState = {
   kind: 'theme',
   gatewayFrameIndex: 0,
   progress: 0,
+  initialProgress: 0,
   linearProgress: 0,
   startedAt: 0,
   duration: THEME_CONTOUR_TRANSITION_DURATION_MS,
@@ -77,11 +78,14 @@ export function startThemeContourTransition({
   applyTheme,
   onComplete,
   duration = THEME_CONTOUR_TRANSITION_DURATION_MS,
+  initialProgress = 0,
 }) {
   if (animationFrame) window.cancelAnimationFrame(animationFrame);
   activeCompletion = null;
 
   const token = transitionState.token + 1;
+  const startProgress = Math.min(1, Math.max(0, Number.isFinite(initialProgress) ? initialProgress : 0));
+  const remainingDuration = Math.max(1, duration * (1 - startProgress));
   Object.assign(transitionState, {
     active: true,
     token,
@@ -92,10 +96,11 @@ export function startThemeContourTransition({
     targetChapterIndex,
     kind,
     gatewayFrameIndex,
-    progress: 0,
+    progress: startProgress,
+    initialProgress: startProgress,
     linearProgress: 0,
     startedAt: 0,
-    duration,
+    duration: remainingDuration,
     fromImage,
     toImage,
     geometryImage,
@@ -127,7 +132,7 @@ export function startThemeContourTransition({
       completionTimer = window.setTimeout(() => {
         if (transitionState.token !== token) return;
         finishTransition(token);
-      }, duration + 80);
+      }, remainingDuration + 80);
     });
   };
 
@@ -135,12 +140,12 @@ export function startThemeContourTransition({
     if (transitionState.token !== token) return;
     if (!startTime) startTime = timestamp;
     transitionState.startedAt = startTime;
-    const rawProgress = Math.min(1, Math.max(0, (timestamp - startTime) / duration));
+    const rawProgress = Math.min(1, Math.max(0, (timestamp - startTime) / remainingDuration));
     transitionState.linearProgress = rawProgress;
     if (!themeApplied && rawProgress >= applyProgress) {
       settleThemeCommit();
     }
-    transitionState.progress = shapeCenterDwellProgress(
+    transitionState.progress = startProgress + (1 - startProgress) * shapeCenterDwellProgress(
       rawProgress,
       THEME_CONTOUR_CENTER_DWELL,
     );

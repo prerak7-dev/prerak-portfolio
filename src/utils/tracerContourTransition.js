@@ -1,7 +1,7 @@
 import { claimTextMask, releaseTextMask } from './textMaskOwnership.js';
 
 const transitions = new WeakMap();
-const TRACERS = 'canvas.cinematic-atmosphere-field, canvas.boundary-filament-field, canvas.lore-avatar-contour-field, canvas.scene-prop-tracer-field';
+const TRACERS = 'canvas.cinematic-atmosphere-field, canvas.boundary-filament-field, canvas.lore-avatar-contour-field, canvas.scene-prop-tracer-field, canvas.ink-fireworks-field';
 const HIDDEN_MASK = 'linear-gradient(transparent, transparent)';
 
 // Keep the outgoing pixels before React commits a new palette or scene. The
@@ -12,6 +12,7 @@ export function beginTracerContourTransition(root, owner, phase) {
     transition = { owner, phase, maskOwner: Symbol('tracer-contours'), layers: [] };
     for (const canvas of root.querySelectorAll(TRACERS)) {
       if (canvas.dataset.tracerOutgoing || !canvas.width || !canvas.height) continue;
+      if (canvas.classList?.contains('ink-fireworks-field') && canvas.style.visibility === 'hidden') continue;
       const rect = canvas.getBoundingClientRect();
       if (rect.width < 1 || rect.height < 1) continue;
       const ghost = canvas.cloneNode(false);

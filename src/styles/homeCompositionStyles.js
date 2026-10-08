@@ -1,6 +1,16 @@
 import { HOME_COMPACT_QUERY, NAV_COMPACT_QUERY, NAV_LANDSCAPE_QUERY } from '../utils/homeCompositionLayout.js';
+import { gateSealStyles } from './gateSealStyles.js';
 
 export const homeCompositionStyles = `
+  .gateway-living-layer > .gate-seal-painted-face {
+    position: absolute; height: auto; aspect-ratio: 1; object-fit: contain;
+    translate: -50% -50%; transform: none; transform-origin: center;
+    pointer-events: none; filter: none; opacity: 1; z-index: 2;
+  }
+  .ink-fireworks-field {
+    position: absolute; inset: 0; z-index: 6; width: 100%; height: 100%;
+    pointer-events: none; contain: strict; visibility: hidden;
+  }
   .archive-viewport .archive-header { z-index: 40; pointer-events: none; }
   .archive-header :is(button, a) { pointer-events: auto; }
   .archive-viewport .chapter-rail .chapter-rail-list { scroll-snap-type: none !important; scroll-behavior: auto !important; }
@@ -343,4 +353,5 @@ export const homeCompositionStyles = `
     .archive-viewport .contour-projects > footer a { width: 30px; padding: 5px; }
     .archive-viewport .contour-projects > footer a span { display: none; }
   }
+  ${gateSealStyles}
 `;

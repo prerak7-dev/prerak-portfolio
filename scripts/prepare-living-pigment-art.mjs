@@ -1,0 +1,16 @@
+import { copyFile, mkdir, readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+const require = createRequire(process.env.PLAYWRIGHT_PACKAGE || 'C:/Users/prera/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json');
+const sharp = require('sharp');
+const provenance = JSON.parse(await readFile('scripts/cinematic-source/living-pigment-art-v1.json', 'utf8'));
+await mkdir(path.dirname(provenance.master), { recursive: true });
+await mkdir(path.dirname(provenance.runtime), { recursive: true });
+await copyFile(process.argv[2] || provenance.generatedSource, provenance.master);
+await sharp(provenance.master).resize(1024, 1024).webp({ quality: 94, alphaQuality: 100 }).toFile(provenance.runtime);
+const image = await sharp(provenance.runtime).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+if (image.info.channels !== 4) throw new Error('Pigment sprites must retain alpha.');
+let transparent = 0;
+for (let i = 3; i < image.data.length; i += 4) if (image.data[i] === 0) transparent++;
+if (transparent < image.info.width * image.info.height * .3) throw new Error('Sprite atlas has an opaque background.');
+console.log(`Prepared alpha-preserving pigment atlas: ${provenance.runtime}`);
