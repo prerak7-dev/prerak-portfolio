@@ -9,6 +9,7 @@ import { GateSealPainting } from './GateSealPainting.jsx';
 import {
   CINEMATIC_ASSET_GEOMETRY,
   getCinematicAssets,
+  getCinematicGeometryAsset,
   GATEWAY_COMPACT_MEDIA_QUERY,
   GATEWAY_FRAME_COUNT,
 } from '../data/cinematicAssets.js';
@@ -30,6 +31,8 @@ import {
   toggleCachedClass,
 } from '../utils/motionPerformance.js';
 import { preloadImageUrl } from '../utils/preloadAssets.js';
+import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
+import { isPaintingReady } from '../utils/paintingReadiness.js';
 import { gatewayBackingProgress, gatewayPlateOpacity, GATEWAY_DISSOLVE_END } from '../utils/cinematicTiming.js';
 import { subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
 import { getThemeVignetteOpacity } from '../utils/themeExposure.js';
@@ -312,7 +315,7 @@ export function CinematicEnvironment({
 
   useLayoutEffect(() => {
     const gatewayFrameReady = imageRefs.current.map((image) => Boolean(
-      image?.complete && image.naturalWidth && image.getAttribute('src') === image.dataset.src,
+      isPaintingReady(image),
     ));
     imageRefs.current.forEach((image, frameIndex) => {
       if (!image) return;
@@ -345,6 +348,8 @@ export function CinematicEnvironment({
     let readinessConfirmFrame = 0;
     let pendingReadyChapter = -1;
     const paintingOwner = {};
+    const contourReady = new Array(6).fill(false);
+    const requestedContours = new Set();
 
     const cancelReadiness = () => {
       window.cancelAnimationFrame(readinessFrame);
@@ -363,17 +368,27 @@ export function CinematicEnvironment({
     setGatewayCanvasVisible(false);
 
     const isImageReady = (imageRef) => {
-      const image = imageRef?.current;
-      return Boolean(
-        image?.complete
-        && image.naturalWidth
-        && image.getAttribute('src') === image.dataset.src,
-      );
+      return isPaintingReady(imageRef?.current);
     };
     const refreshPaintingAvailability = () => {
       const available = [isImageReady({ current: imageRefs.current[0] }), ...sectionImageRefs.slice(1).map(isImageReady)];
-      publishCinematicPaintings(paintingOwner, available);
+      publishCinematicPaintings(paintingOwner, available.map((ready, index) => ready && contourReady[index]));
       rootRef.current.dataset.paintingsReady = available.map((ready, index) => ready ? index : null).filter(index => index !== null).join(',');
+      rootRef.current.dataset.contoursReady = contourReady.map((ready, index) => ready ? index : null).filter(index => index !== null).join(',');
+    };
+    const ensureSceneContour = sceneIndex => {
+      if (contourReady[sceneIndex] || requestedContours.has(sceneIndex)) return;
+      requestedContours.add(sceneIndex);
+      loadCinematicGeometryField(getCinematicGeometryAsset(theme, sceneIndex, 0))
+        .then(field => {
+          if (cancelled) return;
+          contourReady[sceneIndex] = Boolean(field?.image);
+          refreshPaintingAvailability();
+          scheduleGatewayFrame();
+        })
+        .catch(() => {
+          if (!cancelled) window.setTimeout(() => requestedContours.delete(sceneIndex), 1500);
+        });
     };
     const paintingLoaded = () => {
       gatewayFrameReady[0] = isImageReady({ current: imageRefs.current[0] });
@@ -592,6 +607,11 @@ export function CinematicEnvironment({
       if (!root) return;
 
       const atmosphereTransition = getCinematicAtmosphereTransition(scenePosition);
+      for (const sceneIndex of new Set([
+        atmosphereTransition.fromIndex, atmosphereTransition.toIndex,
+        Math.max(0, atmosphereTransition.fromIndex - 1),
+        Math.min(5, atmosphereTransition.toIndex + 1),
+      ])) ensureSceneContour(sceneIndex);
       ensureSceneImage(atmosphereTransition.fromIndex);
       ensureSceneImage(atmosphereTransition.toIndex);
       if (scenePosition - Math.floor(scenePosition) > 0.68) {

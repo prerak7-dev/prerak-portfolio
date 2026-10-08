@@ -31,3 +31,9 @@ test('already-loaded scrolling and explicit contour handoffs keep their original
   assert.equal(gate.update(.19, loaded, 16), .19);
   assert.equal(gate.update(6, Array(6).fill(false), 16, true), 6);
 });
+
+test('scroll cannot leave a painting whose outgoing contour is still loading', () => {
+  const available = [true, false, true, true, true, true];
+  assert.equal(limitPaintedScenePosition(2, 1, available), 1);
+  assert.equal(limitPaintedScenePosition(0, 1, available), 1);
+});

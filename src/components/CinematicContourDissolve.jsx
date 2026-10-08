@@ -24,6 +24,7 @@ import { gateSealFaceBounds, gateSealDissolveProgress } from '../utils/gateSealM
 import { GATE_SEAL_SHAPE_GLSL, GATE_SEAL_ART_EXTENT } from '../utils/gateSealArtwork.js';
 import { getGateSealPose, subscribeGateSealTurn } from '../state/gateSealTurnStore.js';
 import { retryAssetLoad } from '../utils/assetLoadRetry.js';
+import { isPaintingReady } from '../utils/paintingReadiness.js';
 
 const MAX_PIXEL_RATIO = 2;
 const MAX_RENDER_PIXELS = 2560 * 1440;
@@ -424,12 +425,19 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       return cached.texture;
     };
     const trimTextures = () => {
-      while (sceneTextures.size > MAX_SCENE_TEXTURES) {
-        const key = sceneTextures.keys().next().value;
+      const activeTextures = new Set([
+        material.uniforms.uScene.value,
+        material.uniforms.uIncomingScene.value,
+        material.uniforms.uGeometry.value,
+      ]);
+      for (const key of sceneTextures.keys()) {
+        if (sceneTextures.size <= MAX_SCENE_TEXTURES) break;
+        if (activeTextures.has(sceneTextures.get(key).texture)) continue;
         sceneTextures.get(key).texture.dispose(); sceneTextures.delete(key);
       }
-      while (geometryTextures.size > MAX_GEOMETRY_TEXTURES) {
-        const key = geometryTextures.keys().next().value;
+      for (const key of geometryTextures.keys()) {
+        if (geometryTextures.size <= MAX_GEOMETRY_TEXTURES) break;
+        if (activeTextures.has(geometryTextures.get(key))) continue;
         geometryTextures.get(key).dispose(); geometryTextures.delete(key);
       }
       canvas.dataset.sceneTextures = String(sceneTextures.size);
@@ -610,8 +618,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         || !outgoingImage.naturalWidth
         || !incomingImage?.complete
         || !incomingImage.naturalWidth
-        || (outgoingImage.dataset?.src && outgoingImage.getAttribute('src') !== outgoingImage.dataset.src)
-        || (incomingImage.dataset?.src && incomingImage.getAttribute('src') !== incomingImage.dataset.src)
+        || (!themeTransitionActive && outgoingImage.dataset?.src && !isPaintingReady(outgoingImage))
+        || (!themeTransitionActive && incomingImage.dataset?.src && !isPaintingReady(incomingImage))
       ) {
         clear('painting-loading');
         return;
@@ -691,13 +699,9 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       if (incomingIsHome || incomingImage.src.includes('/painted-v1/')) {
         material.uniforms.uIncomingGrade.value.set(1, 0, 1, 1);
       }
-      const liveIncoming = themeTransitionActive
-        ? getProjectionNode(themeTransition.targetSceneIndex) : null;
-      const liveThemeReady = themeTransitionActive && themeRef.current === incomingTheme
-        && liveIncoming?.complete && liveIncoming.naturalWidth > 0
-        && liveIncoming.src === incomingImage.src;
-      material.uniforms.uRevealLiveScene.value = !carriesSealPreview && liveThemeReady
-        || (incomingIsHome && outgoingTheme === 'boot') ? 1 : 0;
+      // Explicit handoffs compose both decoded snapshots for the entire passage.
+      // The store releases this cover only after the native painting is ready.
+      material.uniforms.uRevealLiveScene.value = incomingIsHome && outgoingTheme === 'boot' ? 1 : 0;
       material.uniforms.uScene.value = outgoingTexture;
       material.uniforms.uIncomingScene.value = incomingTexture;
       material.uniforms.uGeometry.value = geometryTextures.get(geometryImage);

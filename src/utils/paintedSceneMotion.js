@@ -2,6 +2,8 @@ const CHAPTER_PAINTINGS = [0, 1, 2, 3, 3, 4, 5];
 
 export function limitPaintedScenePosition(requested, previous, available) {
   if (!available) return requested;
+  // A handoff needs the outgoing contour as well as its incoming painting.
+  if (!available[CHAPTER_PAINTINGS[Math.round(previous)]]) return previous;
   if (requested > previous) {
     for (let chapter = Math.floor(previous) + 1; chapter <= Math.ceil(requested); chapter++) {
       if (!available[CHAPTER_PAINTINGS[chapter]]) return Math.max(previous, chapter - 1);

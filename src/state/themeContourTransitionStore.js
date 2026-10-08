@@ -8,7 +8,7 @@ import {
 // the very end. Commit earlier so homepage CSS surface backgrounds are swapped
 // before the contour dissolve finishes and avoid a late snap on the intro chapter.
 const THEME_APPLY_PROGRESS = 0.22;
-const THEME_COMMIT_FRAMES = 1;
+const MAX_TRANSITION_FRAME_MS = 40;
 
 const transitionState = {
   active: false,
@@ -77,6 +77,7 @@ export function startThemeContourTransition({
   geometryImage,
   applyTheme,
   onComplete,
+  isReadyToReveal,
   duration = THEME_CONTOUR_TRANSITION_DURATION_MS,
   initialProgress = 0,
 }) {
@@ -109,38 +110,27 @@ export function startThemeContourTransition({
   publish();
 
   let startTime = 0;
+  let previousTime = 0;
+  let elapsedTime = 0;
   let themeApplied = false;
-  let themeCommitSettled = false;
-  let completionTimer = 0;
 
   const settleThemeCommit = () => {
     if (themeApplied || transitionState.token !== token) return;
     themeApplied = true;
 
-    const commitPromise = applyTheme ? applyTheme() : Promise.resolve();
-    const fallbackPromise = new Promise((resolve) => {
-      window.setTimeout(resolve, 120);
-    });
-
-    Promise.race([commitPromise, fallbackPromise]).catch(() => {
-      // Keep the visual passage usable even when an optional handoff callback
-      // declines to resolve.
-    }).finally(() => {
-      if (transitionState.token !== token) return;
-      themeCommitSettled = true;
-      if (completionTimer) window.clearTimeout(completionTimer);
-      completionTimer = window.setTimeout(() => {
-        if (transitionState.token !== token) return;
-        finishTransition(token);
-      }, remainingDuration + 80);
+    Promise.resolve(applyTheme?.()).catch(() => {
+      // The decoded canvas remains the visual fallback while the DOM settles.
     });
   };
 
   const animate = (timestamp) => {
     if (transitionState.token !== token) return;
     if (!startTime) startTime = timestamp;
+    if (previousTime) elapsedTime += Math.min(MAX_TRANSITION_FRAME_MS, Math.max(0, timestamp - previousTime));
+    previousTime = timestamp;
     transitionState.startedAt = startTime;
-    const rawProgress = Math.min(1, Math.max(0, (timestamp - startTime) / remainingDuration));
+    const rawProgress = Math.min(1, elapsedTime / remainingDuration);
+    const previousProgress = transitionState.linearProgress;
     transitionState.linearProgress = rawProgress;
     if (!themeApplied && rawProgress >= applyProgress) {
       settleThemeCommit();
@@ -149,12 +139,10 @@ export function startThemeContourTransition({
       rawProgress,
       THEME_CONTOUR_CENTER_DWELL,
     );
-    publish();
-    // Only finish when the transition has naturally reached the end. The
-    // commit settling schedules a completion timer; finishing immediately
-    // when the theme commit settles causes the visual dissolve to snap.
-    if (rawProgress >= 1) {
-      if (completionTimer) window.clearTimeout(completionTimer);
+    if (previousProgress < 1) publish();
+    // Keep the final snapshot covering a delayed DOM painting. Never release
+    // the contour canvas merely because its animation clock has expired.
+    if (rawProgress >= 1 && (!isReadyToReveal || isReadyToReveal())) {
       finishTransition(token);
       return;
     }

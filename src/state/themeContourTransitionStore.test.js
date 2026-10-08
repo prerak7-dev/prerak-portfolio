@@ -40,9 +40,10 @@ function installFakeWindow() {
   return {
     windowMock,
     advance(ms) {
-      now += ms;
+      const target = now + ms;
       let steps = 0;
-      while (steps < 200) {
+      while (now < target && steps < 1000) {
+        now = Math.min(target, now + 16);
         const dueTimeouts = scheduledTimeouts
           .filter((entry) => entry.dueAt <= now)
           .sort((a, b) => a.dueAt - b.dueAt);
@@ -53,12 +54,16 @@ function installFakeWindow() {
 
         const frames = [...scheduledFrames];
         scheduledFrames.length = 0;
-        if (!frames.length) break;
         for (const entry of frames) {
           entry.callback(now);
         }
         steps += 1;
       }
+    },
+    stall(ms) {
+      now += ms;
+      const frames = scheduledFrames.splice(0);
+      for (const entry of frames) entry.callback(now);
     },
   };
 }
@@ -153,4 +158,43 @@ test('direct chapter navigation commits one destination under the dissolve and f
   assert.equal(completed, true);
   assert.deepEqual(visits, [6]);
   assert.equal(getThemeContourTransition().progress, 1);
+});
+
+test('the final decoded painting stays covered until the live background commits', () => {
+  const { advance } = installFakeWindow();
+  let ready = false;
+  let completed = false;
+  const painting = {};
+  startThemeContourTransition({
+    fromTheme: 'default', toTheme: 'winter', sceneIndex: 2,
+    fromImage: {}, toImage: painting, geometryImage: {},
+    applyProgress: 0, duration: 300,
+    isReadyToReveal: () => ready,
+    onComplete: () => { completed = true; },
+  });
+  advance(16);
+  advance(1000);
+  assert.equal(getThemeContourTransition().progress, 1);
+  assert.equal(getThemeContourTransition().active, true);
+  assert.equal(getThemeContourTransition().toImage, painting);
+  assert.equal(completed, false);
+  ready = true;
+  advance(16);
+  assert.equal(getThemeContourTransition().active, false);
+  assert.equal(completed, true);
+});
+
+test('a slow texture upload cannot skip straight to the end of a contour passage', () => {
+  const { advance, stall } = installFakeWindow();
+  startThemeContourTransition({
+    fromTheme: 'default', toTheme: 'fall', sceneIndex: 1,
+    fromImage: {}, toImage: {}, geometryImage: {},
+    applyProgress: 0, duration: 1000,
+  });
+  advance(16);
+  stall(2500);
+  assert.equal(getThemeContourTransition().active, true);
+  assert.equal(getThemeContourTransition().linearProgress, .04);
+  advance(960);
+  assert.equal(getThemeContourTransition().active, false);
 });

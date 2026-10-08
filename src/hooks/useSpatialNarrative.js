@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { publishSpatialMotion } from '../state/spatialMotionStore.js';
-import { getThemeContourTransition } from '../state/themeContourTransitionStore.js';
+import { getThemeContourTransition, subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
 import { getCinematicPaintings } from '../state/cinematicPaintingStore.js';
 import { createPaintedMotionGate } from '../utils/paintedSceneMotion.js';
 import {
@@ -68,6 +68,10 @@ export function useSpatialNarrative(chapterCount) {
     const scroller = createCinematicScroller();
     const paintingGate = createPaintedMotionGate(previousFrameRef.current.scenePosition);
     scrollerRef.current = scroller;
+    const unsubscribeContour = subscribeThemeContourTransition(({ active }) => {
+      if (active) scroller.stop();
+      else scroller.start();
+    });
 
     const updateMetrics = () => {
       const previousMax = maxScrollRef.current;
@@ -161,6 +165,7 @@ export function useSpatialNarrative(chapterCount) {
       window.cancelAnimationFrame(frameRef.current);
       frameRef.current = 0;
       resizeObserver?.disconnect();
+      unsubscribeContour();
       window.removeEventListener('resize', updateMetrics);
       window.visualViewport?.removeEventListener('resize', updateMetrics);
       scroller.destroy();

@@ -21,6 +21,7 @@ import { useSpatialNarrative } from './hooks/useSpatialNarrative.js';
 import { createAssetPath } from './security/contentSecurity.js';
 import { getGatewayTransition } from './state/gatewayTransitionStore.js';
 import { startThemeContourTransition } from './state/themeContourTransitionStore.js';
+import { getCinematicReadiness } from './state/cinematicReadinessStore.js';
 import { getGateSealPose, returnGateSealToRest } from './state/gateSealTurnStore.js';
 import { gateSealDissolveProgress } from './utils/gateSealMotion.js';
 import { spatialStyles } from './styles/spatialStyles.js';
@@ -28,6 +29,7 @@ import { BOOT_CONTOUR_TRANSITION_DURATION_MS } from './utils/cinematicTiming.js'
 import { warmChapterTextField } from './utils/textContourRenderer.js';
 import { loadCinematicGeometryField } from './utils/cinematicGeometryField.js';
 import { preloadAssetManifest, preloadImageUrls, preloadImageUrl } from './utils/preloadAssets.js';
+import { isPaintingReady } from './utils/paintingReadiness.js';
 
 const themeIds = new Set(spatialThemes.flatMap((theme) => [theme.id, `${theme.id}-light`]));
 const CHAPTER_SCROLL_DISTANCE_VH = 400;
@@ -37,6 +39,17 @@ const CHAPTER_SCENE_INDICES = Object.freeze([0, 1, 2, 3, 3, 4, 5]);
 
 function resolveAsset(filename) {
   return createAssetPath(import.meta.env.BASE_URL, filename);
+}
+
+function isLivePaintingReady(source, theme, chapterIndex) {
+  const environment = document.querySelector('.cinematic-environment');
+  const destination = new URL(source, document.baseURI).href;
+  const image = [...(environment?.querySelectorAll('img[data-src]') || [])]
+    .find(image => new URL(image.dataset.src, document.baseURI).href === destination);
+  const readiness = getCinematicReadiness();
+  return environment?.classList.contains(`theme-${theme}`)
+    && isPaintingReady(image, source)
+    && (chapterIndex === undefined || (readiness.settled && readiness.readyIndex === chapterIndex));
 }
 
 function isCompactViewport() {
@@ -421,6 +434,9 @@ export default function App() {
           fromImage,
           toImage,
           geometryImage,
+          isReadyToReveal: () => isLivePaintingReady(resolveAsset(getCinematicSceneAsset(
+            nextTheme, sceneIndex, gatewayFrameIndex, { compact: isCompactViewport() },
+          )), nextTheme),
           applyTheme: () => new Promise((resolve) => {
             setTheme(nextTheme);
             window.requestAnimationFrame(() => {
@@ -499,6 +515,9 @@ export default function App() {
         fromImage,
         toImage,
         geometryImage,
+        isReadyToReveal: () => isLivePaintingReady(resolveAsset(getCinematicSceneAsset(
+          theme, targetSceneIndex, 0, { compact: isCompactViewport() },
+        )), theme, index),
         applyProgress: 0,
         initialProgress,
         applyTheme: () => goToChapter(index, 'auto'),
