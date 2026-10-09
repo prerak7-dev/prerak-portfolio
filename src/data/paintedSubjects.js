@@ -1,4 +1,4 @@
-export const MAX_PAINTED_SUBJECTS = 6;
+export const MAX_PAINTED_SUBJECTS = 7;
 export const PAINTED_SUBJECT_MODES = Object.freeze({ orbit: 0, spin: 1, cloth: 2, water: 3, canopy: 4, waterfall: 5, solar: 6 });
 
 function subject(name, kind, region, period, amount, scroll = .06, horizon = 1.1) {
@@ -14,7 +14,8 @@ const LANDSCAPE = [
     subject('cliff waterfall', 'waterfall', [.079, .68, .014, .128], 4.8, .52),
     subject('falling water', 'waterfall', [.757, .601, .010, .047], 3.8, .55),
     subject('distant waterfall', 'waterfall', [.812, .625, .009, .035], 4.2, .5),
-    subject('gate reflections', 'water', [.5, .865, .36, .058], 14, .005)],
+    subject('gate reflections', 'water', [.5, .865, .36, .058], 14, .005),
+    subject('Home moon', 'orbit', [.9285, -.1517, .385, .684], 30, .16, .08, .46)],
   [subject('Services sun', 'solar', [.201, .711, .044, .078], 66, 1, .18, .747),
     subject('Unreal sun', 'solar', [.503, .697, .081, .144], 84, 1, .16, .747),
     subject('Telemetry sun', 'solar', [.803, .704, .068, .121], 74, 1, .18, .747),
@@ -36,7 +37,8 @@ const PORTRAIT = [
     subject('tree canopy', 'canopy', [.012, .26, .17, .175], 8, .025),
     subject('left waterfall', 'waterfall', [.237, .611, .018, .068], 3.8, .55),
     subject('right waterfall', 'waterfall', [.861, .637, .020, .064], 4.4, .52),
-    subject('gate reflections', 'water', [.51, .827, .36, .078], 14, .005)],
+    subject('gate reflections', 'water', [.51, .827, .36, .078], 14, .005),
+    subject('Home moon', 'orbit', [1.28, -.055, .832, .416], 30, .16, .08, .32)],
   [subject('Services sun', 'solar', [.198, .690, .077, .0385], 66, 1, .18, .703),
     subject('Unreal sun', 'solar', [.501, .667, .124, .062], 84, 1, .16, .703),
     subject('Telemetry sun', 'solar', [.800, .690, .080, .040], 74, 1, .18, .703),

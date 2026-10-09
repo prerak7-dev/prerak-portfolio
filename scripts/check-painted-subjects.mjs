@@ -29,30 +29,44 @@ async function open(theme, viewport) {
     const canvas = document.querySelector('.cinematic-environment > .cinematic-contour-dissolve');
     const gl = canvas.getContext('webgl2'), draw = gl.drawElements.bind(gl);
     const locations = new WeakMap();
-    window.capturePaintedActor = (time = null, count = null) => new Promise(resolve => {
-      window.pendingActorCapture = { resolve, time, count };
+    window.capturePaintedActor = (time = null, count = null, actorIndex = null, travel = null) => new Promise(resolve => {
+      window.pendingActorCapture = { resolve, time, count, actorIndex, travel };
     });
     gl.drawElements = (...args) => {
       const program = gl.getParameter(gl.CURRENT_PROGRAM);
       if (!locations.has(program)) locations.set(program, {
         idle: gl.getUniformLocation(program, 'uActorIdle'), time: gl.getUniformLocation(program, 'uActorTime'),
         strength: gl.getUniformLocation(program, 'uActorStrength'), count: gl.getUniformLocation(program, 'uOutgoingActorCount'),
-        projection: gl.getUniformLocation(program, 'uProjection'),
+        projection: gl.getUniformLocation(program, 'uProjection'), travel: gl.getUniformLocation(program, 'uActorTravel'),
       });
       const uniforms = locations.get(program), pending = window.pendingActorCapture;
       if (!pending || gl.getUniform(program, uniforms.idle) < .5) { draw(...args); return; }
       const original = { time: gl.getUniform(program, uniforms.time), strength: gl.getUniform(program, uniforms.strength),
-        count: gl.getUniform(program, uniforms.count), projection: gl.getUniform(program, uniforms.projection) };
+        count: gl.getUniform(program, uniforms.count), projection: gl.getUniform(program, uniforms.projection),
+        travel: gl.getUniform(program, uniforms.travel) };
+      const restoredActors = [];
+      if (pending.actorIndex !== null) {
+        for (const [name, size] of [['Regions', 4], ['Motion', 4], ['Edges', 2]]) {
+          const location = gl.getUniformLocation(program, `uOutgoingActor${name}[0]`);
+          const selected = gl.getUniformLocation(program, `uOutgoingActor${name}[${pending.actorIndex}]`);
+          restoredActors.push({ location, size, value: gl.getUniform(program, location) });
+          gl[`uniform${size}fv`](location, gl.getUniform(program, selected));
+        }
+        gl.uniform1i(uniforms.count, 1);
+      }
       if (pending.time !== null) {
         gl.uniform1f(uniforms.time, pending.time); gl.uniform1f(uniforms.strength, 1);
         window.actorAuditProjection ??= original.projection;
         gl.uniform4fv(uniforms.projection, window.actorAuditProjection);
       }
       if (pending.count !== null) gl.uniform1i(uniforms.count, pending.count);
+      if (pending.travel !== null) gl.uniform2f(uniforms.travel, pending.travel, pending.travel);
       draw(...args);
       gl.uniform1f(uniforms.time, original.time); gl.uniform1f(uniforms.strength, original.strength);
       gl.uniform1i(uniforms.count, original.count);
       gl.uniform4fv(uniforms.projection, original.projection);
+      gl.uniform2fv(uniforms.travel, original.travel);
+      for (const { location, size, value } of restoredActors) gl[`uniform${size}fv`](location, value);
       window.pendingActorCapture = null;
       pending.resolve({ png: canvas.toDataURL(), width: canvas.width, height: canvas.height,
         time: pending.time ?? original.time, stats: { ...canvas.dataset } });
@@ -116,9 +130,11 @@ async function measure(page, sceneIndex, label) {
     assert(visible < 60 || changed >= 6, `${label}: ${subject.name} must move its actual artwork (${changed}/${visible})`);
     console.log(`${label}: ${subject.name}, ${changed} changed painted pixels / ${visible} visible pixels`);
   }
-  if (/^(desktop|portrait)-/.test(label) && regions.subjects[0].kind === 'orbit') {
-    const pixelsAt = async time => {
-      const frame = await page.evaluate(time => window.capturePaintedActor(time, 1), time);
+  const orbitIndex = regions.subjects.findIndex(subject => subject.kind === 'orbit');
+  if ((/^(desktop|portrait)-/.test(label) || sceneIndex === 0) && orbitIndex >= 0) {
+    const pixelsAt = async (time, travel = 0) => {
+      const frame = await page.evaluate(({ time, index, travel }) => window.capturePaintedActor(time, null, index, travel),
+        { time, index: orbitIndex, travel });
       return sharp(Buffer.from(frame.png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer();
     };
     const difference = (a, b) => {
@@ -130,7 +146,7 @@ async function measure(page, sceneIndex, label) {
       assert(visible > 100, `${label}: the actual celestial body must be visible`);
       return change / (visible * 3);
     };
-    const period = regions.subjects[0].period, movement = [];
+    const period = regions.subjects[orbitIndex].period, movement = [];
     for (const phase of [0, .125, .25, .375, .5, .625, .75, .875]) {
       const time = period * (2 + phase);
       movement.push(difference(await pixelsAt(time), await pixelsAt(time + .25)));
@@ -142,6 +158,16 @@ async function measure(page, sceneIndex, label) {
     for (const phase of [2, 2.5]) {
       assert(difference(await pixelsAt(period * phase - .001), await pixelsAt(period * phase + .001))
         < Math.max(...movement) * .06, `${label}: a hidden flow reset cannot flash or snap`);
+    }
+    if (sceneIndex === 0) {
+      assert(difference(await pixelsAt(period, -.4), await pixelsAt(period, .4)) > .5,
+        `${label}: the Home moon must respond to scroll direction`);
+      const moon = await pixelsAt(period * 2.25);
+      const horizon = regions.subjects[orbitIndex].horizon + (regions.portrait ? .005 : .009);
+      for (let y = Math.max(0, Math.ceil((p.top + horizon * p.height) * sy)); y < after.height; y++) {
+        for (let x = 0; x < after.width; x++) assert(moon[(y * after.width + x) * 4 + 3] < 3,
+          `${label}: moon animation must leave the gate and foreground untouched`);
+      }
     }
     console.log(`${label}: full-cycle motion ${Math.min(...movement).toFixed(2)}-${Math.max(...movement).toFixed(2)}, both loop seams continuous`);
   }
@@ -211,7 +237,27 @@ async function measure(page, sceneIndex, label) {
   return after.time;
 }
 
-try {
+async function checkHomeMoon() {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    for (const theme of ['default-light', 'default', 'fall-light', 'fall', 'spring-light', 'spring', 'winter-light', 'winter']) {
+      const page = await open(theme, viewport);
+      await measure(page, 0, `home-moon-${viewport.width}-${theme}`);
+      await page.close();
+    }
+  }
+  const page = await open('default-light', { width: 844, height: 390 });
+  await measure(page, 0, 'home-moon-landscape');
+  await chapter(page, 'Cores', 'cores');
+  await chapter(page, 'Home', 'intro');
+  assert.match(await page.locator(selector).getAttribute('data-actor-subjects'), /Home moon/);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => document.querySelector('.cinematic-environment > .cinematic-contour-dissolve').dataset.actorState === 'reduced-motion');
+  assert.equal(await page.locator(selector).evaluate(canvas => canvas.style.visibility), 'hidden');
+  assert.deepEqual(errors, []);
+  console.log('PASS: Home moon loops, follows scroll, preserves the foreground and respects reduced motion in every seasonal appearance.');
+}
+
+async function checkAllSubjects() {
   const refinementOnly = process.argv.includes('--refinement-only');
   const page = await open('default-light', { width: 1440, height: 900 });
   await measure(page, 0, 'desktop-home');
@@ -259,6 +305,11 @@ try {
   assert.equal(await mobile.locator(selector).evaluate(canvas => canvas.style.visibility), 'hidden');
   assert.deepEqual(errors, []);
   console.log(`PASS: actual painted subjects move on every chapter${refinementOnly ? '' : ', all eight appearances'} and both mobile layouts; reduced motion stops them.`);
+}
+
+try {
+  if (process.argv.includes('--home-moon-only')) await checkHomeMoon();
+  else await checkAllSubjects();
 } catch (error) {
   console.error(error); process.exitCode = 1;
   for (const [index, context] of browser.contexts().entries()) for (const page of context.pages()) {
