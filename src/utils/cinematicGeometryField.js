@@ -62,7 +62,7 @@ function sampleField(field, x, y) {
   };
 }
 
-function traceDirection(field, seed, direction, maxSteps = STREAMLINE_STEPS) {
+function traceDirection(field, seed, direction, maxSteps = STREAMLINE_STEPS, minEnergy = .055, minMask = .08) {
   const points = [];
   let x = seed.x;
   let y = seed.y;
@@ -72,7 +72,7 @@ function traceDirection(field, seed, direction, maxSteps = STREAMLINE_STEPS) {
 
   for (let index = 0; index < maxSteps; index += 1) {
     const sample = sampleField(field, x, y);
-    if (index > 5 && (sample.energy < 0.055 || sample.mask < 0.08)) break;
+    if (index > 5 && (sample.energy < minEnergy || sample.mask < minMask)) break;
     let tangentX = sample.tangentX * direction;
     let tangentY = sample.tangentY * direction;
     if (hasPrevious && tangentX * previousX + tangentY * previousY < 0) {
@@ -109,6 +109,7 @@ function readFocusDistance(focus, x, y) {
   return {
     radialError: Math.abs(radialDistance - 1),
     angleInside,
+    withinBounds: y <= (focus.maxY ?? 1),
   };
 }
 
@@ -119,7 +120,7 @@ function clipPathToFocus(points, focus) {
   let current = [];
   points.forEach((point) => {
     const sample = readFocusDistance(focus, point.x, point.y);
-    if (sample.angleInside && sample.radialError <= band) {
+    if (sample.angleInside && sample.withinBounds && sample.radialError <= band) {
       current.push(point);
       if (current.length > longest.length) longest = current.slice();
     } else {
@@ -137,12 +138,12 @@ function buildStreamlines(field, seed, options = {}) {
   for (let y = 2; y < field.height - 2; y += candidateStride) {
     for (let x = 2; x < field.width - 2; x += candidateStride) {
       const sample = sampleField(field, x, y);
-      if (sample.energy < 0.14 || sample.mask < 0.17) continue;
+      if (sample.energy < (focus?.minEnergy ?? .14) || sample.mask < (focus?.minMask ?? .17)) continue;
       let focusScore = 0;
       if (focus) {
         const focusSample = readFocusDistance(focus, x / field.width, y / field.height);
         const band = focus.band ?? 0.12;
-        if (!focusSample.angleInside || focusSample.radialError > band) continue;
+        if (!focusSample.angleInside || !focusSample.withinBounds || focusSample.radialError > band) continue;
         focusScore = 1 - focusSample.radialError / band;
       }
       candidates.push({
@@ -175,8 +176,9 @@ function buildStreamlines(field, seed, options = {}) {
       continue;
     }
     const maxSteps = focus ? 210 : STREAMLINE_STEPS;
-    const backward = traceDirection(field, candidate, -1, maxSteps).reverse();
-    const forward = traceDirection(field, candidate, 1, maxSteps);
+    const minEnergy = Math.min(.055, focus?.minEnergy ?? .055), minMask = Math.min(.08, focus?.minMask ?? .08);
+    const backward = traceDirection(field, candidate, -1, maxSteps, minEnergy, minMask).reverse();
+    const forward = traceDirection(field, candidate, 1, maxSteps, minEnergy, minMask);
     const tracedPoints = [...backward.slice(0, -1), ...forward];
     const points = clipPathToFocus(tracedPoints, focus);
     if (points.length < (focus ? 12 : 18)) continue;

@@ -481,6 +481,7 @@ export function drawGeometryContourPassage({
   localOffset = null,
   clipWidth,
   clipHeight,
+  maxVisibleCount = Number.POSITIVE_INFINITY,
 }) {
   if (!geometry || progress <= 0.001 || progress >= 0.999) return;
   const transitionPulse = Math.pow(Math.sin(progress * Math.PI), 0.72);
@@ -489,6 +490,7 @@ export function drawGeometryContourPassage({
   const streamlines = geometry.streamlines;
   const visibleCount = Math.min(
     streamlines.length,
+    maxVisibleCount,
     Math.max(18, Math.round(34 * quality)),
   );
   const stride = Math.max(1, Math.floor(streamlines.length / visibleCount));

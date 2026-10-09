@@ -1,150 +1,17 @@
 import { memo, useEffect, useRef } from 'react';
 import { getSceneCoverProjection, usesPortraitArtwork } from '../data/cinematicViewport.js';
-import {
-  GATEWAY_FRAME_COUNT,
-  getCinematicGeometryAsset,
-} from '../data/cinematicAssets.js';
-import { getCinematicSceneReveals } from '../data/cinematicSceneTimeline.js';
+import { getCinematicGeometryAsset } from '../data/cinematicAssets.js';
 import { getSwarmScenePalette } from '../data/swarmScenePalettes.js';
 import { getTracerSceneBlend } from '../data/tracerSceneFields.js';
+import { getCelestialTracerBudget, getCelestialTracerFocus } from '../data/celestialTracerFocus.js';
+import { PIGMENT_SCENE_SELECTORS } from '../data/livingPigmentArt.js';
 import { getSpatialMotion, subscribeSpatialMotion } from '../state/spatialMotionStore.js';
 import { createTracerAnimation } from '../utils/tracerAnimation.js';
-import {
-  getFocusedCinematicStreamlines,
-  loadCinematicGeometryField,
-} from '../utils/cinematicGeometryField.js';
-import {
-  drawGeometryContourPassage,
-  drawGeometryStreamlines,
-  readSceneImageProjection,
-} from '../utils/cinematicGeometryRenderer.js';
+import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
+import { getCelestialTracerGeometry } from '../utils/celestialTracers.js';
+import { drawGeometryContourPassage, drawGeometryStreamlines, readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 
 const MAX_PIXEL_RATIO = 1.15;
-const GATEWAY_GEOMETRY_STRIDE = 3;
-const SCENE_PROJECTION_SELECTORS = Object.freeze([
-  '.gateway-sequence-preloads img[data-frame-index="0"]',
-  '.cores-plate .environment-living-layer img',
-  '.systems-plate .environment-living-layer img',
-  '.chronology-plate .environment-living-layer img',
-  '.field-plate .environment-living-layer img',
-  '.surface-plate .environment-living-layer img',
-]);
-
-const INTRO_PLANET = Object.freeze({
-  centerX: 0.9285,
-  centerY: -0.1517,
-  radius: 0.3471,
-  startAngle: 1.72,
-  endAngle: 2.8,
-});
-const introGeometryCache = new WeakMap();
-
-function isIntroPathwayPoint(point) {
-  if (point.y < 0.67) return false;
-  const pathwayProgress = clampUnit((point.y - 0.67) / 0.33);
-  const pathwayHalfWidth = 0.022 + pathwayProgress * 0.128;
-  return Math.abs(point.x - 0.5) < pathwayHalfWidth;
-}
-
-function getIntroGeometryWithoutPathway(geometry) {
-  if (usesPortraitArtwork()) return geometry;
-  if (!geometry) return geometry;
-  if (introGeometryCache.has(geometry)) return introGeometryCache.get(geometry);
-
-  const streamlines = [];
-  geometry.streamlines.forEach((streamline) => {
-    let segment = [];
-    let segmentIndex = 0;
-    const commitSegment = () => {
-      if (segment.length >= 4) {
-        streamlines.push(Object.freeze({
-          ...streamline,
-          phase: (streamline.phase + segmentIndex * 0.137) % 1,
-          points: Object.freeze(segment),
-        }));
-        segmentIndex += 1;
-      }
-      segment = [];
-    };
-
-    streamline.points.forEach((point) => {
-      if (isIntroPathwayPoint(point)) {
-        commitSegment();
-      } else {
-        segment.push(point);
-      }
-    });
-    commitSegment();
-  });
-
-  const filteredGeometry = Object.freeze({
-    ...geometry,
-    streamlines: Object.freeze(streamlines),
-  });
-  introGeometryCache.set(geometry, filteredGeometry);
-  return filteredGeometry;
-}
-
-function clampUnit(value) {
-  return Math.min(1, Math.max(0, value));
-}
-
-function smootherStep(value) {
-  const progress = clampUnit(value);
-  return progress * progress * progress * (progress * (progress * 6 - 15) + 10);
-}
-
-function getIntroPlanetFocus(frameProgress) {
-  if (usesPortraitArtwork()) return Object.freeze({
-    centerX: 1.28, centerY: -0.055, radiusX: 0.72, radiusY: 0.36,
-    startAngle: 1.72, endAngle: 2.8, band: 0.07, count: 58,
-  });
-  // Gateway frames are baked with this camera transform. Reusing it here lets
-  // focused seeds land on the exact painted limb in every generated frame.
-  const dolly = smootherStep((frameProgress - 0.06) / 0.94);
-  const zoom = 1 + 1.05 * dolly;
-  return Object.freeze({
-    centerX: 0.5 + (INTRO_PLANET.centerX - 0.5) * zoom,
-    centerY: 0.57 + (INTRO_PLANET.centerY - 0.57) * zoom - 0.012 * dolly,
-    radiusX: INTRO_PLANET.radius * zoom,
-    radiusY: INTRO_PLANET.radius * (16 / 9) * zoom,
-    startAngle: INTRO_PLANET.startAngle,
-    endAngle: INTRO_PLANET.endAngle,
-    band: 0.105,
-    count: 58,
-  });
-}
-
-function drawGeometryScene({
-  context,
-  geometry,
-  palette,
-  projection,
-  weight,
-  time,
-  power,
-  quality,
-  clipWidth,
-  clipHeight,
-}) {
-  if (!geometry || weight < 0.002) return;
-  drawGeometryStreamlines({
-    context,
-    geometry,
-    palette,
-    projection,
-    weight,
-    time,
-    power,
-    quality,
-    clipWidth,
-    clipHeight,
-    densityScale: 1.08,
-    alphaScale: 1.62,
-    widthScale: 1.2,
-    trailScale: 1.38,
-  });
-}
 
 export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({ theme = 'default' }) {
   const canvasRef = useRef(null);
@@ -161,315 +28,105 @@ export const CinematicAtmosphereField = memo(function CinematicAtmosphereField({
     if (!canvas) return undefined;
     const context = canvas.getContext('2d', { alpha: true, desynchronized: true });
     if (!context) return undefined;
-
     const resources = new Map();
     const motion = { ...getSpatialMotion() };
-    const projectionNodes = new Array(SCENE_PROJECTION_SELECTORS.length).fill(null);
-    let disposed = false;
-    let animation;
-    let cinematicTime = 0;
-    let flowSpeed = 1;
-    let width = 1;
-    let height = 1;
-    let renderedPixelRatio = 0;
+    const projectionNodes = new Array(PIGMENT_SCENE_SELECTORS.length).fill(null);
+    let disposed = false, animation, cinematicTime = 0, flowSpeed = 1;
+    let width = 1, height = 1, renderedPixelRatio = 0;
     let fallbackProjection = { left: 0, top: 0, width: 1, height: 1, viewportWidth: 1 };
 
-    const requestResource = (filename) => {
+    const requestResource = filename => {
       const existing = resources.get(filename);
       if (existing !== undefined) return existing;
       resources.set(filename, null);
-      loadCinematicGeometryField(filename)
-        .then((resource) => {
-          if (!disposed) {
-            resources.set(filename, resource);
-            animation?.invalidate();
-          }
-        })
-        .catch(() => {
-          if (!disposed) resources.set(filename, false);
-        });
+      loadCinematicGeometryField(filename).then(resource => {
+        if (!disposed) { resources.set(filename, resource); animation?.invalidate(); }
+      }).catch(() => { if (!disposed) resources.set(filename, false); });
       return null;
     };
-
-    const unsubscribe = subscribeSpatialMotion((next) => {
-      Object.assign(motion, next);
-      animation?.invalidate();
+    const unsubscribe = subscribeSpatialMotion(next => {
+      Object.assign(motion, next); animation?.invalidate();
     });
-
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
-      width = Math.max(1, rect.width);
-      height = Math.max(1, rect.height);
-      if (
-        Math.abs(canvas.width - width * pixelRatio) < 1
-        && Math.abs(canvas.height - height * pixelRatio) < 1
-        && Math.abs(renderedPixelRatio - pixelRatio) < 0.01
-      ) return;
-      renderedPixelRatio = pixelRatio;
-      canvas.width = Math.max(1, Math.round(width * pixelRatio));
-      canvas.height = Math.max(1, Math.round(height * pixelRatio));
-      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      const ratio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
+      width = Math.max(1, rect.width); height = Math.max(1, rect.height);
+      if (Math.abs(canvas.width - width * ratio) < 1 && Math.abs(canvas.height - height * ratio) < 1
+        && Math.abs(renderedPixelRatio - ratio) < .01) return;
+      renderedPixelRatio = ratio;
+      canvas.width = Math.max(1, Math.round(width * ratio));
+      canvas.height = Math.max(1, Math.round(height * ratio));
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
       fallbackProjection = getSceneCoverProjection(width, height);
     };
-
-    const getProjectionNode = (sceneIndex) => {
-      if (sceneIndex === 0) {
-        return document.querySelector(SCENE_PROJECTION_SELECTORS[0]);
+    const projection = sceneIndex => {
+      let image = projectionNodes[sceneIndex];
+      if (!image?.isConnected) {
+        image = document.querySelector(PIGMENT_SCENE_SELECTORS[sceneIndex]);
+        projectionNodes[sceneIndex] = image;
       }
-      const cached = projectionNodes[sceneIndex];
-      if (cached?.isConnected) return cached;
-      const node = document.querySelector(SCENE_PROJECTION_SELECTORS[sceneIndex]);
-      projectionNodes[sceneIndex] = node;
-      return node;
+      return readSceneImageProjection(image, fallbackProjection, width);
     };
 
-    const readProjection = (sceneIndex) => readSceneImageProjection(
-      getProjectionNode(sceneIndex),
-      fallbackProjection,
-      width,
-    );
-
-    const visitSceneGeometry = (sceneIndex, weight, visit) => {
-      if (weight < 0.002) return;
-      if (sceneIndex !== 0) {
-        visit(
-          requestResource(getCinematicGeometryAsset(themeRef.current, sceneIndex)),
-          weight,
-          { sceneIndex },
-        );
-        return;
+    const drawBody = (sceneIndex, weight, blend, role, time, quality, portrait, budget) => {
+      if (weight < .002) return;
+      const field = requestResource(getCinematicGeometryAsset(themeRef.current, sceneIndex, 0, { portrait }));
+      const geometry = getCelestialTracerGeometry(field, sceneIndex, portrait);
+      if (!geometry?.streamlines.length) return;
+      const focus = getCelestialTracerFocus(sceneIndex, portrait), pose = projection(sceneIndex);
+      const palette = getSwarmScenePalette(themeRef.current, sceneIndex, 'tabs');
+      // Clip stroke thickness and tracer heads too, not just their centerlines.
+      // The shoreline cap prevents a sun's lower rim from marking the water.
+      context.save();
+      context.beginPath();
+      context.rect(0, 0, width, Math.max(0, pose.top + focus.maxY * pose.height));
+      context.clip();
+      const band = focus.band * 1.42;
+      const cx = pose.left + focus.centerX * pose.width, cy = pose.top + focus.centerY * pose.height;
+      context.beginPath();
+      for (const radius of [1 + band, 1 - band]) {
+        const rx = focus.radiusX * pose.width * radius, ry = focus.radiusY * pose.height * radius;
+        context.moveTo(cx + rx, cy);
+        context.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        context.closePath();
       }
-
-      const { gatewayProgress } = getCinematicSceneReveals(motion.scenePosition);
-      const framePosition = gatewayProgress * (GATEWAY_FRAME_COUNT - 1);
-      const currentFrame = Math.floor(framePosition / GATEWAY_GEOMETRY_STRIDE)
-        * GATEWAY_GEOMETRY_STRIDE;
-      const nextFrame = Math.min(
-        GATEWAY_FRAME_COUNT - 1,
-        currentFrame + GATEWAY_GEOMETRY_STRIDE,
-      );
-      const frameMix = nextFrame === currentFrame
-        ? 0
-        : (framePosition - currentFrame) / (nextFrame - currentFrame);
-      [
-        { frameIndex: currentFrame, frameWeight: 1 - frameMix },
-        { frameIndex: nextFrame, frameWeight: frameMix },
-      ].forEach(({ frameIndex, frameWeight }) => {
-        if (frameWeight < 0.002) return;
-        visit(
-          getIntroGeometryWithoutPathway(
-            requestResource(getCinematicGeometryAsset(themeRef.current, 0, frameIndex)),
-          ),
-          weight * frameWeight,
-          { sceneIndex: 0, frameIndex },
-        );
-      });
+      context.clip('evenodd');
+      const passage = blend.mix > .001 && blend.mix < .999;
+      const baseBudget = passage ? Math.max(3, budget - 2) : budget;
+      drawGeometryStreamlines({ context, geometry, palette, projection: pose, weight, time,
+        power: 1.2, quality, clipWidth: width, clipHeight: height,
+        maxVisibleCount: baseBudget, densityScale: .7, alphaScale: 1.3,
+        widthScale: 1, trailScale: 1.15, headFrequency: 4 });
+      if (passage) drawGeometryContourPassage({ context, geometry, field: role === 'from' ? blend.from : blend.to,
+        palette, projection: pose, progress: blend.mix, role, time, power: .72 * weight, quality,
+        clipWidth: width, clipHeight: height, maxVisibleCount: 2 });
+      context.restore();
     };
 
-    const drawSceneIndex = ({ sceneIndex, palette, projection, weight, time, power, quality }) => {
-      visitSceneGeometry(sceneIndex, weight, (geometry, geometryWeight) => {
-        drawGeometryScene({
-          context,
-          geometry,
-          palette,
-          projection,
-          weight: geometryWeight,
-          time,
-          power,
-          quality,
-          clipWidth: width,
-          clipHeight: height,
-        });
-      });
-    };
-
-    const drawIntroPlanetContourScene = ({
-      palette,
-      projection,
-      gatewayProgress,
-      weight,
-      time,
-      quality,
-    }) => {
-      const contourExit = 1 - smootherStep((gatewayProgress - 0.24) / 0.3);
-      const visibility = Math.pow(Math.max(0, 1 - gatewayProgress), 0.48) * contourExit;
-      if (weight * visibility < 0.004) return;
-      visitSceneGeometry(0, weight * visibility, (geometry, geometryWeight, metadata) => {
-        if (!geometry || !Number.isFinite(metadata?.frameIndex)) return;
-        const frameProgress = metadata.frameIndex / (GATEWAY_FRAME_COUNT - 1);
-        const focus = getIntroPlanetFocus(frameProgress);
-        const streamlines = getFocusedCinematicStreamlines(
-          geometry,
-          focus,
-          `intro-planet-${metadata.frameIndex}`,
-        );
-        drawGeometryStreamlines({
-          context,
-          geometry,
-          streamlines,
-          palette,
-          projection,
-          weight: geometryWeight,
-          time,
-          power: 1.42,
-          quality,
-          densityScale: 1.12,
-          alphaScale: 1.2,
-          widthScale: 1.06,
-          trailScale: 1.52,
-          maxVisibleCount: 48,
-          headFrequency: 5,
-          cinematicEmphasis: 1.14,
-          clipWidth: width,
-          clipHeight: height,
-        });
-      });
-    };
-
-    const drawPassageSceneIndex = ({
-      sceneIndex,
-      field,
-      palette,
-      projection,
-      progress,
-      role,
-      time,
-      power,
-      quality,
-    }) => {
-      visitSceneGeometry(sceneIndex, 1, (geometry, geometryWeight) => {
-        if (!geometry) return;
-        drawGeometryContourPassage({
-          context,
-          geometry,
-          field,
-          palette,
-          projection,
-          progress,
-          role,
-          time,
-          power: power * geometryWeight,
-          quality,
-          clipWidth: width,
-          clipHeight: height,
-        });
-      });
-    };
-
-    const draw = ({ delta: elapsed, reducedMotion }) => {
+    const draw = ({ delta: elapsed }) => {
       const root = document.documentElement;
-      const quality = root.classList.contains('motion-quality-low')
-        ? 0.62
-        : root.classList.contains('motion-quality-balanced')
-          ? 0.82
-          : 1;
-      const isTransitioning = Math.abs(
-        motion.scenePosition - Math.round(motion.scenePosition)
-      ) > 0.001 || Math.abs(motion.velocity) > 0.01;
-      // Reduce path count under load, not the cadence of visible motion.
-      let renderQuality = quality;
-      if (isTransitioning && !reducedMotion) {
-        renderQuality = Math.max(0.5, quality * 0.66);
-      }
-      const targetFlowSpeed = 1 + Math.min(0.26, Math.abs(motion.velocity) * 0.028);
-      flowSpeed += (targetFlowSpeed - flowSpeed) * (1 - Math.exp(-elapsed * 2.4));
+      const quality = root.classList.contains('motion-quality-low') ? .62
+        : root.classList.contains('motion-quality-balanced') ? .82 : 1;
+      const targetSpeed = 1 + Math.min(.26, Math.abs(motion.velocity) * .028);
+      flowSpeed += (targetSpeed - flowSpeed) * (1 - Math.exp(-elapsed * 2.4));
       cinematicTime += elapsed * flowSpeed;
-      const time = cinematicTime;
-      const fieldBlend = getTracerSceneBlend(themeRef.current, motion.scenePosition);
-      const fromPalette = getSwarmScenePalette(themeRef.current, fieldBlend.fromIndex, 'tabs');
-      const toPalette = getSwarmScenePalette(themeRef.current, fieldBlend.toIndex, 'tabs');
-      const power = 1.32;
-      const fromProjection = readProjection(fieldBlend.fromIndex);
-      const toProjection = fieldBlend.toIndex === fieldBlend.fromIndex
-        ? fromProjection
-        : readProjection(fieldBlend.toIndex);
-      const { gatewayProgress } = getCinematicSceneReveals(motion.scenePosition);
-
+      const blend = getTracerSceneBlend(themeRef.current, motion.scenePosition);
+      const portrait = usesPortraitArtwork(), budget = getCelestialTracerBudget(width, height);
       context.clearRect(0, 0, width, height);
-      drawSceneIndex({
-        sceneIndex: fieldBlend.fromIndex,
-        palette: fromPalette,
-        projection: fromProjection,
-        weight: 1 - fieldBlend.mix,
-        time,
-        power,
-        quality: renderQuality,
-      });
-      if (fieldBlend.fromIndex === 0) {
-        drawIntroPlanetContourScene({
-          palette: fromPalette,
-          projection: fromProjection,
-          gatewayProgress,
-          weight: 1 - fieldBlend.mix,
-          time,
-          quality: renderQuality,
-        });
+      drawBody(blend.fromIndex, 1 - blend.mix, blend, 'from', cinematicTime, quality, portrait, budget);
+      if (blend.toIndex !== blend.fromIndex) {
+        drawBody(blend.toIndex, blend.mix, blend, 'to', cinematicTime, quality, portrait, budget);
       }
-      if (fieldBlend.toIndex !== fieldBlend.fromIndex) {
-        drawSceneIndex({
-          sceneIndex: fieldBlend.toIndex,
-          palette: toPalette,
-          projection: toProjection,
-          weight: fieldBlend.mix,
-          time,
-          power,
-          quality: renderQuality,
-        });
-        if (fieldBlend.toIndex === 0) {
-          drawIntroPlanetContourScene({
-            palette: toPalette,
-            projection: toProjection,
-            gatewayProgress,
-            weight: fieldBlend.mix,
-            time,
-            quality: renderQuality,
-          });
-        }
-
-        const isGatewayPassage = fieldBlend.fromIndex === 0 && fieldBlend.toIndex === 1;
-        if (!isGatewayPassage && fieldBlend.mix > 0.001 && fieldBlend.mix < 0.999) {
-          drawPassageSceneIndex({
-            sceneIndex: fieldBlend.fromIndex,
-            field: fieldBlend.from,
-            palette: fromPalette,
-            projection: fromProjection,
-            progress: fieldBlend.mix,
-            role: 'from',
-            time,
-            power: 0.92,
-            quality: renderQuality,
-          });
-          drawPassageSceneIndex({
-            sceneIndex: fieldBlend.toIndex,
-            field: fieldBlend.to,
-            palette: toPalette,
-            projection: toProjection,
-            progress: fieldBlend.mix,
-            role: 'to',
-            time,
-            power: 0.96,
-            quality: renderQuality,
-          });
-        }
-      }
+      canvas.dataset.tracerBudget = String(budget);
+      canvas.dataset.tracerScope = 'primary-celestial';
+      canvas.dataset.tracerBody = getCelestialTracerFocus(blend.mix < .5 ? blend.fromIndex : blend.toIndex, portrait).name;
     };
-
-    const observer = new ResizeObserver(() => {
-      resize();
-      animation?.invalidate();
-    });
-    observer.observe(canvas);
-    resize();
-    animation = createTracerAnimation(draw);
-    animationRef.current = animation;
-
+    const observer = new ResizeObserver(() => { resize(); animation?.invalidate(); });
+    observer.observe(canvas); resize();
+    animation = createTracerAnimation(draw); animationRef.current = animation;
     return () => {
-      disposed = true;
-      animation.dispose();
-      animationRef.current = null;
-      observer.disconnect();
-      unsubscribe();
+      disposed = true; animation.dispose(); animationRef.current = null;
+      observer.disconnect(); unsubscribe();
     };
   }, []);
 
