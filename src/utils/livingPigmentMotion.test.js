@@ -25,9 +25,9 @@ test('the Education moon carries a flat painted wash and shares one pose with it
   const reading = samplePigmentSubject(moon, normal, 8, 0);
   const starting = samplePigmentSubject(moon, normal, 8, .000001);
   assert(Math.hypot(starting.x - reading.x, starting.y - reading.y) < .00001, 'Transition starts from the visible loop pose');
-  const during = samplePigmentSubject(moon, normal, 8, .4);
-  assert(Math.hypot(during.x - reading.x, during.y - reading.y) > .2, 'Scroll adds a visible angular response');
-  assert.deepEqual(samplePigmentSubject(moon, normal, 8, .4), during, 'Reversed progress returns to the same angular offset');
+  assert.deepEqual(samplePigmentSubject(moon, normal, 8, .4), reading,
+    'Dissolve progress cannot offset or reverse the integrated loop pose');
+  assert.notDeepEqual(samplePigmentSubject(moon, normal, 8.1), reading);
   for (let time = 0; time < moon.period; time += .1) {
     const pose = samplePigmentSubject(moon, normal, time, 0);
     assert(Math.abs(Math.hypot(pose.x, pose.y) - Math.hypot(...normal)) < 1e-12);

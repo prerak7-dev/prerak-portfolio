@@ -16,7 +16,7 @@ const VERTEX_SHADER = `
   varying float vTile, vBackdropMotion;
   void main() {
     float phase = clamp(uTravel, 0., 1.);
-    float angle = uTime * aLoop.y + aLoop.w + phase * aLoop.z;
+    float angle = uTime * aLoop.y + aLoop.w;
     float c = cos(angle), s = sin(angle);
     vec2 surface = aLocal;
     if (aLoop.x > .5 && aLoop.x < 2.5) {
@@ -182,6 +182,9 @@ export function createLivingPigmentRenderer(canvas) {
       while (entries.size > 4) { const [key, entry] = entries.entries().next().value; disposeEntry(entry); entries.delete(key); }
     },
     clear() { renderer.clear(); },
-    dispose() { entries.forEach(disposeEntry); geometries.forEach(geometry => geometry.dispose()); sprites?.dispose(); renderer.dispose(); },
+    dispose() {
+      entries.forEach(disposeEntry); geometries.forEach(geometry => geometry.dispose()); sprites?.dispose(); renderer.dispose();
+      window.requestAnimationFrame(() => { if (!canvas.isConnected) renderer.forceContextLoss(); });
+    },
   };
 }

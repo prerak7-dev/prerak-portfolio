@@ -5,7 +5,8 @@ import { getTracerSceneField } from '../data/tracerSceneFields.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const bakedFields = new Map();
-let warmer;
+let fieldBaker;
+let clients = 0;
 const fieldKey = (image, projection, source, width, height) => JSON.stringify([
   image.currentSrc || image.src, source.seed, width, height,
   projection.left, projection.top, projection.width, projection.height,
@@ -19,10 +20,11 @@ function svgElement(name, attributes, parent) {
   return node;
 }
 
-// Bake the painted flow once. Frames update two shared alpha-transfer values,
-// never read pixels, encode PNGs, or replace CSS images in the animation loop.
-export function createTextContourRenderer() {
+// All text, hover and rail controllers share one GPU baker. Their live masks
+// are SVG, so retaining a WebGL context per controller wastes mobile slots.
+function createFieldBaker() {
   const canvas = document.createElement('canvas');
+  canvas.dataset.contourBaker = 'shared';
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, preserveDrawingBuffer: true, powerPreference: 'low-power' });
   renderer.setClearColor(0xffffff, 0);
   const geometry = new THREE.PlaneGeometry(2, 2);
@@ -72,30 +74,10 @@ export function createTextContourRenderer() {
   scene.add(new THREE.Mesh(geometry, material));
   const camera = new THREE.Camera();
   renderer.compile(scene, camera);
-  const prefix = `text-contour-${crypto.randomUUID()}`;
-  const svg = svgElement('svg', { width: 0, height: 0, 'aria-hidden': 'true' });
-  svg.style.cssText = 'position:absolute;pointer-events:none;overflow:hidden';
-  const defs = svgElement('defs', {}, svg);
-  const channels = new Map();
-  const channelFunctions = channel => {
-    if (!channels.has(channel)) channels.set(channel, ['incoming', 'outgoing'].map((direction, index) => {
-      const filter = svgElement('filter', { id: `${prefix}-${channel}-${direction}-filter`, filterUnits: 'objectBoundingBox', primitiveUnits: 'objectBoundingBox', x: 0, y: 0, width: 1, height: 1, 'color-interpolation-filters': 'sRGB' }, defs);
-      const transfer = svgElement('feComponentTransfer', { x: 0, y: 0, width: 1, height: 1 }, filter);
-      return svgElement('feFuncA', { type: 'linear', slope: index ? 16 : -16, intercept: index ? 1 : 0 }, transfer);
-    }));
-    return channels.get(channel);
-  };
-  document.body.append(svg);
-  let field;
-  let viewport;
-  let maskIndex = 0;
   let texture;
   return {
-    configure(image, projection, sourceField, width, height) {
-      const key = fieldKey(image, projection, sourceField, width, height);
-      viewport = { width, height };
-      defs.querySelectorAll('mask, pattern').forEach(node => node.remove());
-      if (bakedFields.has(key)) { field = bakedFields.get(key); return; }
+    bake(image, projection, sourceField, width, height) {
+      if (renderer.getContext().isContextLost()) throw new Error('Contour baker is awaiting graphics recovery');
       texture?.dispose();
       texture = new THREE.Texture(image);
       texture.minFilter = THREE.LinearFilter;
@@ -113,9 +95,50 @@ export function createTextContourRenderer() {
       u.uOriginFocus.value = sourceField.motif === 'gateway' ? 1 : 0;
       u.uProgress.value = .5;
       renderer.render(scene, camera);
-      field = canvas.toDataURL();
-      bakedFields.set(key, field);
-      if (bakedFields.size > 16) bakedFields.delete(bakedFields.keys().next().value);
+      return canvas.toDataURL();
+    },
+    dispose() {
+      texture?.dispose(); material.dispose(); geometry.dispose(); renderer.dispose(); renderer.forceContextLoss();
+    },
+  };
+}
+
+function bakeField(image, projection, sourceField, width, height) {
+  const key = fieldKey(image, projection, sourceField, width, height);
+  if (bakedFields.has(key)) return bakedFields.get(key);
+  fieldBaker ??= createFieldBaker();
+  const field = fieldBaker.bake(image, projection, sourceField, width, height);
+  bakedFields.set(key, field);
+  if (bakedFields.size > 16) bakedFields.delete(bakedFields.keys().next().value);
+  return field;
+}
+
+// Frames update alpha-transfer values, never read pixels or encode PNGs.
+export function createTextContourRenderer() {
+  clients++;
+  let disposed = false;
+  const prefix = `text-contour-${crypto.randomUUID()}`;
+  const svg = svgElement('svg', { width: 0, height: 0, 'aria-hidden': 'true' });
+  svg.style.cssText = 'position:absolute;pointer-events:none;overflow:hidden';
+  const defs = svgElement('defs', {}, svg);
+  const channels = new Map();
+  const channelFunctions = channel => {
+    if (!channels.has(channel)) channels.set(channel, ['incoming', 'outgoing'].map((direction, index) => {
+      const filter = svgElement('filter', { id: `${prefix}-${channel}-${direction}-filter`, filterUnits: 'objectBoundingBox', primitiveUnits: 'objectBoundingBox', x: 0, y: 0, width: 1, height: 1, 'color-interpolation-filters': 'sRGB' }, defs);
+      const transfer = svgElement('feComponentTransfer', { x: 0, y: 0, width: 1, height: 1 }, filter);
+      return svgElement('feFuncA', { type: 'linear', slope: index ? 16 : -16, intercept: index ? 1 : 0 }, transfer);
+    }));
+    return channels.get(channel);
+  };
+  document.body.append(svg);
+  let field;
+  let viewport;
+  let maskIndex = 0;
+  return {
+    configure(image, projection, sourceField, width, height) {
+      viewport = { width, height };
+      defs.querySelectorAll('mask, pattern').forEach(node => node.remove());
+      field = bakeField(image, projection, sourceField, width, height);
     },
     draw(progress, channel = 'default', incomingProgress = progress) {
       const functions = channelFunctions(channel);
@@ -147,8 +170,10 @@ export function createTextContourRenderer() {
       defs.querySelector(`#${id}-field`)?.remove();
     },
     dispose() {
+      if (disposed) return;
+      disposed = true;
       svg.remove();
-      texture?.dispose(); material.dispose(); geometry.dispose(); renderer.dispose(); renderer.forceContextLoss();
+      if (--clients === 0) { fieldBaker?.dispose(); fieldBaker = null; }
     },
   };
 }
@@ -160,9 +185,8 @@ export function warmChapterTextField(image, theme, sceneIndex) {
   const source = getTracerSceneField(theme, sceneIndex);
   if (bakedFields.has(fieldKey(image, projection, source, width, height))) return;
   try {
-    warmer ??= createTextContourRenderer();
-    warmer.configure(image, projection, source, width, height);
+    bakeField(image, projection, source, width, height);
   } catch {
-    warmer?.dispose(); warmer = null;
+    // Live SVG fields remain usable while a lost baker context recovers.
   }
 }

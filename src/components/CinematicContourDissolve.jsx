@@ -29,6 +29,7 @@ import { isPaintingReady } from '../utils/paintingReadiness.js';
 import { getPaintedBackdropClip, getPaintedSubjects, MAX_PAINTED_SUBJECTS } from '../data/paintedSubjects.js';
 import { PAINTED_SUBJECT_GLSL } from '../utils/paintedSubjectShader.js';
 import { createTracerAnimation } from '../utils/tracerAnimation.js';
+import { createPaintedMotionClock, paintedMotionSample } from '../utils/paintedMotionClock.js';
 
 const MAX_PIXEL_RATIO = 2;
 const MAX_RENDER_PIXELS = 2560 * 1440;
@@ -107,7 +108,6 @@ const FRAGMENT_SHADER = `
   uniform vec4 uOutgoingSeal;
   uniform vec4 uIncomingSeal;
   uniform vec2 uSealAngles;
-  uniform vec2 uActorTravel;
   varying vec2 vUv;
 
   ${CONTOUR_NOISE_GLSL}
@@ -168,7 +168,7 @@ const FRAGMENT_SHADER = `
   }
 
   vec4 paintedScene(sampler2D painting, vec2 local, vec4 bounds, float angle, float incoming, out float actorCoverage) {
-    vec4 original = animatePainting(painting, local, incoming, mix(uActorTravel.x, uActorTravel.y, incoming), actorCoverage);
+    vec4 original = animatePainting(painting, local, incoming, actorCoverage);
     if (uActorIdle > .5 && actorCoverage < .00001) return vec4(0.);
     if (bounds.z <= 0.0) return original;
     vec2 offset = (local - bounds.xy) / bounds.zw;
@@ -324,6 +324,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     let actorTime = 0;
     let actorVisibleAt = null;
     let actorAnimation;
+    const actorClock = createPaintedMotionClock();
     const actorProfileKeys = ['', ''];
     const actorArrays = () => Array.from({ length: MAX_PAINTED_SUBJECTS }, () => new THREE.Vector4(0, 0, 1, 1));
 
@@ -357,7 +358,6 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         uActorIdle: { value: 0 },
         uActorTime: { value: 0 },
         uActorStrength: { value: 0 },
-        uActorTravel: { value: new THREE.Vector2() },
         uOutgoingActorRegions: { value: actorArrays() },
         uIncomingActorRegions: { value: actorArrays() },
         uOutgoingActorMotion: { value: actorArrays() },
@@ -547,7 +547,6 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       const projection = readSceneImageProjection(image, fallbackProjection, width);
       const texture = getSceneTexture(image);
       material.uniforms.uActorIdle.value = 1;
-      material.uniforms.uActorTravel.value.set(0, 0);
       material.uniforms.uScene.value = texture;
       material.uniforms.uIncomingScene.value = texture;
       material.uniforms.uGeometry.value = texture;
@@ -803,8 +802,6 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       material.uniforms.uSealAngles.value.set(THREE.MathUtils.degToRad(outgoingAngle), THREE.MathUtils.degToRad(incomingAngle));
       setActorProfiles(outgoingSceneIndex, outgoingImage, false, outgoingTheme !== 'boot');
       setActorProfiles(incomingSceneIndex, incomingImage, true);
-      const actorTravels = outgoingSceneIndex !== incomingSceneIndex;
-      material.uniforms.uActorTravel.value.set(actorTravels ? progress : 0, actorTravels ? 1 - progress : 0);
       // Authored watercolor plates already contain their final lighting. Match
       // the live DOM's unfiltered art instead of reapplying the legacy grade.
       if ((outgoingIsHome || outgoingImage.src.includes('/painted-v1/')) && outgoingTheme !== 'boot') {
@@ -909,8 +906,10 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     if (!className.includes('boot-contour-dissolve')) {
       // One clock owns both time and painting, including after theme/scroll
       // events. A second queued RAF would render an older pose a frame later.
-      actorAnimation = createTracerAnimation(({ time, timestamp }) => {
-        actorTime = time;
+      actorAnimation = createTracerAnimation(({ delta, timestamp }) => {
+        const pose = actorClock.advance(delta, paintedMotionSample(motion, themeTransition, getGateSealPose(timestamp)));
+        actorTime = pose.time;
+        canvas.dataset.actorSpeed = pose.speed.toFixed(4);
         if (frame) window.cancelAnimationFrame(frame);
         draw(timestamp);
       });
@@ -935,6 +934,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       geometry.dispose();
       material.dispose();
       renderer.dispose();
+      // StrictMode can immediately reuse this DOM canvas for a new renderer.
+      window.requestAnimationFrame(() => { if (!canvas.isConnected) renderer.forceContextLoss(); });
     };
   }, []);
 

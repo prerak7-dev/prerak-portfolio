@@ -527,6 +527,7 @@ export function SpatialWorld({ theme, atmospherePower, onReady }) {
       material?.dispose();
       Object.values(textures).forEach((texture) => texture.dispose());
       renderer?.dispose();
+      renderer?.forceContextLoss();
       renderer?.domElement.remove();
       toggleCachedClass(document.documentElement, 'motion-quality-balanced', false);
       toggleCachedClass(document.documentElement, 'motion-quality-low', false);

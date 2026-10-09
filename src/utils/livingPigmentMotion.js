@@ -39,10 +39,9 @@ export function createPigmentSeeds(sceneIndex, portrait = false, count = PIGMENT
   return { ...values, count: written };
 }
 
-// The loop clock never restarts on a chapter, theme, or scroll handoff. Scroll
-// adds a reversible angular offset to the same subject pose used while reading.
-export function samplePigmentSubject(subject, local, time, travel = 0) {
-  const angle = time * Math.PI * 2 / subject.period + subject.phase + clamp(travel) * subject.scrollTurn;
+// The integrated loop clock carries navigation momentum through the handoff.
+export function samplePigmentSubject(subject, local, time) {
+  const angle = time * Math.PI * 2 / subject.period + subject.phase;
   const c = Math.cos(angle), s = Math.sin(angle);
   if (subject.kind === 'wash' || subject.kind === 'orbit') return { x: local[0] * c - local[1] * s, y: local[0] * s + local[1] * c };
   if (subject.kind === 'ripple') return { x: local[0] + Math.sin(angle + local[0] * 6) * .035,

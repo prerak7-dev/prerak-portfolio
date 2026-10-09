@@ -32,7 +32,7 @@ export const PAINTED_SUBJECT_GLSL = `
     return smoothstep(0., .012, min(min(point.x, 1. - point.x), min(point.y, 1. - point.y)));
   }
 
-  vec4 animatePainting(sampler2D painting, vec2 point, float incoming, float travel, out float coverage) {
+  vec4 animatePainting(sampler2D painting, vec2 point, float incoming, out float coverage) {
     vec4 original = readPainting(painting, point);
     vec4 result = original;
     coverage = 0.;
@@ -62,7 +62,7 @@ export const PAINTED_SUBJECT_GLSL = `
       if (motion.x < .5) {
         // One continuous paper-plane orbit, not two cross-fading copies of
         // the rim. Quadrature drift carries the motion through each turn.
-        float angle = sin(phase) * motion.z * .18 + travel * motion.w;
+        float angle = sin(phase) * motion.z * .18;
         vec2 turned = rotatePaint(local, angle);
         turned += vec2(cos(phase), sin(phase)) * motion.z * .18;
         vec2 displacement = (turned - local) * region.zw;
@@ -92,7 +92,7 @@ export const PAINTED_SUBJECT_GLSL = `
         paint = (readPainting(painting, sourceA) * validA + readPainting(painting, sourceB) * validB) / max(valid, .00001);
         weight *= valid;
       } else if (motion.x < 1.5 || motion.x > 5.5) {
-        vec2 turned = rotatePaint(local, phase + travel * motion.w);
+        vec2 turned = rotatePaint(local, phase);
         if (motion.x > 5.5) {
           // The lower sun is hidden by water. Reconstruct that unseen pigment
           // from the visible face, and keep the real foreground and rim fixed.

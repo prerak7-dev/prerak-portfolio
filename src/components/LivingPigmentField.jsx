@@ -15,6 +15,7 @@ import { preloadImageUrl } from '../utils/preloadAssets.js';
 import { findTextTargets } from '../utils/textTargets.js';
 import { createTracerAnimation } from '../utils/tracerAnimation.js';
 import { retryAssetLoad } from '../utils/assetLoadRetry.js';
+import { createPaintedMotionClock, paintedMotionSample } from '../utils/paintedMotionClock.js';
 
 const asset = filename => createAssetPath(import.meta.env.BASE_URL, filename);
 const smooth = t => { const p = Math.max(0, Math.min(1, t)); return p * p * p * (p * (p * 6 - 15) + 10); };
@@ -36,6 +37,7 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
     let quietNodes = [], quietDirty = true, quietScanAt = -1, quietRects = [];
     let frozenOutgoing = null, incomingOrigin = null, entranceAt = null, lastMeasure = -1;
     let drawnFrames = 0;
+    const loopClock = createPaintedMotionClock();
     const motion = { ...getSpatialMotion() }, transition = { ...getThemeContourTransition() };
     const resources = new Map(), lastProjections = new Map();
     const retryAt = new Map();
@@ -85,13 +87,14 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
       quietRects = pigmentQuietRects(quietNodes.filter(node => node.isConnected && node.checkVisibility({ checkVisibilityCSS: true }))
         .map(node => node.getBoundingClientRect()), width, height);
     };
-    const draw = ({ time, timestamp, reducedMotion }) => {
+    const draw = ({ time, delta, timestamp, reducedMotion }) => {
+      const seal = getGateSealPose(timestamp);
+      const loop = loopClock.advance(delta, paintedMotionSample(motion, transition, seal));
       canvas.dataset.pigmentReady = String(latest.current.ready);
       canvas.dataset.pigmentAtlasReady = String(atlasReady);
       if (disposed || !latest.current.ready || reducedMotion || !atlasReady) { entranceAt = null; hide(reducedMotion ? 'reduced-motion' : 'loading'); return; }
       entranceAt ??= time;
       const portrait = usesPortraitArtwork();
-      const seal = getGateSealPose(timestamp);
       const layers = resolvePigmentPassage(latest.current.theme, motion, transition, seal);
       if (!layers.length) { hide('loading'); return; }
       const prepared = layers.map(layer => {
@@ -107,7 +110,7 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
       measureQuiet(time);
       const quality = document.documentElement.classList.contains('motion-quality-low') ? .48
         : document.documentElement.classList.contains('motion-quality-balanced') ? .72 : 1;
-      renderer.draw(prepared, time, quietRects, quality, smooth((time - entranceAt) / 1.6));
+      renderer.draw(prepared, loop.time, quietRects, quality, smooth((time - entranceAt) / 1.6));
       canvas.style.visibility = 'visible';
       canvas.dataset.pigmentState = layers.some(layer => layer.transitioning) ? 'passage' : 'reading';
       canvas.dataset.pigmentScenes = layers.map(layer => layer.sceneIndex).join(',');

@@ -29,21 +29,20 @@ async function open(theme, viewport) {
     const canvas = document.querySelector('.cinematic-environment > .cinematic-contour-dissolve');
     const gl = canvas.getContext('webgl2'), draw = gl.drawElements.bind(gl);
     const locations = new WeakMap();
-    window.capturePaintedActor = (time = null, count = null, actorIndex = null, travel = null) => new Promise(resolve => {
-      window.pendingActorCapture = { resolve, time, count, actorIndex, travel };
+    window.capturePaintedActor = (time = null, count = null, actorIndex = null) => new Promise(resolve => {
+      window.pendingActorCapture = { resolve, time, count, actorIndex };
     });
     gl.drawElements = (...args) => {
       const program = gl.getParameter(gl.CURRENT_PROGRAM);
       if (!locations.has(program)) locations.set(program, {
         idle: gl.getUniformLocation(program, 'uActorIdle'), time: gl.getUniformLocation(program, 'uActorTime'),
         strength: gl.getUniformLocation(program, 'uActorStrength'), count: gl.getUniformLocation(program, 'uOutgoingActorCount'),
-        projection: gl.getUniformLocation(program, 'uProjection'), travel: gl.getUniformLocation(program, 'uActorTravel'),
+        projection: gl.getUniformLocation(program, 'uProjection'),
       });
       const uniforms = locations.get(program), pending = window.pendingActorCapture;
       if (!pending || gl.getUniform(program, uniforms.idle) < .5) { draw(...args); return; }
       const original = { time: gl.getUniform(program, uniforms.time), strength: gl.getUniform(program, uniforms.strength),
-        count: gl.getUniform(program, uniforms.count), projection: gl.getUniform(program, uniforms.projection),
-        travel: gl.getUniform(program, uniforms.travel) };
+        count: gl.getUniform(program, uniforms.count), projection: gl.getUniform(program, uniforms.projection) };
       const restoredActors = [];
       if (pending.actorIndex !== null) {
         for (const [name, size] of [['Regions', 4], ['Motion', 4], ['Edges', 2]]) {
@@ -60,12 +59,10 @@ async function open(theme, viewport) {
         gl.uniform4fv(uniforms.projection, window.actorAuditProjection);
       }
       if (pending.count !== null) gl.uniform1i(uniforms.count, pending.count);
-      if (pending.travel !== null) gl.uniform2f(uniforms.travel, pending.travel, pending.travel);
       draw(...args);
       gl.uniform1f(uniforms.time, original.time); gl.uniform1f(uniforms.strength, original.strength);
       gl.uniform1i(uniforms.count, original.count);
       gl.uniform4fv(uniforms.projection, original.projection);
-      gl.uniform2fv(uniforms.travel, original.travel);
       for (const { location, size, value } of restoredActors) gl[`uniform${size}fv`](location, value);
       window.pendingActorCapture = null;
       pending.resolve({ png: canvas.toDataURL(), width: canvas.width, height: canvas.height,
@@ -132,9 +129,9 @@ async function measure(page, sceneIndex, label) {
   }
   const orbitIndex = regions.subjects.findIndex(subject => subject.kind === 'orbit');
   if ((/^(desktop|portrait)-/.test(label) || sceneIndex === 0) && orbitIndex >= 0) {
-    const pixelsAt = async (time, travel = 0) => {
-      const frame = await page.evaluate(({ time, index, travel }) => window.capturePaintedActor(time, null, index, travel),
-        { time, index: orbitIndex, travel });
+    const pixelsAt = async time => {
+      const frame = await page.evaluate(({ time, index }) => window.capturePaintedActor(time, null, index),
+        { time, index: orbitIndex });
       return sharp(Buffer.from(frame.png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer();
     };
     const difference = (a, b) => {
@@ -160,8 +157,6 @@ async function measure(page, sceneIndex, label) {
         < Math.max(...movement) * .06, `${label}: a hidden flow reset cannot flash or snap`);
     }
     if (sceneIndex === 0) {
-      assert(difference(await pixelsAt(period, -.4), await pixelsAt(period, .4)) > .5,
-        `${label}: the Home moon must respond to scroll direction`);
       const moon = await pixelsAt(period * 2.25);
       const horizon = regions.subjects[orbitIndex].horizon + (regions.portrait ? .005 : .009);
       for (let y = Math.max(0, Math.ceil((p.top + horizon * p.height) * sy)); y < after.height; y++) {
@@ -204,14 +199,14 @@ async function measure(page, sceneIndex, label) {
       }
       assert(checked > 10000 && visible > 20, `${label}: check a visible layer and a substantial static foreground`);
     };
-    for (const [time, travel] of [[0, -.4], [7.5, 0], [15, .4]]) {
-      const frame = await page.evaluate(({ time, travel }) => window.capturePaintedActor(time, null, null, travel), { time, travel });
+    for (const time of [0, 7.5, 15]) {
+      const frame = await page.evaluate(time => window.capturePaintedActor(time), time);
       await checkLowerLandscape(frame, 'painted motion');
     }
     const pigment = await page.locator('.living-pigment-field').evaluate(canvas => canvas.style.display === 'none' ? null
       : { png: canvas.toDataURL(), width: canvas.width, height: canvas.height });
     if (pigment) await checkLowerLandscape(pigment, 'pigment drift');
-    console.log(`${label}: lower landscape stays static at multiple loop phases and in both scroll directions`);
+    console.log(`${label}: lower landscape stays static at multiple loop phases`);
   }
   if (sceneIndex === 0) {
     const pins = regions.portrait ? [[.135, .461], [.14, .48], [.129, .52]] : [[.094, .412], [.097, .44], [.097, .498]];
