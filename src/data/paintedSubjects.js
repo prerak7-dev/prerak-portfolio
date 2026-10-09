@@ -1,8 +1,8 @@
 export const MAX_PAINTED_SUBJECTS = 6;
-export const PAINTED_SUBJECT_MODES = Object.freeze({ rock: 0, spin: 1, cloth: 2, water: 3, canopy: 4, waterfall: 5 });
+export const PAINTED_SUBJECT_MODES = Object.freeze({ orbit: 0, spin: 1, cloth: 2, water: 3, canopy: 4, waterfall: 5, solar: 6 });
 
-function subject(name, kind, region, period, amount, scroll = .06) {
-  return Object.freeze({ name, kind, region: Object.freeze(region), period, amount, scroll,
+function subject(name, kind, region, period, amount, scroll = .06, horizon = 1.1) {
+  return Object.freeze({ name, kind, region: Object.freeze(region), period, amount, scroll, horizon,
     mode: PAINTED_SUBJECT_MODES[kind] });
 }
 
@@ -11,43 +11,45 @@ function subject(name, kind, region, period, amount, scroll = .06) {
 const LANDSCAPE = [
   [subject('wind-blown cloak', 'cloth', [.080, .461, .027, .039], 5.6, .16),
     subject('tree canopy', 'canopy', [-.004, .196, .132, .206], 8, .025),
-    subject('falling water', 'waterfall', [.757, .597, .018, .058], 3.1, .11),
+    subject('cliff waterfall', 'waterfall', [.079, .68, .014, .128], 4.8, .52),
+    subject('falling water', 'waterfall', [.757, .601, .010, .047], 3.8, .55),
+    subject('distant waterfall', 'waterfall', [.812, .625, .009, .035], 4.2, .5),
     subject('gate reflections', 'water', [.5, .865, .36, .058], 14, .005)],
-  [subject('Services sun', 'spin', [.20, .70, .085, .15], 90, 1, .25),
-    subject('Unreal sun', 'spin', [.50, .68, .10, .18], 112, 1, .22),
-    subject('Telemetry sun', 'spin', [.80, .70, .085, .15], 98, 1, .25),
+  [subject('Services sun', 'solar', [.201, .711, .044, .078], 66, 1, .18, .747),
+    subject('Unreal sun', 'solar', [.503, .697, .081, .144], 84, 1, .16, .747),
+    subject('Telemetry sun', 'solar', [.803, .704, .068, .121], 74, 1, .18, .747),
     subject('sunlit tide', 'water', [.50, .885, .40, .063], 16, .005)],
-  [subject('Case Studies satellite', 'rock', [1.06, .31, .395, .65], 34, .065, .10),
+  [subject('Case Studies satellite', 'orbit', [1.06, .31, .395, .65], 24, .18, .10, .88),
     subject('shore reflections', 'water', [.36, .92, .34, .045], 15, .005)],
-  [subject('orbital ribbon', 'rock', [.53, .29, .64, .43], 62, .014, .04),
+  [subject('orbital ribbon', 'orbit', [.53, .29, .64, .43], 30, .065, .04, .78),
     subject('Education moon', 'spin', [.107, .436, .034, .061], 42, 1, .28),
     subject('chronology tide', 'water', [.50, .94, .42, .035], 19, .005)],
-  [subject('near celestial arc', 'rock', [-.53, .41, .75, .98], 52, .021, .06),
+  [subject('near celestial arc', 'orbit', [-.53, .41, .75, .98], 28, .12, .06, .57),
     subject('tidal bands', 'water', [.40, .855, .32, .075], 17, .006)],
-  [subject('horizon arc', 'rock', [.69, -.20, .60, .61], 70, .018, .05),
-    subject('distant moon', 'spin', [.70, .397, .028, .05], 56, 1, .24),
+  [subject('horizon arc', 'orbit', [.69, -.20, .60, .61], 32, .10, .05, .348),
+    subject('distant moon', 'spin', [.698, .377, .011, .0196], 56, 1, .24),
     subject('beacon sea', 'water', [.58, .69, .32, .13], 21, .004)],
 ];
 
 const PORTRAIT = [
   [subject('wind-blown cloak', 'cloth', [.105, .488, .049, .028], 5.6, .16),
     subject('tree canopy', 'canopy', [.012, .26, .17, .175], 8, .025),
-    subject('left waterfall', 'waterfall', [.237, .611, .024, .068], 3.1, .11),
-    subject('right waterfall', 'waterfall', [.861, .637, .027, .064], 3.7, .11),
+    subject('left waterfall', 'waterfall', [.237, .611, .018, .068], 3.8, .55),
+    subject('right waterfall', 'waterfall', [.861, .637, .020, .064], 4.4, .52),
     subject('gate reflections', 'water', [.51, .827, .36, .078], 14, .005)],
-  [subject('Services sun', 'spin', [.20, .69, .11, .055], 90, 1, .25),
-    subject('Unreal sun', 'spin', [.50, .67, .16, .08], 112, 1, .22),
-    subject('Telemetry sun', 'spin', [.81, .69, .11, .055], 98, 1, .25),
+  [subject('Services sun', 'solar', [.198, .690, .077, .0385], 66, 1, .18, .703),
+    subject('Unreal sun', 'solar', [.501, .667, .124, .062], 84, 1, .16, .703),
+    subject('Telemetry sun', 'solar', [.800, .690, .080, .040], 74, 1, .18, .703),
     subject('sunlit tide', 'water', [.50, .875, .39, .075], 16, .005)],
-  [subject('Case Studies satellite', 'rock', [1.26, .57, .62, .315], 34, .065, .10),
+  [subject('Case Studies satellite', 'orbit', [1.26, .57, .62, .315], 24, .18, .10, .88),
     subject('shore reflections', 'water', [.43, .934, .40, .036], 15, .005)],
-  [subject('orbital ribbon', 'rock', [.64, .67, .80, .20], 62, .014, .04),
+  [subject('orbital ribbon', 'orbit', [.64, .67, .80, .20], 30, .065, .04, .855),
     subject('Education moon', 'spin', [.247, .409, .058, .030], 42, 1, .28),
     subject('chronology tide', 'water', [.50, .912, .42, .043], 19, .005)],
-  [subject('near celestial arc', 'rock', [-.37, .515, .64, .34], 52, .021, .06),
+  [subject('near celestial arc', 'orbit', [-.37, .515, .64, .34], 28, .12, .06, .655),
     subject('tidal bands', 'water', [.45, .895, .43, .068], 17, .006)],
-  [subject('horizon arc', 'rock', [.70, .14, .85, .37], 70, .018, .05),
-    subject('distant moon', 'spin', [.68, .579, .034, .017], 56, 1, .24),
+  [subject('horizon arc', 'orbit', [.70, .14, 1.05, .42], 32, .10, .05, .56),
+    subject('distant moon', 'spin', [.677, .576, .016, .008], 56, 1, .24),
     subject('beacon sea', 'water', [.50, .775, .45, .125], 21, .004)],
 ];
 

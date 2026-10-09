@@ -29,17 +29,33 @@ async function open(theme, viewport) {
     const canvas = document.querySelector('.cinematic-environment > .cinematic-contour-dissolve');
     const gl = canvas.getContext('webgl2'), draw = gl.drawElements.bind(gl);
     const locations = new WeakMap();
-    window.capturePaintedActor = () => new Promise(resolve => { window.pendingActorCapture = resolve; });
+    window.capturePaintedActor = (time = null, count = null) => new Promise(resolve => {
+      window.pendingActorCapture = { resolve, time, count };
+    });
     gl.drawElements = (...args) => {
-      draw(...args);
-      if (!window.pendingActorCapture) return;
       const program = gl.getParameter(gl.CURRENT_PROGRAM);
-      if (!locations.has(program)) locations.set(program, gl.getUniformLocation(program, 'uActorIdle'));
-      if (gl.getUniform(program, locations.get(program)) < .5) return;
-      const resolve = window.pendingActorCapture;
+      if (!locations.has(program)) locations.set(program, {
+        idle: gl.getUniformLocation(program, 'uActorIdle'), time: gl.getUniformLocation(program, 'uActorTime'),
+        strength: gl.getUniformLocation(program, 'uActorStrength'), count: gl.getUniformLocation(program, 'uOutgoingActorCount'),
+        projection: gl.getUniformLocation(program, 'uProjection'),
+      });
+      const uniforms = locations.get(program), pending = window.pendingActorCapture;
+      if (!pending || gl.getUniform(program, uniforms.idle) < .5) { draw(...args); return; }
+      const original = { time: gl.getUniform(program, uniforms.time), strength: gl.getUniform(program, uniforms.strength),
+        count: gl.getUniform(program, uniforms.count), projection: gl.getUniform(program, uniforms.projection) };
+      if (pending.time !== null) {
+        gl.uniform1f(uniforms.time, pending.time); gl.uniform1f(uniforms.strength, 1);
+        window.actorAuditProjection ??= original.projection;
+        gl.uniform4fv(uniforms.projection, window.actorAuditProjection);
+      }
+      if (pending.count !== null) gl.uniform1i(uniforms.count, pending.count);
+      draw(...args);
+      gl.uniform1f(uniforms.time, original.time); gl.uniform1f(uniforms.strength, original.strength);
+      gl.uniform1i(uniforms.count, original.count);
+      gl.uniform4fv(uniforms.projection, original.projection);
       window.pendingActorCapture = null;
-      resolve({ png: canvas.toDataURL(), width: canvas.width, height: canvas.height,
-        time: Number(canvas.dataset.actorTime), stats: { ...canvas.dataset } });
+      pending.resolve({ png: canvas.toDataURL(), width: canvas.width, height: canvas.height,
+        time: pending.time ?? original.time, stats: { ...canvas.dataset } });
     };
   });
   return page;
@@ -59,6 +75,7 @@ async function chapter(page, label, id) {
 }
 
 async function measure(page, sceneIndex, label) {
+  await page.evaluate(() => { window.actorAuditProjection = null; });
   const regions = await page.evaluate(async sceneIndex => {
     const { getPaintedSubjects } = await import('/prerak-portfolio/src/data/paintedSubjects.js');
     const { PIGMENT_SCENE_SELECTORS } = await import('/prerak-portfolio/src/data/livingPigmentArt.js');
@@ -99,6 +116,50 @@ async function measure(page, sceneIndex, label) {
     assert(visible < 60 || changed >= 6, `${label}: ${subject.name} must move its actual artwork (${changed}/${visible})`);
     console.log(`${label}: ${subject.name}, ${changed} changed painted pixels / ${visible} visible pixels`);
   }
+  if (/^(desktop|portrait)-/.test(label) && regions.subjects[0].kind === 'orbit') {
+    const pixelsAt = async time => {
+      const frame = await page.evaluate(time => window.capturePaintedActor(time, 1), time);
+      return sharp(Buffer.from(frame.png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer();
+    };
+    const difference = (a, b) => {
+      let change = 0, visible = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        if (Math.min(a[i + 3], b[i + 3]) < 180) continue;
+        change += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]); visible++;
+      }
+      assert(visible > 100, `${label}: the actual celestial body must be visible`);
+      return change / (visible * 3);
+    };
+    const period = regions.subjects[0].period, movement = [];
+    for (const phase of [0, .125, .25, .375, .5, .625, .75, .875]) {
+      const time = period * (2 + phase);
+      movement.push(difference(await pixelsAt(time), await pixelsAt(time + .25)));
+    }
+    assert(Math.min(...movement) > .5 && Math.min(...movement) / Math.max(...movement) > .14,
+      `${label}: motion must continue across the full cycle: ${JSON.stringify(movement)}`);
+    const closure = difference(await pixelsAt(period * 2), await pixelsAt(period * 3));
+    assert(closure < .08, `${label}: the loop must close exactly (${closure})`);
+    for (const phase of [2, 2.5]) {
+      assert(difference(await pixelsAt(period * phase - .001), await pixelsAt(period * phase + .001))
+        < Math.max(...movement) * .06, `${label}: a hidden flow reset cannot flash or snap`);
+    }
+    console.log(`${label}: full-cycle motion ${Math.min(...movement).toFixed(2)}-${Math.max(...movement).toFixed(2)}, both loop seams continuous`);
+  }
+  if (sceneIndex === 1) {
+    // Solar rotation must never sample the foreground into its face or move
+    // the sea below the sun, including at quarter and half turns.
+    for (const time of [16.5, 33, 49.5]) {
+      const frame = await page.evaluate(time => window.capturePaintedActor(time, 3), time);
+      const pixels = await sharp(Buffer.from(frame.png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer();
+      const shoreline = regions.portrait ? .715 : .766;
+      for (let y = Math.max(0, Math.ceil((p.top + shoreline * p.height) * sy)); y < after.height; y++) {
+        for (let x = 0; x < after.width; x++) {
+          assert(pixels[(y * after.width + x) * 4 + 3] < 3, `${label}: solar motion must leave foreground waves untouched`);
+        }
+      }
+    }
+    console.log(`${label}: foreground waves remain pinned throughout solar rotation`);
+  }
   if (sceneIndex === 0) {
     const pins = regions.portrait ? [[.135, .461], [.14, .48], [.129, .52]] : [[.094, .412], [.097, .44], [.097, .498]];
     for (const [u, v] of pins) {
@@ -107,12 +168,38 @@ async function measure(page, sceneIndex, label) {
       const alpha = second[(y * after.width + x) * 4 + 3];
       assert(alpha < 5, `${label}: the head, shoulder and feet cannot be moved by a neighboring effect (${alpha})`);
     }
+    const index = regions.subjects.findIndex(subject => subject.kind === 'waterfall');
+    const fall = regions.subjects[index], [cx, cy, rx, ry] = fall.region;
+    const at = async time => {
+      const frame = await page.evaluate(({ time, count }) => window.capturePaintedActor(time, count), { time, count: index + 1 });
+      return sharp(Buffer.from(frame.png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer();
+    };
+    const time = fall.period * (2.5 - index * .173), a = await at(time - .15), b = await at(time + .15);
+    const x0 = Math.max(0, Math.ceil((p.left + (cx - rx * .4) * p.width) * sx));
+    const x1 = Math.min(after.width, Math.floor((p.left + (cx + rx * .4) * p.width) * sx));
+    const y0 = Math.max(10, Math.ceil((p.top + (cy - ry * .35) * p.height) * sy));
+    const y1 = Math.min(after.height - 10, Math.floor((p.top + (cy + ry * .35) * p.height) * sy));
+    const matches = [];
+    for (let dy = -8; dy <= 8; dy++) {
+      let error = 0, count = 0;
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        const i = (y * after.width + x) * 4, j = ((y + dy) * after.width + x) * 4;
+        if (Math.min(a[i + 3], b[j + 3]) < 100) continue;
+        for (let channel = 0; channel < 3; channel++) error += (a[i + channel] - b[j + channel]) ** 2;
+        count++;
+      }
+      if (count > 20) matches.push({ dy, error: error / count });
+    }
+    matches.sort((a, b) => a.error - b.error);
+    assert(matches[0]?.dy > 0, `${label}: painted water must flow down instead of oscillating: ${JSON.stringify(matches.slice(0, 3))}`);
+    console.log(`${label}: waterfall brushwork travels downward (${matches[0].dy}px between frames)`);
   }
   await page.screenshot({ path: `${output}/${label}.png` });
   return after.time;
 }
 
 try {
+  const refinementOnly = process.argv.includes('--refinement-only');
   const page = await open('default-light', { width: 1440, height: 900 });
   await measure(page, 0, 'desktop-home');
   for (const [label, id, scene] of [['Cores', 'cores', 1], ['Case Studies', 'projects', 2],
@@ -121,16 +208,20 @@ try {
   }
   await chapter(page, 'Case Studies', 'projects');
   let lastTime = Number(await page.locator(selector).getAttribute('data-actor-time'));
-  for (const [label, theme] of [['Fall', 'fall-light'], ['Spring', 'spring-light'], ['Winter', 'winter-light'], ['Monochrome', 'default-light']]) {
+  for (const [label, theme] of refinementOnly ? [] : [['Fall', 'fall-light'], ['Spring', 'spring-light'], ['Winter', 'winter-light'], ['Monochrome', 'default-light']]) {
     await page.getByRole('button', { name: label, exact: true }).click();
     await page.waitForFunction(theme => document.querySelector('.archive-app').classList.contains(`theme-${theme}`)
       && !document.documentElement.classList.contains('theme-contour-transition-active'), theme, { timeout: 45000 });
     await page.mouse.move(4, 300);
     lastTime = await measure(page, 2, theme);
+    await chapter(page, 'Cores', 'cores'); await measure(page, 1, `${theme}-cores`);
+    await chapter(page, 'Case Studies', 'projects');
     await page.getByRole('switch', { name: 'Light appearance' }).click();
     await page.waitForFunction(theme => document.querySelector('.archive-app').classList.contains(`theme-${theme}`)
       && !document.documentElement.classList.contains('theme-contour-transition-active'), theme.replace('-light', ''), { timeout: 45000 });
     const darkTime = await measure(page, 2, theme.replace('-light', ''));
+    await chapter(page, 'Cores', 'cores'); await measure(page, 1, `${theme.replace('-light', '')}-cores`);
+    await chapter(page, 'Case Studies', 'projects');
     assert(darkTime > lastTime, 'Appearance changes cannot restart the subject pose');
     await page.getByRole('switch', { name: 'Light appearance' }).click();
     await page.waitForFunction(theme => document.querySelector('.archive-app').classList.contains(`theme-${theme}`)

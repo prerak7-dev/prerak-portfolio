@@ -167,14 +167,8 @@ const FRAGMENT_SHADER = `
   }
 
   vec4 paintedScene(sampler2D painting, vec2 local, vec4 bounds, float angle, float incoming, out float actorCoverage) {
-    vec2 spinUv;
-    float spinCoverage;
-    vec2 animated = animatePainting(local, incoming, mix(uActorTravel.x, uActorTravel.y, incoming), actorCoverage, spinUv, spinCoverage);
+    vec4 original = animatePainting(painting, local, incoming, mix(uActorTravel.x, uActorTravel.y, incoming), actorCoverage);
     if (uActorIdle > .5 && actorCoverage < .00001) return vec4(0.);
-    vec4 original = texture2D(painting, vec2(animated.x, 1.0 - animated.y));
-    // Blend painted borders in color space, not UV space. Interpolating a
-    // half-turned coordinate would pinch the moon's rim into its center.
-    if (spinCoverage > .00001) original = mix(original, texture2D(painting, vec2(spinUv.x, 1. - spinUv.y)), spinCoverage);
     if (bounds.z <= 0.0) return original;
     vec2 offset = (local - bounds.xy) / bounds.zw;
     if (max(abs(offset.x), abs(offset.y)) > ${GATE_SEAL_ART_EXTENT}) return original;
@@ -367,6 +361,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         uIncomingActorRegions: { value: actorArrays() },
         uOutgoingActorMotion: { value: actorArrays() },
         uIncomingActorMotion: { value: actorArrays() },
+        uOutgoingActorEdges: { value: Array.from({ length: MAX_PAINTED_SUBJECTS }, () => new THREE.Vector2(1.1, .01)) },
+        uIncomingActorEdges: { value: Array.from({ length: MAX_PAINTED_SUBJECTS }, () => new THREE.Vector2(1.1, .01)) },
         uOutgoingActorCount: { value: 0 },
         uIncomingActorCount: { value: 0 },
       },
@@ -522,6 +518,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       subjects.forEach((subject, i) => {
         material.uniforms[`u${side}ActorRegions`].value[i].set(...subject.region);
         material.uniforms[`u${side}ActorMotion`].value[i].set(subject.mode, Math.PI * 2 / subject.period, subject.amount, subject.scroll);
+        material.uniforms[`u${side}ActorEdges`].value[i].set(subject.horizon, portrait ? .005 : .009);
       });
     };
 
