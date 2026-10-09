@@ -28,12 +28,20 @@ async function open(viewport) {
     const sample = document.createElement('canvas');
     sample.width = 96; sample.height = 60;
     const context = sample.getContext('2d', { willReadFrequently: true });
+    const locations = new WeakMap();
     window.contourAudit = [];
     // Read immediately after a real draw: a non-preserved WebGL buffer may be
     // cleared by the compositor before an ordinary screenshot callback.
     gl.drawElements = (...args) => {
       draw(...args);
-      const progress = Number(canvas.dataset.dissolveProgress || 0);
+      const program = gl.getParameter(gl.CURRENT_PROGRAM);
+      if (!locations.has(program)) locations.set(program, {
+        idle: gl.getUniformLocation(program, 'uActorIdle'),
+        progress: gl.getUniformLocation(program, 'uProgress'),
+      });
+      const { idle, progress: progressLocation } = locations.get(program);
+      if (idle && gl.getUniform(program, idle) > .5) return;
+      const progress = gl.getUniform(program, progressLocation);
       const bin = Math.floor(progress * 10);
       if (window.contourAudit.some(frame => frame.bin === bin)) return;
       context.drawImage(canvas, 0, 0, 96, 60);
@@ -52,7 +60,7 @@ async function settled(page, chapter) {
   await page.waitForFunction(chapter => {
     const root = document.querySelector('.archive-viewport');
     const canvas = document.querySelector('.cinematic-environment > .cinematic-contour-dissolve');
-    return canvas.style.visibility === 'hidden' && root.dataset.chapter === chapter
+    return !canvas.dataset.dissolveSource && root.dataset.chapter === chapter
       && root.dataset.chapterCopyPhase === 'idle' && root.classList.contains('chapter-settled');
   }, chapter, { timeout: 45000 });
 }
@@ -183,7 +191,8 @@ try {
     const { getSpatialMotion } = await import('/prerak-portfolio/src/state/spatialMotionStore.js');
     return getSpatialMotion().scenePosition > 2.65;
   }, null, { timeout: 20000 });
-  assert((await page.evaluate(() => window.contourAudit)).some(frame => frame.alpha > 100 && frame.progress > .1));
+  await page.waitForFunction(() => window.contourAudit.some(frame => frame.alpha > 100 && frame.progress > .1),
+    null, { timeout: 10000 });
   await page.screenshot({ path: `${output}/scroll-contour-recovered.png` });
   await page.getByRole('button', { name: 'Spring', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('.archive-app').classList.contains('theme-spring')
@@ -198,6 +207,7 @@ try {
       theme: document.querySelector('.archive-app').className,
       flags: document.documentElement.className,
       canvas: { ...root.querySelector('.cinematic-contour-dissolve').dataset },
+      frames: window.contourAudit,
     })).catch(() => ({})));
     await page.screenshot({ path: `${output}/failure-${index}.png` }).catch(() => {});
   }

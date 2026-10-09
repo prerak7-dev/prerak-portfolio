@@ -25,6 +25,9 @@ import { GATE_SEAL_SHAPE_GLSL, GATE_SEAL_ART_EXTENT } from '../utils/gateSealArt
 import { getGateSealPose, subscribeGateSealTurn } from '../state/gateSealTurnStore.js';
 import { retryAssetLoad } from '../utils/assetLoadRetry.js';
 import { isPaintingReady } from '../utils/paintingReadiness.js';
+import { getPaintedSubjects, MAX_PAINTED_SUBJECTS } from '../data/paintedSubjects.js';
+import { PAINTED_SUBJECT_GLSL } from '../utils/paintedSubjectShader.js';
+import { createTracerAnimation } from '../utils/tracerAnimation.js';
 
 const MAX_PIXEL_RATIO = 2;
 const MAX_RENDER_PIXELS = 2560 * 1440;
@@ -103,10 +106,12 @@ const FRAGMENT_SHADER = `
   uniform vec4 uOutgoingSeal;
   uniform vec4 uIncomingSeal;
   uniform vec2 uSealAngles;
+  uniform vec2 uActorTravel;
   varying vec2 vUv;
 
   ${CONTOUR_NOISE_GLSL}
   ${GATE_SEAL_SHAPE_GLSL}
+  ${PAINTED_SUBJECT_GLSL}
 
   vec3 linearToCssSpace(vec3 color) {
     vec3 safeColor = max(color, vec3(0.0));
@@ -161,8 +166,15 @@ const FRAGMENT_SHADER = `
       -sine * offset.x + cosine * offset.y) * bounds.zw;
   }
 
-  vec4 paintedScene(sampler2D painting, vec2 local, vec4 bounds, float angle) {
-    vec4 original = texture2D(painting, vec2(local.x, 1.0 - local.y));
+  vec4 paintedScene(sampler2D painting, vec2 local, vec4 bounds, float angle, float incoming, out float actorCoverage) {
+    vec2 spinUv;
+    float spinCoverage;
+    vec2 animated = animatePainting(local, incoming, mix(uActorTravel.x, uActorTravel.y, incoming), actorCoverage, spinUv, spinCoverage);
+    if (uActorIdle > .5 && actorCoverage < .00001) return vec4(0.);
+    vec4 original = texture2D(painting, vec2(animated.x, 1.0 - animated.y));
+    // Blend painted borders in color space, not UV space. Interpolating a
+    // half-turned coordinate would pinch the moon's rim into its center.
+    if (spinCoverage > .00001) original = mix(original, texture2D(painting, vec2(spinUv.x, 1. - spinUv.y)), spinCoverage);
     if (bounds.z <= 0.0) return original;
     vec2 offset = (local - bounds.xy) / bounds.zw;
     if (max(abs(offset.x), abs(offset.y)) > ${GATE_SEAL_ART_EXTENT}) return original;
@@ -203,8 +215,17 @@ const FRAGMENT_SHADER = `
       clamp(incomingLocal.x, 0.0, 1.0),
       1.0 - clamp(incomingLocal.y, 0.0, 1.0)
     );
-    vec4 sceneColor = paintedScene(uScene, vec2(sampleUv.x, 1.0 - sampleUv.y), uOutgoingSeal, uSealAngles.x);
-    vec4 incomingColor = paintedScene(uIncomingScene, vec2(incomingSampleUv.x, 1.0 - incomingSampleUv.y), uIncomingSeal, uSealAngles.y);
+    float outgoingActorCoverage, incomingActorCoverage;
+    vec4 sceneColor = paintedScene(uScene, vec2(sampleUv.x, 1.0 - sampleUv.y), uOutgoingSeal, uSealAngles.x, 0., outgoingActorCoverage);
+    // At rest only repaint the moving subjects. Everything else stays on the
+    // decoded native plate; the expensive contour field is not sampled here.
+    if (uActorIdle > .5) {
+      if (outgoingActorCoverage < .00001) discard;
+      gl_FragColor = vec4(sceneColor.rgb, sceneColor.a * sceneCoverage * smoothstep(0., .02, outgoingActorCoverage));
+      #include <colorspace_fragment>
+      return;
+    }
+    vec4 incomingColor = paintedScene(uIncomingScene, vec2(incomingSampleUv.x, 1.0 - incomingSampleUv.y), uIncomingSeal, uSealAngles.y, 1., incomingActorCoverage);
     vec4 geometry = texture2D(uGeometry, sampleUv);
     ${CONTOUR_HANDOFF_GLSL}
 
@@ -305,6 +326,11 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     let sealPreview = null;
     let preparedSealTexture = null;
     let preparedSealVersion = -1;
+    let actorTime = 0;
+    let actorVisibleAt = null;
+    let actorAnimation;
+    const actorProfileKeys = ['', ''];
+    const actorArrays = () => Array.from({ length: MAX_PAINTED_SUBJECTS }, () => new THREE.Vector4(0, 0, 1, 1));
 
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -333,6 +359,16 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         uOutgoingSeal: { value: new THREE.Vector4() },
         uIncomingSeal: { value: new THREE.Vector4() },
         uSealAngles: { value: new THREE.Vector2() },
+        uActorIdle: { value: 0 },
+        uActorTime: { value: 0 },
+        uActorStrength: { value: 0 },
+        uActorTravel: { value: new THREE.Vector2() },
+        uOutgoingActorRegions: { value: actorArrays() },
+        uIncomingActorRegions: { value: actorArrays() },
+        uOutgoingActorMotion: { value: actorArrays() },
+        uIncomingActorMotion: { value: actorArrays() },
+        uOutgoingActorCount: { value: 0 },
+        uIncomingActorCount: { value: 0 },
       },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
@@ -471,7 +507,53 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       delete canvas.dataset.sealRendering;
       delete canvas.dataset.dissolveSource;
       delete canvas.dataset.dissolveProgress;
+      canvas.dataset.actorState = reason;
       renderer.clear();
+    };
+
+    const setActorProfiles = (sceneIndex, image, incoming = false, enabled = true) => {
+      const side = incoming ? 'Incoming' : 'Outgoing';
+      const portrait = image.naturalHeight > image.naturalWidth;
+      const key = `${sceneIndex}:${portrait}:${enabled}`;
+      if (actorProfileKeys[Number(incoming)] === key) return;
+      actorProfileKeys[Number(incoming)] = key;
+      const subjects = enabled ? getPaintedSubjects(sceneIndex, portrait) : [];
+      material.uniforms[`u${side}ActorCount`].value = subjects.length;
+      subjects.forEach((subject, i) => {
+        material.uniforms[`u${side}ActorRegions`].value[i].set(...subject.region);
+        material.uniforms[`u${side}ActorMotion`].value[i].set(subject.mode, Math.PI * 2 / subject.period, subject.amount, subject.scroll);
+      });
+    };
+
+    const drawRestingSubjects = sceneIndex => {
+      const image = getProjectionNode(sceneIndex);
+      if (!image?.complete || !image.naturalWidth || material.uniforms.uActorStrength.value <= 0) {
+        clear('idle');
+        return;
+      }
+      const projection = readSceneImageProjection(image, fallbackProjection, width);
+      const texture = getSceneTexture(image);
+      material.uniforms.uActorIdle.value = 1;
+      material.uniforms.uActorTravel.value.set(0, 0);
+      material.uniforms.uScene.value = texture;
+      material.uniforms.uIncomingScene.value = texture;
+      material.uniforms.uGeometry.value = texture;
+      material.uniforms.uProjection.value.set(projection.left, projection.top, projection.width, projection.height);
+      material.uniforms.uIncomingProjection.value.copy(material.uniforms.uProjection.value);
+      material.uniforms.uOutgoingSeal.value.set(0, 0, 0, 0);
+      material.uniforms.uIncomingSeal.value.set(0, 0, 0, 0);
+      setActorProfiles(sceneIndex, image);
+      canvas.style.visibility = 'visible';
+      renderer.render(scene, camera);
+      trimTextures();
+      canvas.dataset.sealState = 'idle';
+      canvas.dataset.actorDrawCalls = String(renderer.info.render.calls);
+      canvas.dataset.actorState = 'looping';
+      canvas.dataset.actorScenes = String(sceneIndex);
+      canvas.dataset.actorSubjects = getPaintedSubjects(sceneIndex, image.naturalHeight > image.naturalWidth).map(subject => subject.name).join(',');
+      delete canvas.dataset.sealRendering;
+      delete canvas.dataset.dissolveSource;
+      delete canvas.dataset.dissolveProgress;
     };
 
     const applyThemeGrades = (outgoingTheme, incomingTheme, progress = 0) => {
@@ -521,10 +603,18 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
 
     const draw = (now = performance.now()) => {
       frame = 0;
-      if (disposed || reducedMotion) {
-        clear('reduced-motion');
+      if (disposed || reducedMotion || document.hidden) {
+        clear(document.hidden ? 'hidden' : 'reduced-motion');
         return;
       }
+      const actorsReady = !className.includes('boot-contour-dissolve')
+        && canvas.closest('.archive-viewport')?.classList.contains('experience-visible');
+      if (actorsReady) actorVisibleAt ??= actorTime;
+      else actorVisibleAt = null;
+      material.uniforms.uActorTime.value = actorTime;
+      material.uniforms.uActorStrength.value = actorsReady ? smootherStep((actorTime - actorVisibleAt) / 1.5) : 0;
+      material.uniforms.uActorIdle.value = 0;
+      canvas.dataset.actorTime = actorTime.toFixed(4);
 
       const themeTransitionActive = Boolean(
         themeTransition.active
@@ -547,6 +637,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       let outgoingTheme;
       let incomingTheme;
       let envelope;
+      let outgoingSceneIndex = 0;
+      let incomingSceneIndex = 0;
       const sealPose = getGateSealPose(now);
       if (!themeTransitionActive && sealPose.dissolving && sealPose.moving
         && sealPose.theme === themeRef.current && motion.scenePosition < .00001
@@ -570,6 +662,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         outgoingTheme = themeTransition.fromTheme;
         incomingTheme = themeTransition.toTheme;
         envelope = 1;
+        outgoingSceneIndex = themeTransition.sceneIndex;
+        incomingSceneIndex = themeTransition.targetSceneIndex ?? themeTransition.sceneIndex;
         // keep using the main watercolor material during theme transitions
       } else if (sealPreviewActive) {
         const geometryResource = requestResource(getCinematicGeometryAsset(themeRef.current, 0, 0));
@@ -581,6 +675,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         sourceField = getTracerSceneField(themeRef.current, 0);
         outgoingTheme = incomingTheme = themeRef.current;
         envelope = 1;
+        incomingSceneIndex = 1;
       } else {
         const { transition, blend, gatewayFrameIndex } = resolveTransition();
         progress = transition.mix;
@@ -591,7 +686,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         ) {
           if (blend.fromIndex === 0 && !themeTransition.active) prepareGatePainting();
           sealPreview = null;
-          clear('idle');
+          drawRestingSubjects(progress >= .99999 ? blend.toIndex : blend.fromIndex);
           return;
         }
         outgoingImage = getProjectionNode(blend.fromIndex);
@@ -611,6 +706,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         outgoingTheme = themeRef.current;
         incomingTheme = themeRef.current;
         envelope = dissolveEnvelope(progress);
+        outgoingSceneIndex = blend.fromIndex;
+        incomingSceneIndex = blend.toIndex;
       }
 
       if (
@@ -691,6 +788,10 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       setSealBounds(material.uniforms.uOutgoingSeal, outgoingImage, outgoingIsHome);
       setSealBounds(material.uniforms.uIncomingSeal, incomingImage, incomingIsHome);
       material.uniforms.uSealAngles.value.set(THREE.MathUtils.degToRad(outgoingAngle), THREE.MathUtils.degToRad(incomingAngle));
+      setActorProfiles(outgoingSceneIndex, outgoingImage, false, outgoingTheme !== 'boot');
+      setActorProfiles(incomingSceneIndex, incomingImage, true);
+      const actorTravels = outgoingSceneIndex !== incomingSceneIndex;
+      material.uniforms.uActorTravel.value.set(actorTravels ? progress : 0, actorTravels ? 1 - progress : 0);
       // Authored watercolor plates already contain their final lighting. Match
       // the live DOM's unfiltered art instead of reapplying the legacy grade.
       if ((outgoingIsHome || outgoingImage.src.includes('/painted-v1/')) && outgoingTheme !== 'boot') {
@@ -734,6 +835,9 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       canvas.dataset.sealRendering = 'background-dissolve';
       canvas.dataset.dissolveSource = sealPreviewActive ? 'seal' : themeTransitionActive ? themeTransition.kind : 'scroll';
       canvas.dataset.dissolveProgress = progress.toFixed(5);
+      canvas.dataset.actorState = 'passage';
+      canvas.dataset.actorDrawCalls = String(renderer.info.render.calls);
+      canvas.dataset.actorScenes = `${outgoingSceneIndex},${incomingSceneIndex}`;
     };
 
     const scheduleDraw = () => {
@@ -777,6 +881,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     sceneRoot.addEventListener('load', paintingLoaded, true);
     const preference = () => { reducedMotion = reducedQuery.matches; scheduleDraw(); };
     reducedQuery.addEventListener('change', preference);
+    const visibility = () => scheduleDraw();
+    document.addEventListener('visibilitychange', visibility);
     const observer = new ResizeObserver(() => {
       resize();
       scheduleDraw();
@@ -785,9 +891,13 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     resize();
     clear();
     scheduleDraw();
+    if (!className.includes('boot-contour-dissolve')) {
+      actorAnimation = createTracerAnimation(({ time }) => { actorTime = time; scheduleDraw(); });
+    }
 
     return () => {
       disposed = true;
+      actorAnimation?.dispose();
       window.cancelAnimationFrame(frame);
       observer.disconnect();
       unsubscribe();
@@ -796,6 +906,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       unsubscribeSeal();
       sceneRoot.removeEventListener('load', paintingLoaded, true);
       reducedQuery.removeEventListener('change', preference);
+      document.removeEventListener('visibilitychange', visibility);
 
       sceneTextures.forEach(({ texture }) => texture.dispose());
       geometryTextures.forEach((texture) => texture.dispose());

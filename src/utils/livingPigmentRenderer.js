@@ -78,7 +78,7 @@ const FRAGMENT_SHADER = `
     float coverage = mix(1., mix(1. - handoff, handoff, uRole), uTransition);
     vec3 native = texture2D(uPainting, vec2(vPaintingUv.x, 1. - vPaintingUv.y)).rgb;
     float grain = dot(stamp.rgb, vec3(.213, .715, .072));
-    float alpha = stamp.a * quiet * coverage * uOpacity * .54;
+    float alpha = stamp.a * quiet * coverage * uOpacity * .30;
     if (alpha < .002) discard;
     gl_FragColor = vec4(native * (.96 + grain * .08), alpha);
     #include <colorspace_fragment>
