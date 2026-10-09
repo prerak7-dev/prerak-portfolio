@@ -14,6 +14,7 @@ import {
 import { getSpatialMotion, subscribeSpatialMotion } from '../state/spatialMotionStore.js';
 import {
   getThemeContourTransition,
+  registerContourPaintingPreparer,
   subscribeThemeContourTransition,
 } from '../state/themeContourTransitionStore.js';
 import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
@@ -443,17 +444,15 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
 
     const getSceneTexture = (image) => {
       const source = image.currentSrc || image.src;
-      const cached = sceneTextures.get(image);
+      // The preload snapshot and the native plate are different Image objects
+      // for the same decoded artwork. Keep one GPU upload across that handoff.
+      const cached = sceneTextures.get(source);
       if (!cached) {
         const texture = createTexture(image, true);
-        sceneTextures.set(image, { source, texture });
+        sceneTextures.set(source, { texture });
         return texture;
       }
-      if (cached.source !== source) {
-        cached.source = source;
-        cached.texture.needsUpdate = true;
-      }
-      sceneTextures.delete(image); sceneTextures.set(image, cached);
+      sceneTextures.delete(source); sceneTextures.set(source, cached);
       return cached.texture;
     };
     const trimTextures = () => {
@@ -475,6 +474,20 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       canvas.dataset.sceneTextures = String(sceneTextures.size);
       canvas.dataset.geometryTextures = String(geometryTextures.size);
     };
+
+    const unregisterPreparer = className.includes('boot-contour-dissolve') ? () => {}
+      : registerContourPaintingPreparer(async ({ fromImage, toImage, geometryImage }) => {
+        for (const image of new Set([fromImage, toImage, geometryImage])) {
+          if (disposed || !image?.complete || !image.naturalWidth) continue;
+          // Give the current scene a frame between large uploads.
+          await new Promise(resolve => window.requestAnimationFrame(resolve));
+          if (disposed) return;
+          if (image === geometryImage) {
+            if (!geometryTextures.has(image)) geometryTextures.set(image, createTexture(image));
+            renderer.initTexture(geometryTextures.get(image));
+          } else renderer.initTexture(getSceneTexture(image));
+        }
+      });
 
     const prepareGatePainting = () => {
       if (className.includes('boot-contour-dissolve') || document.hidden) return;
@@ -895,6 +908,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     return () => {
       disposed = true;
       actorAnimation?.dispose();
+      unregisterPreparer();
       window.cancelAnimationFrame(frame);
       observer.disconnect();
       unsubscribe();

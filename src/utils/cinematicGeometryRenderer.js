@@ -265,10 +265,18 @@ function drawElongatedHead(context, points, color, alpha, radius) {
 }
 
 let projectionCache = new WeakMap();
-let projectionCacheFrame = 0;
+let projectionCacheTime = null;
 
 export function readSceneImageProjection(image, fallback, viewportWidth) {
   if (!image?.isConnected) return fallback;
+  // All RAF callbacks in a presented frame share the document timeline.
+  // Clearing from a separate RAF split that frame's readers into two batches,
+  // forcing another style/layout flush after the first renderer had written.
+  const frameTime = document.timeline.currentTime;
+  if (frameTime !== projectionCacheTime) {
+    projectionCache = new WeakMap();
+    projectionCacheTime = frameTime;
+  }
   // Every gate frame occupies exactly the same box. Measure that box once,
   // independent of the image used by the dissolve texture.
   if (image.parentElement?.classList.contains('gateway-sequence-preloads')) {
@@ -276,12 +284,6 @@ export function readSceneImageProjection(image, fallback, viewportWidth) {
   }
   const cached = projectionCache.get(image);
   if (cached?.viewportWidth === viewportWidth) return cached;
-  if (!projectionCacheFrame) {
-    projectionCacheFrame = window.requestAnimationFrame(() => {
-      projectionCache = new WeakMap();
-      projectionCacheFrame = 0;
-    });
-  }
   const rect = image.getBoundingClientRect();
   const boxWidth = image.clientWidth;
   const boxHeight = image.clientHeight;

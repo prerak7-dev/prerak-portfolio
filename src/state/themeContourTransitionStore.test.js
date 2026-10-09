@@ -3,8 +3,32 @@ import assert from 'node:assert/strict';
 
 import {
   getThemeContourTransition,
+  prepareContourPaintings,
+  registerContourPaintingPreparer,
   startThemeContourTransition,
 } from './themeContourTransitionStore.js';
+
+test('GPU painting preparation completes before a handoff is started and unregisters cleanly', async () => {
+  const assets = { fromImage: {}, toImage: {}, geometryImage: {} };
+  const events = [];
+  let release;
+  const removeFirst = registerContourPaintingPreparer(async received => {
+    assert.equal(received, assets);
+    events.push('upload');
+    await new Promise(resolve => { release = resolve; });
+    events.push('ready');
+  });
+  const removeSecond = registerContourPaintingPreparer(() => { events.push('pigment'); });
+  try {
+    const pending = prepareContourPaintings(assets);
+    assert.deepEqual(events, ['upload']);
+    release();
+    await pending;
+    assert.deepEqual(events, ['upload', 'ready', 'pigment']);
+  } finally { removeFirst(); removeSecond(); }
+  await prepareContourPaintings(assets);
+  assert.deepEqual(events, ['upload', 'ready', 'pigment']);
+});
 
 function installFakeWindow() {
   const scheduledFrames = [];

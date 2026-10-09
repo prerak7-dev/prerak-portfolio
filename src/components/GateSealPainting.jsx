@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { gateSealLandmark } from '../utils/gateSealMotion.js';
 import { GATE_SEAL_ART_EXTENT, prepareGateSealArtwork } from '../utils/gateSealArtwork.js';
 import { getGateSealPose, subscribeGateSealTurn } from '../state/gateSealTurnStore.js';
+import { getSpatialMotion, subscribeSpatialMotion } from '../state/spatialMotionStore.js';
 
 export function GateSealPainting({ portrait, theme }) {
   const canvasRef = useRef(null);
@@ -22,6 +23,9 @@ export function GateSealPainting({ portrait, theme }) {
     const draw = now => {
       frame = 0;
       if (disposed) return;
+      // Hidden Home artwork does not need a synchronous canvas readback while
+      // another chapter is committing its new seasonal painting.
+      if (getSpatialMotion().scenePosition >= 1) { canvas.style.visibility = 'hidden'; return; }
       const pose = getGateSealPose(now);
       const angle = !reduced.matches && pose.theme === theme ? pose.angle : 0;
       canvas.dataset.sealAngle = String(angle);
@@ -53,12 +57,17 @@ export function GateSealPainting({ portrait, theme }) {
     };
     const schedule = () => { if (!frame && !disposed) frame = requestAnimationFrame(draw); };
     const unsubscribe = subscribeGateSealTurn(schedule);
+    let atHome = getSpatialMotion().scenePosition < 1;
+    const unsubscribeMotion = subscribeSpatialMotion(motion => {
+      const next = motion.scenePosition < 1;
+      if (next !== atHome) { atHome = next; schedule(); }
+    });
     image?.addEventListener('load', schedule);
     document.addEventListener('visibilitychange', schedule);
     reduced.addEventListener('change', schedule);
     draw(performance.now());
     return () => {
-      disposed = true; cancelAnimationFrame(frame); unsubscribe();
+      disposed = true; cancelAnimationFrame(frame); unsubscribe(); unsubscribeMotion();
       image?.removeEventListener('load', schedule);
       document.removeEventListener('visibilitychange', schedule); reduced.removeEventListener('change', schedule);
     };

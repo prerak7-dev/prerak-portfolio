@@ -31,6 +31,7 @@ const transitionState = {
 };
 
 const listeners = new Set();
+const paintingPreparers = new Set();
 let animationFrame = 0;
 let activeCompletion = null;
 
@@ -61,6 +62,17 @@ export function subscribeThemeContourTransition(listener) {
   listeners.add(listener);
   listener(transitionState);
   return () => listeners.delete(listener);
+}
+
+// Decoding is not GPU readiness. Upload the handoff's textures while its
+// current painting is still resting, before advancing the visual clock.
+export function registerContourPaintingPreparer(prepare) {
+  paintingPreparers.add(prepare);
+  return () => paintingPreparers.delete(prepare);
+}
+
+export async function prepareContourPaintings(images) {
+  for (const prepare of paintingPreparers) await prepare(images);
 }
 
 export function startThemeContourTransition({

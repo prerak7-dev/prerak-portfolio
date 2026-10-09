@@ -168,6 +168,19 @@ async function measure(page, sceneIndex, label) {
       const alpha = second[(y * after.width + x) * 4 + 3];
       assert(alpha < 5, `${label}: the head, shoulder and feet cannot be moved by a neighboring effect (${alpha})`);
     }
+    // The trailing hem must not pick up the flowers below and to its left.
+    const flowers = regions.portrait ? [[.065, .503], [.075, .508], [.057, .494]]
+      : [[.060, .474], [.067, .484], [.055, .480]];
+    const cloakFrame = await page.evaluate(() => window.capturePaintedActor(1.4, 1));
+    const cloakPixels = await sharp(Buffer.from(cloakFrame.png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer();
+    for (const [u, v] of flowers) {
+      const x = Math.round((p.left + u * p.width) * sx), y = Math.round((p.top + v * p.height) * sy);
+      if (x < 2 || x >= after.width - 2 || y < 2 || y >= after.height - 2) continue;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        assert(cloakPixels[((y + dy) * after.width + x + dx) * 4 + 3] < 3,
+          `${label}: flowers cannot be included in the cloak mask`);
+      }
+    }
     const index = regions.subjects.findIndex(subject => subject.kind === 'waterfall');
     const fall = regions.subjects[index], [cx, cy, rx, ry] = fall.region;
     const at = async time => {
@@ -245,7 +258,7 @@ try {
   assert.equal(Number(await mobile.locator(selector).getAttribute('data-actor-time')), paused);
   assert.equal(await mobile.locator(selector).evaluate(canvas => canvas.style.visibility), 'hidden');
   assert.deepEqual(errors, []);
-  console.log('PASS: actual painted subjects move on every chapter, all eight appearances and both mobile layouts; reduced motion stops them.');
+  console.log(`PASS: actual painted subjects move on every chapter${refinementOnly ? '' : ', all eight appearances'} and both mobile layouts; reduced motion stops them.`);
 } catch (error) {
   console.error(error); process.exitCode = 1;
   for (const [index, context] of browser.contexts().entries()) for (const page of context.pages()) {

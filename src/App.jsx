@@ -20,7 +20,7 @@ import { spatialChapters, spatialThemes } from './data/spatialPortfolioData.js';
 import { useSpatialNarrative } from './hooks/useSpatialNarrative.js';
 import { createAssetPath } from './security/contentSecurity.js';
 import { getGatewayTransition } from './state/gatewayTransitionStore.js';
-import { startThemeContourTransition } from './state/themeContourTransitionStore.js';
+import { prepareContourPaintings, startThemeContourTransition } from './state/themeContourTransitionStore.js';
 import { getCinematicReadiness } from './state/cinematicReadinessStore.js';
 import { getGateSealPose, returnGateSealToRest } from './state/gateSealTurnStore.js';
 import { gateSealDissolveProgress } from './utils/gateSealMotion.js';
@@ -412,7 +412,7 @@ export default function App() {
       // Decode the incoming tracer paths before their contour starts revealing.
       loadCinematicGeometryField(getCinematicGeometryAsset(nextTheme, sceneIndex, gatewayFrameIndex)).catch(() => null),
       returnGateSealToRest(),
-    ]).then(([fromImage, toImage, geometryImage]) => {
+    ]).then(async ([fromImage, toImage, geometryImage]) => {
       if (themeRequestRef.current !== requestId) return;
       document.documentElement.classList.remove('theme-assets-preparing');
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -424,6 +424,8 @@ export default function App() {
         setTheme(nextTheme);
         themeTransitionBusyRef.current = false;
       } else {
+        await prepareContourPaintings({ fromImage, toImage, geometryImage, fromTheme: theme, toTheme: nextTheme, sceneIndex, targetSceneIndex: sceneIndex });
+        if (themeRequestRef.current !== requestId) return;
         document.documentElement.classList.add('theme-contour-transition-active');
         startThemeContourTransition({
           fromTheme: theme,
@@ -498,6 +500,7 @@ export default function App() {
         finish();
         return;
       }
+      await prepareContourPaintings({ fromImage, toImage, geometryImage, fromTheme: theme, toTheme: theme, sceneIndex, targetSceneIndex });
       setChapterNavigationActive(true);
       const seal = getGateSealPose();
       const previewCanvas = document.querySelector('.cinematic-environment > .cinematic-contour-dissolve');

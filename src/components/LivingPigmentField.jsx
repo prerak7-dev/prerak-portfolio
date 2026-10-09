@@ -5,7 +5,7 @@ import { LIVING_PIGMENT_ATLAS, PIGMENT_SCENE_SELECTORS } from '../data/livingPig
 import { getTracerSceneField } from '../data/tracerSceneFields.js';
 import { createAssetPath } from '../security/contentSecurity.js';
 import { getSpatialMotion, subscribeSpatialMotion } from '../state/spatialMotionStore.js';
-import { getThemeContourTransition, subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
+import { getThemeContourTransition, registerContourPaintingPreparer, subscribeThemeContourTransition } from '../state/themeContourTransitionStore.js';
 import { getGateSealPose, subscribeGateSealTurn } from '../state/gateSealTurnStore.js';
 import { loadCinematicGeometryField } from '../utils/cinematicGeometryField.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
@@ -40,8 +40,9 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
     const resources = new Map(), lastProjections = new Map();
     const retryAt = new Map();
     const projection = index => readSceneImageProjection(root.querySelector(PIGMENT_SCENE_SELECTORS[index]), getSceneCoverProjection(width, height), width);
+    const resourceKey = (appearance, sceneIndex, portrait) => `${appearance}:${sceneIndex}:${portrait}:${width <= 1100 || height <= 500}`;
     const request = (appearance, sceneIndex, portrait) => {
-      const key = `${appearance}:${sceneIndex}:${portrait}:${width <= 1100 || height <= 500}`;
+      const key = resourceKey(appearance, sceneIndex, portrait);
       if (resources.get(key) === false && performance.now() >= retryAt.get(key)) resources.delete(key);
       if (!resources.has(key)) {
         resources.set(key, null);
@@ -71,14 +72,16 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
       if (canvas.style.visibility !== 'hidden') { renderer.clear(); canvas.style.visibility = 'hidden'; }
       canvas.dataset.pigmentState = state;
     };
-    const measureQuiet = (time, moving) => {
+    const measureQuiet = time => {
+      // Text exclusion is a soft, padded boundary, not an animation. Sampling
+      // it at display cadence forces expensive layout during every passage.
+      if (time - lastMeasure < .12) return;
+      lastMeasure = time;
       if (quietDirty || time - quietScanAt > .5) {
         quietNodes = [...findTextTargets(root), ...root.querySelectorAll('.archive-header, .theme-switcher, .lore-toggle, .lore-avatar')]
           .filter(node => !node.closest('.archive-scene[aria-hidden="true"], .cinematic-environment, .spatial-world'));
         quietDirty = false; quietScanAt = time;
       }
-      if (!moving && time - lastMeasure < .12) return;
-      lastMeasure = time;
       quietRects = pigmentQuietRects(quietNodes.filter(node => node.isConnected && node.checkVisibility({ checkVisibilityCSS: true }))
         .map(node => node.getBoundingClientRect()), width, height);
     };
@@ -101,7 +104,7 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
         if (resource) resource.firstDraw ??= time;
         return { ...layer, key, projection: pose, opacity: resource ? smooth((time - resource.firstDraw) / .8) : 0 };
       });
-      measureQuiet(time, layers.some(layer => layer.transitioning) || Math.abs(motion.velocity) > .01);
+      measureQuiet(time);
       const quality = document.documentElement.classList.contains('motion-quality-low') ? .48
         : document.documentElement.classList.contains('motion-quality-balanced') ? .72 : 1;
       renderer.draw(prepared, time, quietRects, quality, smooth((time - entranceAt) / 1.6));
@@ -124,9 +127,21 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
         incomingOrigin = next.initialProgress > 0 ? lastProjections.get(next.targetSceneIndex) : null;
       }
       if (!next.active) frozenOutgoing = incomingOrigin = null;
-      Object.assign(transition, next); quietDirty = true; animation?.invalidate();
+      if (next.token !== transition.token || next.active !== transition.active) quietDirty = true;
+      Object.assign(transition, next); animation?.invalidate();
     });
     const unsubscribeSeal = subscribeGateSealTurn(() => animation?.invalidate());
+    const unregisterPreparer = registerContourPaintingPreparer(async ({ toImage, toTheme, targetSceneIndex }) => {
+      if (!atlasReady || disposed) return;
+      const portrait = toImage.naturalHeight > toImage.naturalWidth;
+      const key = resourceKey(toTheme, targetSceneIndex, portrait);
+      const field = await loadCinematicGeometryField(getCinematicGeometryAsset(toTheme, targetSceneIndex, 0, { portrait })).catch(() => null);
+      if (disposed || !field?.image) return;
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      if (disposed) return;
+      renderer.prepare(key, targetSceneIndex, portrait, toImage, field.image, getTracerSceneField(toTheme, targetSceneIndex, { portrait }));
+      if (!resources.get(key)) resources.set(key, { image: toImage, field, firstDraw: null });
+    });
     const mutation = new MutationObserver(() => { quietDirty = true; animation?.invalidate(); });
     mutation.observe(root, { childList: true, subtree: true, characterData: true });
     const observer = new ResizeObserver(resize);
@@ -142,7 +157,7 @@ export const LivingPigmentField = memo(function LivingPigmentField({ theme, read
     });
     return () => {
       disposed = true; animation.dispose(); observer.disconnect(); mutation.disconnect();
-      unsubscribeMotion(); unsubscribeTransition(); unsubscribeSeal(); renderer.dispose();
+      unsubscribeMotion(); unsubscribeTransition(); unsubscribeSeal(); unregisterPreparer(); renderer.dispose();
     };
   }, []);
 

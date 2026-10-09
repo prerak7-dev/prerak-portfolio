@@ -39,31 +39,44 @@ export const PAINTED_SUBJECT_GLSL = `
       float weight = 1. - smoothstep(motion.x > 5.5 ? .82 : .78, motion.x > 5.5 ? .97 : 1., distance);
       weight *= 1. - smoothstep(edge.x - edge.y, edge.x + edge.y, point.y);
       if (motion.x > 1.5 && motion.x < 2.5) {
+        // The trailing hem slopes up toward the left. A rectangular feather
+        // also catches the flowers below it, especially in portrait artwork.
+        float hem = mix(-.06, .72, smoothstep(-.65, .02, local.x));
         weight *= (1. - smoothstep(.1, .6, local.x)) * smoothstep(-.95, -.35, local.y)
-          * (1. - smoothstep(.45, .9, local.y));
+          * (1. - smoothstep(hem - .12, hem, local.y));
       } else if (motion.x > 3.5 && motion.x < 4.5) weight *= 1. - smoothstep(.5, .98, local.y);
       weight *= insidePainting(point) * uActorStrength;
       if (weight < .00001) continue;
       float phase = uActorTime * motion.y;
       vec4 paint;
-      if (motion.x < .5 || motion.x > 4.5 && motion.x < 5.5) {
+      if (motion.x < .5) {
+        // One continuous paper-plane orbit, not two cross-fading copies of
+        // the rim. Quadrature drift carries the motion through each turn.
+        float angle = sin(phase) * motion.z * .30 + travel * motion.w;
+        vec2 turned = rotatePaint(local, angle);
+        turned += vec2(cos(phase), sin(phase)) * motion.z * .065;
+        vec2 displacement = (turned - local) * region.zw;
+        // Pin the crop and shoreline in UV space: blending two sampled
+        // colors here would bring back a second edge around the body.
+        float border = min(min(point.x, 1. - point.x), min(point.y, 1. - point.y));
+        float cropPin = border / (border + length(displacement) + .001);
+        vec2 source = point + displacement * weight * cropPin;
+        paint = readPainting(painting, source);
+        result = paint;
+        coverage = max(coverage, weight);
+        continue;
+      } else if (motion.x > 4.5 && motion.x < 5.5) {
         // Each sample keeps travelling in one direction. Its reset happens at
         // zero weight while the other sample carries the original brushwork.
         float a = fract(phase / 6.28318530718 + float(i) * .173);
         float b = fract(a + .5);
         float blend = .5 - .5 * cos(a * 6.28318530718);
-        vec2 sourceA, sourceB;
-        if (motion.x < .5) {
-          sourceA = region.xy + rotatePaint(local, (a - .5) * motion.z + travel * motion.w) * region.zw;
-          sourceB = region.xy + rotatePaint(local, (b - .5) * motion.z + travel * motion.w) * region.zw;
-        } else {
-          float flutter = .025 * sin(phase + local.y * 5.);
-          sourceA = region.xy + vec2(local.x + flutter, clamp(local.y - (a - .5) * motion.z, -.93, .93)) * region.zw;
-          sourceB = region.xy + vec2(local.x + flutter, clamp(local.y - (b - .5) * motion.z, -.93, .93)) * region.zw;
-          weight *= (1. - smoothstep(.45, .92, abs(local.x))) * smoothstep(-.98, -.6, local.y)
-            * (1. - smoothstep(.58, .98, local.y));
-          weight *= smoothstep(.035, .32, dot(original.rgb, vec3(.213, .715, .072)));
-        }
+        float flutter = .025 * sin(phase + local.y * 5.);
+        vec2 sourceA = region.xy + vec2(local.x + flutter, clamp(local.y - (a - .5) * motion.z, -.93, .93)) * region.zw;
+        vec2 sourceB = region.xy + vec2(local.x + flutter, clamp(local.y - (b - .5) * motion.z, -.93, .93)) * region.zw;
+        weight *= (1. - smoothstep(.45, .92, abs(local.x))) * smoothstep(-.98, -.6, local.y)
+          * (1. - smoothstep(.58, .98, local.y));
+        weight *= smoothstep(.035, .32, dot(original.rgb, vec3(.213, .715, .072)));
         float validA = blend * insidePainting(sourceA), validB = (1. - blend) * insidePainting(sourceB);
         float valid = validA + validB;
         paint = (readPainting(painting, sourceA) * validA + readPainting(painting, sourceB) * validB) / max(valid, .00001);
