@@ -23,8 +23,7 @@ const LANDSCAPE = [
   [subject('Case Studies satellite', 'orbit', [1.06, .31, .395, .65], 24, .18, .10, .88),
     subject('shore reflections', 'water', [.36, .92, .34, .045], 15, .005)],
   [subject('orbital ribbon', 'orbit', [.53, .29, .64, .43], 30, .065, .04, .78),
-    subject('Education moon', 'spin', [.107, .436, .034, .061], 42, 1, .28),
-    subject('chronology tide', 'water', [.50, .94, .42, .035], 19, .005)],
+    subject('Education moon', 'spin', [.107, .436, .034, .061], 42, 1, .28)],
   [subject('near celestial arc', 'orbit', [-.53, .41, .75, .98], 28, .12, .06, .57),
     subject('tidal bands', 'water', [.40, .855, .32, .075], 17, .006)],
   [subject('horizon arc', 'orbit', [.69, -.20, .60, .61], 32, .10, .05, .348),
@@ -46,8 +45,7 @@ const PORTRAIT = [
   [subject('Case Studies satellite', 'orbit', [1.26, .57, .62, .315], 24, .18, .10, .88),
     subject('shore reflections', 'water', [.43, .934, .40, .036], 15, .005)],
   [subject('orbital ribbon', 'orbit', [.64, .67, .80, .20], 30, .065, .04, .855),
-    subject('Education moon', 'spin', [.247, .409, .058, .030], 42, 1, .28),
-    subject('chronology tide', 'water', [.50, .912, .42, .043], 19, .005)],
+    subject('Education moon', 'spin', [.247, .409, .058, .030], 42, 1, .28)],
   [subject('near celestial arc', 'orbit', [-.37, .515, .64, .34], 28, .12, .06, .655),
     subject('tidal bands', 'water', [.45, .895, .43, .068], 17, .006)],
   [subject('horizon arc', 'orbit', [.70, .14, 1.05, .42], 32, .10, .05, .56),
@@ -57,4 +55,16 @@ const PORTRAIT = [
 
 export function getPaintedSubjects(sceneIndex, portrait = false) {
   return (portrait ? PORTRAIT : LANDSCAPE)[Math.max(0, Math.min(5, sceneIndex))];
+}
+
+// The outer edge of the shared Experience/Education band. Keep its lower
+// triangular landscape still; the independently animated moon is exempt.
+const NO_BACKDROP_CLIP = Object.freeze([0, 0, 0, 0]);
+const CHRONOLOGY_BACKDROP_CLIPS = [
+  Object.freeze([1.326, -2.775, 2.066 * 1.008, 3.672 * 1.008]),
+  Object.freeze([1.10, .11, 1.28 * 1.035, .645 * 1.035]),
+];
+
+export function getPaintedBackdropClip(sceneIndex, portrait = false) {
+  return sceneIndex === 3 ? CHRONOLOGY_BACKDROP_CLIPS[Number(portrait)] : NO_BACKDROP_CLIP;
 }

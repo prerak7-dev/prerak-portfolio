@@ -91,7 +91,7 @@ async function chapter(page, label, id) {
 async function measure(page, sceneIndex, label) {
   await page.evaluate(() => { window.actorAuditProjection = null; });
   const regions = await page.evaluate(async sceneIndex => {
-    const { getPaintedSubjects } = await import('/prerak-portfolio/src/data/paintedSubjects.js');
+    const { getPaintedSubjects, getPaintedBackdropClip } = await import('/prerak-portfolio/src/data/paintedSubjects.js');
     const { PIGMENT_SCENE_SELECTORS } = await import('/prerak-portfolio/src/data/livingPigmentArt.js');
     const { readSceneImageProjection } = await import('/prerak-portfolio/src/utils/cinematicGeometryRenderer.js');
     const { getSceneCoverProjection } = await import('/prerak-portfolio/src/data/cinematicViewport.js');
@@ -99,7 +99,7 @@ async function measure(page, sceneIndex, label) {
     const projection = readSceneImageProjection(image, getSceneCoverProjection(innerWidth, innerHeight), innerWidth);
     const portrait = image.naturalHeight > image.naturalWidth;
     return { projection, viewportWidth: innerWidth, viewportHeight: innerHeight, portrait,
-      subjects: getPaintedSubjects(sceneIndex, portrait) };
+      subjects: getPaintedSubjects(sceneIndex, portrait), backdropClip: getPaintedBackdropClip(sceneIndex, portrait) };
   }, sceneIndex);
   const capture = () => page.evaluate(() => window.capturePaintedActor());
   const before = await capture();
@@ -186,6 +186,33 @@ async function measure(page, sceneIndex, label) {
     }
     console.log(`${label}: foreground waves remain pinned throughout solar rotation`);
   }
+  if (sceneIndex === 3) {
+    const [cx, cy, rx, ry] = regions.backdropClip;
+    const moon = regions.subjects.find(subject => subject.kind === 'spin').region;
+    const checkLowerLandscape = async (frame, name) => {
+      const pixels = await sharp(Buffer.from(frame.png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer();
+      const scaleX = frame.width / regions.viewportWidth, scaleY = frame.height / regions.viewportHeight;
+      let checked = 0, visible = 0;
+      for (let y = 0; y < frame.height; y++) for (let x = 0; x < frame.width; x++) {
+        const u = (x / scaleX - p.left) / p.width, v = (y / scaleY - p.top) / p.height;
+        const alpha = pixels[(y * frame.width + x) * 4 + 3];
+        if (alpha > 3) visible++;
+        if (Math.hypot((u - cx) / rx, (v - cy) / ry) <= 1.003) continue;
+        if (Math.hypot((u - moon[0]) / moon[2], (v - moon[1]) / moon[3]) < 1.35) continue;
+        checked++;
+        assert(alpha < 3, `${label}: ${name} cannot animate below the diagonal band at ${u.toFixed(3)},${v.toFixed(3)}`);
+      }
+      assert(checked > 10000 && visible > 20, `${label}: check a visible layer and a substantial static foreground`);
+    };
+    for (const [time, travel] of [[0, -.4], [7.5, 0], [15, .4]]) {
+      const frame = await page.evaluate(({ time, travel }) => window.capturePaintedActor(time, null, null, travel), { time, travel });
+      await checkLowerLandscape(frame, 'painted motion');
+    }
+    const pigment = await page.locator('.living-pigment-field').evaluate(canvas => canvas.style.display === 'none' ? null
+      : { png: canvas.toDataURL(), width: canvas.width, height: canvas.height });
+    if (pigment) await checkLowerLandscape(pigment, 'pigment drift');
+    console.log(`${label}: lower landscape stays static at multiple loop phases and in both scroll directions`);
+  }
   if (sceneIndex === 0) {
     const pins = regions.portrait ? [[.135, .461], [.14, .48], [.129, .52]] : [[.094, .412], [.097, .44], [.097, .498]];
     for (const [u, v] of pins) {
@@ -257,6 +284,32 @@ async function checkHomeMoon() {
   console.log('PASS: Home moon loops, follows scroll, preserves the foreground and respects reduced motion in every seasonal appearance.');
 }
 
+async function checkChronology() {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    const page = await open('default-light', viewport);
+    await page.locator('.living-pigment-field').evaluate(canvas => { canvas.style.display = ''; });
+    for (const [label, id] of [['Experience', 'professional'], ['Education', 'education']]) {
+      await chapter(page, label, id);
+      await page.waitForFunction(() => document.querySelector('.living-pigment-field').dataset.pigmentScenes === '3'
+        && document.querySelector('.living-pigment-field').dataset.pigmentState === 'reading');
+      await page.waitForTimeout(1200);
+      await measure(page, 3, `chronology-${viewport.width}-${id}-light`);
+    }
+    await page.getByRole('button', { name: 'Winter', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('.archive-app').classList.contains('theme-winter-light')
+      && !document.documentElement.classList.contains('theme-contour-transition-active'), null, { timeout: 45000 });
+    await page.getByRole('switch', { name: 'Light appearance' }).click();
+    await page.waitForFunction(() => document.querySelector('.archive-app').classList.contains('theme-winter')
+      && !document.documentElement.classList.contains('theme-contour-transition-active'), null, { timeout: 45000 });
+    await measure(page, 3, `chronology-${viewport.width}-education-night`);
+    await chapter(page, 'Experience', 'professional');
+    await measure(page, 3, `chronology-${viewport.width}-professional-night`);
+    await page.close();
+  }
+  assert.deepEqual(errors, []);
+  console.log('PASS: both chronology chapters keep the lower landscape still, retain moon and band motion, and preserve seasonal handoffs.');
+}
+
 async function checkAllSubjects() {
   const refinementOnly = process.argv.includes('--refinement-only');
   const page = await open('default-light', { width: 1440, height: 900 });
@@ -309,6 +362,7 @@ async function checkAllSubjects() {
 
 try {
   if (process.argv.includes('--home-moon-only')) await checkHomeMoon();
+  else if (process.argv.includes('--chronology-only')) await checkChronology();
   else await checkAllSubjects();
 } catch (error) {
   console.error(error); process.exitCode = 1;

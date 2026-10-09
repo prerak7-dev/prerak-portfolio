@@ -1,6 +1,14 @@
 import { MAX_PAINTED_SUBJECTS } from '../data/paintedSubjects.js';
 
+export const PAINTED_BACKDROP_CLIP_GLSL = `
+  float paintedBackdropCoverage(vec2 point, vec4 boundary) {
+    if (boundary.z <= 0.) return 1.;
+    return 1. - smoothstep(.992, 1., length((point - boundary.xy) / boundary.zw));
+  }
+`;
+
 export const PAINTED_SUBJECT_GLSL = `
+  ${PAINTED_BACKDROP_CLIP_GLSL}
   uniform vec4 uOutgoingActorRegions[${MAX_PAINTED_SUBJECTS}];
   uniform vec4 uIncomingActorRegions[${MAX_PAINTED_SUBJECTS}];
   uniform vec4 uOutgoingActorMotion[${MAX_PAINTED_SUBJECTS}];
@@ -9,6 +17,7 @@ export const PAINTED_SUBJECT_GLSL = `
   uniform vec2 uIncomingActorEdges[${MAX_PAINTED_SUBJECTS}];
   uniform int uOutgoingActorCount, uIncomingActorCount;
   uniform float uActorTime, uActorStrength, uActorIdle;
+  uniform vec4 uOutgoingBackdropClip, uIncomingBackdropClip;
 
   vec4 readPainting(sampler2D painting, vec2 point) {
     return texture2D(painting, vec2(clamp(point.x, 0., 1.), 1. - clamp(point.y, 0., 1.)));
@@ -38,6 +47,7 @@ export const PAINTED_SUBJECT_GLSL = `
       float distance = roundSubject ? length(local) : max(abs(local.x), abs(local.y));
       float weight = 1. - smoothstep(motion.x > 5.5 ? .82 : .78, motion.x > 5.5 ? .97 : 1., distance);
       weight *= 1. - smoothstep(edge.x - edge.y, edge.x + edge.y, point.y);
+      if (motion.x < .5) weight *= paintedBackdropCoverage(point, mix(uOutgoingBackdropClip, uIncomingBackdropClip, incoming));
       if (motion.x > 1.5 && motion.x < 2.5) {
         // The trailing hem slopes up toward the left. A rectangular feather
         // also catches the flowers below it, especially in portrait artwork.

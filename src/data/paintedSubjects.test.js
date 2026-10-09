@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getPaintedSubjects, MAX_PAINTED_SUBJECTS, PAINTED_SUBJECT_MODES } from './paintedSubjects.js';
+import { getPaintedBackdropClip, getPaintedSubjects, MAX_PAINTED_SUBJECTS, PAINTED_SUBJECT_MODES } from './paintedSubjects.js';
 import { getCelestialTracerFocus } from './celestialTracerFocus.js';
 
 test('all painted subjects fit the shared shader without dropping existing Home motion', () => {
@@ -32,5 +32,20 @@ test('Home moon reuses the looping, scroll-responsive celestial motion in both c
       const [cx, cy, rx, ry] = moon.region;
       assert(y > moon.horizon + .01 || Math.hypot((x - cx) / rx, (y - cy) / ry) >= 1);
     }
+  }
+});
+
+test('Experience and Education keep their lower landscape still without stopping the moon or band', () => {
+  for (const portrait of [false, true]) {
+    const subjects = getPaintedSubjects(3, portrait);
+    assert.deepEqual(subjects.map(subject => subject.kind), ['orbit', 'spin']);
+    const clip = getPaintedBackdropClip(3, portrait);
+    assert(Object.isFrozen(clip));
+    const [cx, cy, rx, ry] = clip;
+    const lowerLandscape = portrait ? [[.2, .75], [.5, .85], [.8, .9]] : [[.2, .5], [.5, .75], [.8, .9]];
+    for (const [x, y] of lowerLandscape) assert(Math.hypot((x - cx) / rx, (y - cy) / ry) > 1);
+    const focus = getCelestialTracerFocus(3, portrait);
+    assert(rx > focus.radiusX && ry > focus.radiusY, 'The original painted band must remain inside the feathered boundary');
+    for (const scene of [0, 1, 2, 4, 5]) assert.deepEqual(getPaintedBackdropClip(scene, portrait), [0, 0, 0, 0]);
   }
 });

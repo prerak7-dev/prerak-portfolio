@@ -26,7 +26,7 @@ import { GATE_SEAL_SHAPE_GLSL, GATE_SEAL_ART_EXTENT } from '../utils/gateSealArt
 import { getGateSealPose, subscribeGateSealTurn } from '../state/gateSealTurnStore.js';
 import { retryAssetLoad } from '../utils/assetLoadRetry.js';
 import { isPaintingReady } from '../utils/paintingReadiness.js';
-import { getPaintedSubjects, MAX_PAINTED_SUBJECTS } from '../data/paintedSubjects.js';
+import { getPaintedBackdropClip, getPaintedSubjects, MAX_PAINTED_SUBJECTS } from '../data/paintedSubjects.js';
 import { PAINTED_SUBJECT_GLSL } from '../utils/paintedSubjectShader.js';
 import { createTracerAnimation } from '../utils/tracerAnimation.js';
 
@@ -364,6 +364,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         uIncomingActorMotion: { value: actorArrays() },
         uOutgoingActorEdges: { value: Array.from({ length: MAX_PAINTED_SUBJECTS }, () => new THREE.Vector2(1.1, .01)) },
         uIncomingActorEdges: { value: Array.from({ length: MAX_PAINTED_SUBJECTS }, () => new THREE.Vector2(1.1, .01)) },
+        uOutgoingBackdropClip: { value: new THREE.Vector4() },
+        uIncomingBackdropClip: { value: new THREE.Vector4() },
         uOutgoingActorCount: { value: 0 },
         uIncomingActorCount: { value: 0 },
       },
@@ -527,6 +529,7 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       if (actorProfileKeys[Number(incoming)] === key) return;
       actorProfileKeys[Number(incoming)] = key;
       const subjects = enabled ? getPaintedSubjects(sceneIndex, portrait) : [];
+      material.uniforms[`u${side}BackdropClip`].value.set(...getPaintedBackdropClip(sceneIndex, portrait));
       material.uniforms[`u${side}ActorCount`].value = subjects.length;
       subjects.forEach((subject, i) => {
         material.uniforms[`u${side}ActorRegions`].value[i].set(...subject.region);

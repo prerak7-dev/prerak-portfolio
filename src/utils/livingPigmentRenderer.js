@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { CONTOUR_HANDOFF_GLSL, CONTOUR_NOISE_GLSL } from './contourDissolveShader.js';
 import { createPigmentSeeds, MAX_PIGMENT_QUIET_RECTS, PIGMENT_COMPACT_COUNT, PIGMENT_DESKTOP_COUNT } from './livingPigmentMotion.js';
 import { getPigmentSubjects } from '../data/livingPigmentArt.js';
+import { getPaintedBackdropClip } from '../data/paintedSubjects.js';
+import { PAINTED_BACKDROP_CLIP_GLSL } from './paintedSubjectShader.js';
 
 const VERTEX_SHADER = `
   attribute vec2 aPaintingUv, aCenter, aRadius, aLocal;
@@ -11,7 +13,7 @@ const VERTEX_SHADER = `
   uniform vec2 uViewport;
   uniform float uTime, uTravel;
   varying vec2 vSprite, vPaintingUv, vContourUv, vScreen;
-  varying float vTile;
+  varying float vTile, vBackdropMotion;
   void main() {
     float phase = clamp(uTravel, 0., 1.);
     float angle = uTime * aLoop.y + aLoop.w + phase * aLoop.z;
@@ -45,6 +47,7 @@ const VERTEX_SHADER = `
     vSprite = uv; vPaintingUv = aLoop.x > .5 && aLoop.x < 1.5 ? anchoredUv : aPaintingUv;
     vContourUv = (point - uProjection.xy) / uProjection.zw;
     vScreen = point;
+    vBackdropMotion = aLoop.x < 1.5 ? 1. : 0.;
     vTile = aSeed.w < .70 ? floor(aSeed.x * 4.) : aSeed.w < .9 ? 4. + floor(aSeed.x * 4.) : 8. + floor(aSeed.x * 8.);
     gl_Position = vec4(point.x / uViewport.x * 2. - 1., 1. - point.y / uViewport.y * 2., 0., 1.);
   }
@@ -56,8 +59,10 @@ const FRAGMENT_SHADER = `
   uniform float uSourceReach, uOriginFocus, uProgress, uTransition, uRole, uOpacity;
   uniform vec4 uQuietRects[${MAX_PIGMENT_QUIET_RECTS}];
   uniform int uQuietCount;
+  uniform vec4 uBackdropClip;
   varying vec2 vSprite, vPaintingUv, vContourUv, vScreen;
-  varying float vTile;
+  varying float vTile, vBackdropMotion;
+  ${PAINTED_BACKDROP_CLIP_GLSL}
   ${CONTOUR_NOISE_GLSL}
   void main() {
     vec2 spriteUv = vec2((mod(vTile, 4.) + mix(.01, .99, vSprite.x)) / 4.,
@@ -65,6 +70,7 @@ const FRAGMENT_SHADER = `
     vec4 stamp = texture2D(uSprites, spriteUv);
     if (stamp.a < .01) discard;
     float quiet = 1.;
+    if (vBackdropMotion > .5) quiet *= paintedBackdropCoverage(vContourUv, uBackdropClip);
     for (int i = 0; i < ${MAX_PIGMENT_QUIET_RECTS}; i++) {
       if (i >= uQuietCount) break;
       vec4 rect = uQuietRects[i];
@@ -139,6 +145,7 @@ export function createLivingPigmentRenderer(canvas) {
           uProjection: { value: new THREE.Vector4() }, uViewport: { value: new THREE.Vector2(width, height) },
           uTime: { value: 0 }, uTravel: { value: 0 }, uProgress: { value: 0 }, uRole: { value: 0 },
           uTransition: { value: 0 }, uOpacity: { value: 0 },
+          uBackdropClip: { value: new THREE.Vector4(...getPaintedBackdropClip(sceneIndex, portrait)) },
           uSource: { value: new THREE.Vector2(...field.source) }, uSourceReach: { value: field.sourceReach },
           uOriginFocus: { value: field.motif === 'gateway' ? 1 : 0 },
           uQuietCount: { value: 0 }, uQuietRects: { value: Array.from({ length: MAX_PIGMENT_QUIET_RECTS }, () => new THREE.Vector4()) } },
