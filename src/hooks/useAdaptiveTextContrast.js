@@ -3,6 +3,7 @@ import { TEXT_MATERIALS } from '../data/textMaterials.js';
 import { readSceneImageProjection } from '../utils/cinematicGeometryRenderer.js';
 import { chooseReadableInk, inkRgb, sampleInkField, stabilizeInkWash, washOpacity } from '../utils/adaptiveInk.js';
 import { mergeBrushLines } from '../utils/textBrushGeometry.js';
+import { isPaintingReady } from '../utils/paintingReadiness.js';
 
 const IMAGES = {
   intro: '.gateway-sequence-preloads img', cores: '.cores-plate img', projects: '.systems-plate img',
@@ -87,6 +88,8 @@ export function useAdaptiveTextContrast(ref) {
     const clear = node => {
       node.removeAttribute('data-adaptive-ink');
       node.removeAttribute('data-ink-blend');
+      node.removeAttribute('data-ink-theme');
+      node.removeAttribute('data-ink-painting');
       for (let index = 0; index < (applied.get(node)?.opacities.length || 0); index++) node.style.removeProperty(`--adaptive-wash-${index}`);
       for (const property of ['--type-ink-color', '--adaptive-ink-paper', '--ink-wash-images', '--ink-wash-sizes', '--ink-wash-positions', '--ink-wash-clips', '--ink-wash-repeats', '--ink-wash-blends', '--ink-wash-transition']) node.style.removeProperty(property);
       applied.delete(node);
@@ -95,7 +98,9 @@ export function useAdaptiveTextContrast(ref) {
       frame = 0;
       if (disposed || forced.matches || !brush.complete || !brush.naturalWidth) return;
       const image = root.querySelector(IMAGES[root.dataset.chapter] || IMAGES.intro);
-      if (!image?.complete || !image.naturalWidth) return;
+      // React commits the palette before the decoded plate changes. Never lock
+      // incoming ink to the outgoing light/dark painting during that interval.
+      if (!isPaintingReady(image)) return;
       // Keep outgoing pigment frozen with its painting; prepare the next face on entry.
       if (root.dataset.chapterCopyPhase === 'exiting' || root.dataset.textContentPhase === 'exiting') return;
       const theme = [...root.classList].find(name => name.startsWith('theme-'))?.slice(6) || 'default';
@@ -128,14 +133,14 @@ export function useAdaptiveTextContrast(ref) {
         const style = getComputedStyle(node);
         if (style.visibility === 'hidden' || style.display === 'none') return [];
         const kind = node.matches('[aria-pressed="true"], .contour-eyebrow') ? 'accent' : node.dataset.textMaterial === 'display-ink' ? 'face' : 'ink';
-        const identity = `${theme}:${kind}:${node.textContent}`;
+        const identity = `${theme}:${image.currentSrc}:${kind}:${node.textContent}`;
         const key = `${sceneKey}:${identity}:${[rect.left, rect.top, rect.width, rect.height].map(Math.round).join(':')}`;
         const previous = applied.get(node);
         if (previous?.key === key) return [];
         // A compositor-driven flight must not trigger new contrast decisions at
         // arbitrary intermediate poses. The moving flag schedules the final pose.
-        if (previous?.identity === identity && (performance.now() < scrollingUntil
-          || node.closest('.chapter-rail[data-moving="true"]'))) return [];
+        if ((previous?.identity === identity && performance.now() < scrollingUntil)
+          || (previous?.theme === theme && node.closest('.chapter-rail[data-moving="true"]'))) return [];
         const icon = !node.matches('.material-text');
         range.selectNodeContents(node);
         const lines = icon ? [{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }]
@@ -156,6 +161,8 @@ export function useAdaptiveTextContrast(ref) {
         node.style.setProperty('--type-ink-color', rgb(choice.ink));
         node.style.setProperty('--adaptive-ink-paper', rgb(choice.paper));
         node.dataset.adaptiveInk = icon ? 'control' : 'text';
+        node.dataset.inkTheme = theme;
+        node.dataset.inkPainting = image.currentSrc;
         const images = [], sizes = [], positions = [], opacities = [], transitions = [];
         const sx = rect.width / (node.offsetWidth || rect.width);
         const sy = rect.height / (node.offsetHeight || rect.height);
@@ -184,12 +191,13 @@ export function useAdaptiveTextContrast(ref) {
         for (const [property, value] of [['clips', 'border-box'], ['repeats', 'no-repeat'], ['blends', 'normal']]) {
           node.style.setProperty(`--ink-wash-${property}`, images.map(() => value).join(',') || value);
         }
-        applied.set(node, { key, identity, choice, opacities });
+        applied.set(node, { key, identity, theme, choice, opacities });
         painted++;
       }
       for (const node of applied.keys()) if (!node.isConnected) applied.delete(node);
       // Regression checks verify this counter remains unchanged while idle.
       root.dataset.inkRefresh = String(++refreshCount);
+      if (painted) root.dispatchEvent(new Event('adaptive-ink-refresh'));
     };
     // Layout hooks place chapter copy in the first frame. Sample its final boxes
     // after that paint, avoiding stale mobile positions and forced layout work.

@@ -62,9 +62,9 @@ export const PAINTED_SUBJECT_GLSL = `
       if (motion.x < .5) {
         // One continuous paper-plane orbit, not two cross-fading copies of
         // the rim. Quadrature drift carries the motion through each turn.
-        float angle = sin(phase) * motion.z * .30 + travel * motion.w;
+        float angle = sin(phase) * motion.z * .18 + travel * motion.w;
         vec2 turned = rotatePaint(local, angle);
-        turned += vec2(cos(phase), sin(phase)) * motion.z * .065;
+        turned += vec2(cos(phase), sin(phase)) * motion.z * .18;
         vec2 displacement = (turned - local) * region.zw;
         // Pin the crop and shoreline in UV space: blending two sampled
         // colors here would bring back a second edge around the body.

@@ -854,7 +854,9 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     };
 
     const scheduleDraw = () => {
-      if (!disposed && !frame) frame = window.requestAnimationFrame(draw);
+      if (disposed) return;
+      if (actorAnimation) actorAnimation.invalidate();
+      else if (!frame) frame = window.requestAnimationFrame(draw);
     };
 
     const unsubscribe = subscribeSpatialMotion((next) => {
@@ -905,7 +907,13 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
     clear();
     scheduleDraw();
     if (!className.includes('boot-contour-dissolve')) {
-      actorAnimation = createTracerAnimation(({ time }) => { actorTime = time; scheduleDraw(); });
+      // One clock owns both time and painting, including after theme/scroll
+      // events. A second queued RAF would render an older pose a frame later.
+      actorAnimation = createTracerAnimation(({ time, timestamp }) => {
+        actorTime = time;
+        if (frame) window.cancelAnimationFrame(frame);
+        draw(timestamp);
+      });
     }
 
     return () => {

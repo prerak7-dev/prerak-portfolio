@@ -48,6 +48,14 @@ export function useTextBrushHover(ref) {
       strokes.splice(strokes.indexOf(stroke), 1);
     };
     const clear = () => { [...strokes].forEach(remove); cancelAnimationFrame(frame); frame = 0; };
+    const updatePigment = stroke => {
+      const style = getComputedStyle(root);
+      const ink = stroke.target.matches('[data-adaptive-ink]') ? stroke.target : stroke.target.querySelector('[data-adaptive-ink]');
+      const paper = ink?.dataset.inkTheme === scene().theme ? getComputedStyle(ink).getPropertyValue('--adaptive-ink-paper') : '';
+      stroke.node.style.setProperty('--brush-pigment', paper || style.getPropertyValue('--brush-pigment'));
+      stroke.node.style.setProperty('--brush-grain', style.getPropertyValue('--type-grain'));
+      stroke.node.dataset.brushTheme = scene().theme;
+    };
     const position = stroke => {
       const lines = measureBrushLines(stroke.target, root);
       const signature = JSON.stringify(lines);
@@ -95,14 +103,14 @@ export function useTextBrushHover(ref) {
       if (pending?.key === state.key) return pending.promise;
       const promise = loadCinematicGeometryField(getCinematicGeometryAsset(state.theme, state.index)).then(resource => {
         if (disposed || state.key !== scene().key || transitioning) return;
-        clear();
+        clear(); wanted = null;
         renderer ??= createTextContourRenderer();
         renderer.configure(resource.image, getSceneCoverProjection(innerWidth, innerHeight, resource.image.naturalWidth / resource.image.naturalHeight),
           getTracerSceneField(state.theme, state.index), innerWidth, innerHeight);
         configured = state.key;
       }).catch(() => {
         // A static painted edge is still usable without WebGL.
-        if (!disposed && state.key === scene().key) { clear(); renderer?.dispose(); renderer = null; configured = state.key; }
+        if (!disposed && state.key === scene().key) { clear(); wanted = null; renderer?.dispose(); renderer = null; configured = state.key; }
       }).finally(() => { if (pending?.promise === promise) pending = null; });
       pending = { key: state.key, promise };
       return promise;
@@ -115,20 +123,18 @@ export function useTextBrushHover(ref) {
       strokes.filter(stroke => stroke.to && stroke.target !== target).forEach(stroke => flow(stroke, 0));
       if (!target) return;
       const existing = strokes.find(stroke => stroke.target === target);
-      if (existing) { flow(existing, 1); return; }
+      if (existing) { updatePigment(existing); flow(existing, 1); return; }
       await prepare();
       if (disposed || ticket !== request || blocked() || !target.isConnected) return;
       if (strokes.length >= 3) remove(strokes[0]);
       const channel = ['hover-0', 'hover-1', 'hover-2'].find(name => !strokes.some(stroke => stroke.channel === name));
       const node = document.createElement('div');
       node.className = 'text-brush-wash';
-      const style = getComputedStyle(root);
-      const ink = target.matches('[data-adaptive-ink]') ? target : target.querySelector('[data-adaptive-ink]');
-      node.style.setProperty('--brush-pigment', (ink && getComputedStyle(ink).getPropertyValue('--adaptive-ink-paper')) || style.getPropertyValue('--brush-pigment'));
-      node.style.setProperty('--brush-grain', style.getPropertyValue('--type-grain'));
       const mask = !reduced.matches && renderer ? renderer.mask({ left: 0, top: 0, width: innerWidth, height: innerHeight }, 'incoming', 1, 1, channel) : null;
       if (mask) { node.style.maskImage = mask; renderer.draw(0, channel); }
       const stroke = { target, node, mask, channel, progress: 0, from: 0, to: 1, started: performance.now() };
+      wanted = target;
+      updatePigment(stroke);
       if (!position(stroke)) { renderer?.releaseMask(mask); wanted = null; return; }
       strokes.push(stroke);
       layer.append(node);
@@ -140,6 +146,7 @@ export function useTextBrushHover(ref) {
       for (const stroke of [...strokes]) if (stroke.to && !position(stroke)) remove(stroke);
       if (strokes.length) wake();
     };
+    const refreshPigment = () => { for (const stroke of strokes) if (stroke.to && !blocked()) updatePigment(stroke); };
     const onPointer = event => {
       if (event.pointerType === 'touch') return;
       pointer = { x: event.clientX, y: event.clientY };
@@ -179,6 +186,7 @@ export function useTextBrushHover(ref) {
     root.addEventListener('focusout', blur);
     root.addEventListener('scroll', refresh, true);
     root.addEventListener('contour-reading-refresh', refresh);
+    root.addEventListener('adaptive-ink-refresh', refreshPigment);
     window.addEventListener('text-contour-change', changeContent);
     window.addEventListener('resize', resize);
     window.addEventListener('blur', leave);
@@ -194,6 +202,7 @@ export function useTextBrushHover(ref) {
       root.removeEventListener('focusout', blur);
       root.removeEventListener('scroll', refresh, true);
       root.removeEventListener('contour-reading-refresh', refresh);
+      root.removeEventListener('adaptive-ink-refresh', refreshPigment);
       window.removeEventListener('text-contour-change', changeContent);
       window.removeEventListener('resize', resize);
       window.removeEventListener('blur', leave);

@@ -360,9 +360,42 @@ async function checkAllSubjects() {
   console.log(`PASS: actual painted subjects move on every chapter${refinementOnly ? '' : ', all eight appearances'} and both mobile layouts; reduced motion stops them.`);
 }
 
+async function checkSustainedMotion() {
+  for (const [theme, viewport] of [['default-light', { width: 1440, height: 900 }], ['winter', { width: 390, height: 844 }]]) {
+    const page = await open(theme, viewport);
+    let previousTime = 0;
+    for (const [label, id, scene] of [['Cores', 'cores', 1], ['Experience', 'professional', 3],
+      ['Education', 'education', 3], ['Field Notes', 'personal', 4], ['Contact', 'contact', 5]]) {
+      await chapter(page, label, id);
+      const entered = Number(await page.locator(selector).getAttribute('data-actor-time'));
+      assert(entered > previousTime, `${id}: chapter entry cannot reset the shared clock`);
+      await page.waitForTimeout(10000);
+      previousTime = await measure(page, scene, `${viewport.width > 1000 ? 'desktop' : 'portrait'}-sustained-${id}`);
+      assert(previousTime > entered + 2, `${id}: idle animation must not stop after entry`);
+      const nextTheme = theme.endsWith('-light') ? theme.replace('-light', '') : `${theme}-light`;
+      await page.getByRole('switch', { name: 'Light appearance' }).click();
+      await page.waitForFunction(theme => document.querySelector('.archive-app').classList.contains(`theme-${theme}`)
+        && !document.documentElement.classList.contains('theme-contour-transition-active'), nextTheme, { timeout: 45000 });
+      const changed = await page.evaluate(() => window.capturePaintedActor());
+      assert(changed.time > previousTime, `${id}: theme changes cannot restart the clock`);
+      await page.waitForTimeout(1200);
+      const continued = await page.evaluate(() => window.capturePaintedActor());
+      assert(continued.time > changed.time + .3, `${id}: animation must continue after the theme handoff`);
+      assert.notEqual(continued.png, changed.png, `${id}: actual painted pixels keep moving after a theme change`);
+      await page.getByRole('switch', { name: 'Light appearance' }).click();
+      await page.waitForFunction(theme => document.querySelector('.archive-app').classList.contains(`theme-${theme}`)
+        && !document.documentElement.classList.contains('theme-contour-transition-active'), theme, { timeout: 45000 });
+    }
+    await page.close();
+  }
+  assert.deepEqual(errors, []);
+  console.log('PASS: sustained painted motion in all five reported chapters, light/dark handoffs, and complete orbital loops on desktop and portrait.');
+}
+
 try {
   if (process.argv.includes('--home-moon-only')) await checkHomeMoon();
   else if (process.argv.includes('--chronology-only')) await checkChronology();
+  else if (process.argv.includes('--sustained-only')) await checkSustainedMotion();
   else await checkAllSubjects();
 } catch (error) {
   console.error(error); process.exitCode = 1;

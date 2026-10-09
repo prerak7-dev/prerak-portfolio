@@ -3,7 +3,8 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE || 'C:/Users/prera/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json');
 const { chromium } = require('playwright');
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const server = await chromium.launchServer({ channel: 'msedge', headless: true });
+const browser = await chromium.connect(server.wsEndpoint());
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
@@ -43,6 +44,7 @@ try {
     const image = new Image();
     image.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;opacity:0';
     image.src = canvas.toDataURL();
+    image.dataset.src = image.src;
     await image.decode(); plate.append(image); root.prepend(plate);
     const probe = document.createElement('p');
     probe.id = 'adaptive-motion-probe'; probe.className = 'material-text';
@@ -109,4 +111,7 @@ try {
   assert.equal(await page.locator('[data-adaptive-ink]').count(), 0);
   assert.deepEqual(errors, []);
   console.log('PASS: orbital label stability, stable moving ink, gradual wash, smooth interrupted fade, scroll settling, reduced motion, forced colors, and zero idle sampling.');
-} finally { await browser.close(); }
+} finally {
+  if (process.platform === 'win32') server.process().kill('SIGKILL');
+  else await server.close();
+}
