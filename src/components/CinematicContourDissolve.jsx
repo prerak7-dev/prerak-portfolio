@@ -253,7 +253,12 @@ const FRAGMENT_SHADER = `
     float edgeDeposit = wetEdge * edgePresence * (0.28 + paperFiber * 0.72);
     composed = mix(composed, luminousPigment, edgeDeposit * 0.045);
     composed += vec3(edgeDeposit * (0.004 + brokenWash * 0.008));
-    gl_FragColor = vec4(composed, clamp(totalWeight, 0.0, 1.0) * uEnvelope);
+    // Touch scrolling can rest a fraction of a pixel from a chapter boundary.
+    // Fade the contour cover there, never the subjects' continuous animation.
+    float actorCoverage = (outgoingActorCoverage * sceneWeight
+      + incomingActorCoverage * incomingWeight) / totalWeight;
+    float liveCoverage = smoothstep(0., .02, actorCoverage);
+    gl_FragColor = vec4(composed, clamp(totalWeight, 0.0, 1.0) * max(uEnvelope, liveCoverage));
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }

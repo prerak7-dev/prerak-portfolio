@@ -8,6 +8,7 @@ const server = await chromium.launchServer({ headless: true, args: ['--max-activ
   ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe' } : {}) });
 const browser = await chromium.connect(server.wsEndpoint());
 const output = 'tmp/mobile-painted-handoff', errors = [], warnings = [];
+const boundaryOnly = process.argv.includes('--boundary-only');
 await mkdir(output, { recursive: true });
 
 async function auditGraphics(page) {
@@ -58,8 +59,10 @@ async function settled(page, chapter) {
 async function moving(page, label) {
   await page.waitForTimeout(1200);
   const first = await page.evaluate(() => window.captureMovingPainting());
+  const screenFirst = boundaryOnly ? await page.screenshot({ scale: 'css' }) : null;
   await page.waitForTimeout(1400);
   const next = await page.evaluate(() => window.captureMovingPainting());
+  const screenNext = boundaryOnly ? await page.screenshot({ scale: 'css' }) : null;
   assert(next.time > first.time + .3, `${label}: the live loop must advance after the dissolve`);
   const pixels = async png => sharp(Buffer.from(png.split(',')[1], 'base64')).ensureAlpha().raw().toBuffer();
   const a = await pixels(first.png), b = await pixels(next.png);
@@ -67,6 +70,22 @@ async function moving(page, label) {
   for (let i = 0; i < a.length; i += 4) if (Math.min(a[i + 3], b[i + 3]) > 100
     && Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 18) changed++;
   assert(changed > 10, `${label}: actual background pixels must still animate`);
+  if (boundaryOnly) {
+    const size = page.viewportSize();
+    const [screenA, screenB, maskA, maskB] = await Promise.all([
+      sharp(screenFirst).ensureAlpha().raw().toBuffer(), sharp(screenNext).ensureAlpha().raw().toBuffer(),
+      sharp(Buffer.from(first.png.split(',')[1], 'base64')).resize(size.width, size.height).ensureAlpha().raw().toBuffer(),
+      sharp(Buffer.from(next.png.split(',')[1], 'base64')).resize(size.width, size.height).ensureAlpha().raw().toBuffer(),
+    ]);
+    let visibleChanges = 0;
+    for (let i = 0; i < screenA.length; i += 4) {
+      if (Math.min(maskA[i + 3], maskB[i + 3]) > 100
+        && Math.abs(maskA[i] - maskB[i]) + Math.abs(maskA[i + 1] - maskB[i + 1]) + Math.abs(maskA[i + 2] - maskB[i + 2]) > 18
+        && Math.abs(screenA[i] - screenB[i]) + Math.abs(screenA[i + 1] - screenB[i + 1]) + Math.abs(screenA[i + 2] - screenB[i + 2]) > 18) visibleChanges++;
+    }
+    assert(visibleChanges > 10, `${label}: animated subjects must be visible in the final composed screen`);
+    console.log(`${label}: ${visibleChanges} visible animated screen pixels`);
+  }
   const audit = await page.evaluate(() => ({
     peak: window.graphicsAudit.peak,
     active: window.graphicsAudit.contexts.filter(entry => !entry.gl.isContextLost()).length,
@@ -91,6 +110,10 @@ try {
     await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:4187/prerak-portfolio/');
     await page.waitForFunction(() => !document.querySelector('#boot-loader')
       && document.querySelector('.archive-viewport')?.dataset.homeIntroStage === 'complete', null, { timeout: 60000 });
+    if (boundaryOnly) await page.addStyleTag({ content: `
+      .cinematic-environment .environment-living-layer { animation: none !important; }
+      .living-pigment-field, .cinematic-atmosphere-field, .environment-volumetrics { visibility: hidden !important; }
+    ` });
     const orientation = landscape ? 'landscape' : 'portrait';
     await moving(page, `${orientation}-home`);
     for (const [label, id] of [['Cores', 'cores'], ['Experience', 'professional'], ['Education', 'education'],
@@ -107,6 +130,11 @@ try {
       await tab.scrollIntoViewIfNeeded();
       await tab.tap();
       await settled(page, id);
+      if (boundaryOnly) {
+        // Native touch scroll and address-bar resizing rarely land on an exact
+        // chapter float. A single CSS pixel used to hide the whole actor layer.
+        await page.evaluate(offset => scrollTo(0, scrollY + offset), ['professional', 'contact'].includes(id) ? -1 : 1);
+      }
       await moving(page, `${orientation}-${id}`);
       if (id === 'education') {
         for (const theme of ['default', 'default-light']) {
