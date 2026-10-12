@@ -13,6 +13,13 @@ export const homeCompositionStyles = `
   }
   .archive-viewport .archive-header { z-index: 40; pointer-events: none; }
   .archive-header :is(button, a) { pointer-events: auto; }
+  .archive-app .archive-viewport.experience-visible > .chapter-rail { animation: none; transition: none; }
+  .archive-app .archive-viewport .chapter-rail[data-entry-phase="waiting"] {
+    opacity: 0 !important; visibility: hidden !important; pointer-events: none;
+  }
+  .archive-app .chapter-rail[data-entry-phase="entering"][data-layout="compact"] .chapter-rail-list {
+    overflow: visible !important; clip-path: inset(-18px -8px);
+  }
   .archive-viewport .chapter-rail .chapter-rail-list { scroll-snap-type: none !important; scroll-behavior: auto !important; }
   .archive-app .archive-viewport .chapter-rail .chapter-rail-list button strong { scale: 1 !important; }
   .archive-app .archive-viewport .chapter-rail .chapter-celestial-marker,

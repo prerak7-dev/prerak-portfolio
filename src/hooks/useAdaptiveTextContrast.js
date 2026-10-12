@@ -140,7 +140,7 @@ export function useAdaptiveTextContrast(ref) {
         // A compositor-driven flight must not trigger new contrast decisions at
         // arbitrary intermediate poses. The moving flag schedules the final pose.
         if ((previous?.identity === identity && performance.now() < scrollingUntil)
-          || (previous?.theme === theme && node.closest('.chapter-rail[data-moving="true"]'))) return [];
+          || (previous?.theme === theme && node.closest('.chapter-rail[data-moving="true"], .chapter-rail[data-entry-phase="entering"]'))) return [];
         const icon = !node.matches('.material-text');
         range.selectNodeContents(node);
         const lines = icon ? [{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }]
@@ -209,7 +209,7 @@ export function useAdaptiveTextContrast(ref) {
         && (record.type !== 'attributes' || record.oldValue !== record.target.getAttribute(record.attributeName)))) schedule();
     });
     observer.observe(root, { subtree: true, childList: true, characterData: true, attributes: true, attributeOldValue: true,
-      attributeFilter: ['class', 'data-text-material', 'data-reading-hidden', 'aria-hidden', 'aria-selected', 'aria-pressed', 'data-chapter', 'data-chapter-copy-phase', 'data-chapter-copy-ready', 'data-text-content-phase', 'data-home-intro-stage', 'data-home-awaiting', 'data-moving'] });
+      attributeFilter: ['class', 'data-text-material', 'data-reading-hidden', 'aria-hidden', 'aria-selected', 'aria-pressed', 'data-chapter', 'data-chapter-copy-phase', 'data-chapter-copy-ready', 'data-text-content-phase', 'data-home-intro-stage', 'data-home-awaiting', 'data-moving', 'data-entry-phase'] });
     const settle = () => {
       scrollingUntil = performance.now() + 140;
       clearTimeout(settleTimer);

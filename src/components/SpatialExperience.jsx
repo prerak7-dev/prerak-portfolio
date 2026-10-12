@@ -14,6 +14,7 @@ import { getLoreAvatarState } from '../data/loreAvatarData.js';
 import { createAssetPath, createMailtoHref, getSafeLinkProps } from '../security/contentSecurity.js';
 import { CASE_STUDY_TIMING, useCaseStudySequence } from '../hooks/useCaseStudySequence.js';
 import { useChapterRailChoreography } from '../hooks/useChapterRailChoreography.js';
+import { useChapterRailEntrance } from '../hooks/useChapterRailEntrance.js';
 import { useChapterRailScroll } from '../hooks/useChapterRailScroll.js';
 import { useContourContentLayout } from '../hooks/useContourContentLayout.js';
 import { useHomeCompositionLayout } from '../hooks/useHomeCompositionLayout.js';
@@ -411,7 +412,7 @@ function ThemeAssetCrossfade({ src, alt = '', className = '', width, height }) {
   );
 }
 
-function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onSelect, theme }) {
+function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onSelect, theme, contentReady }) {
   const listRef = useRef(null);
   const railRef = useRef(null);
   const itemRefs = useRef([]);
@@ -425,12 +426,15 @@ function ChapterRail({ activeIndex, collapsed, intensity, onCollapsedChange, onS
     listRef,
     theme,
   });
+  const entryPhase = useChapterRailEntrance({ railRef, itemRefs, ready: contentReady });
 
   return (
     <nav
       ref={railRef}
       className={`chapter-rail is-orbit-rail ${collapsed ? 'is-collapsed' : ''}`}
       aria-label="Portfolio chapters"
+      data-entry-phase={entryPhase}
+      {...(entryPhase !== 'complete' ? { inert: '' } : {})}
       style={{ '--chapter-atmosphere-power': intensity }}
     >
       <button
@@ -1441,6 +1445,7 @@ export function SpatialExperience({
       <MemoArchiveHeader profile={profile} onIntro={handleIntro} />
       <MemoChapterRail
         activeIndex={activeIndex}
+        contentReady={experienceVisible && chapterCopy.phase === 'idle' && !chapterNavigationActive}
         collapsed={railCollapsed}
         intensity={atmospherePower}
         onCollapsedChange={setRailCollapsed}
