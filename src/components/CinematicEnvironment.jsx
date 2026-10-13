@@ -4,7 +4,6 @@ import { useDecodedPaintingSource } from '../hooks/useDecodedPaintingSource.js';
 import { CinematicAtmosphereField } from './CinematicAtmosphereField.jsx';
 import { CinematicContourDissolve } from './CinematicContourDissolve.jsx';
 import { LivingPigmentField } from './LivingPigmentField.jsx';
-import { InkFireworks } from './InkFireworks.jsx';
 import { GateSealPainting } from './GateSealPainting.jsx';
 import {
   CINEMATIC_ASSET_GEOMETRY,
@@ -796,7 +795,6 @@ export function CinematicEnvironment({
         </div>
         <CinematicContourDissolve theme={theme} />
         <LivingPigmentField theme={theme} ready={experienceVisible} />
-        <InkFireworks theme={theme} ready={experienceVisible} />
         <div className="environment-volumetrics" />
         <div ref={vignetteRef} className="environment-vignette" />
       </div>

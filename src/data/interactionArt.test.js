@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { GATE_SEAL_ART, INK_BRUSH_ART, INK_BRUSH_LANES, SEASONAL_SWIRL_ART, SEASONAL_SWIRL_SEASONS, SEASONAL_SWIRL_ELEMENTS } from './interactionArt.js';
 import { getCriticalPreloadManifest } from './cinematicAssets.js';
+import { APPEARANCE_IDS } from './themeAppearance.js';
 
 test('generated drafts retain provenance without being loaded by the seasonal swarm', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../scripts/cinematic-source/generated-interaction-art.json', import.meta.url)));
@@ -17,12 +18,19 @@ test('generated drafts retain provenance without being loaded by the seasonal sw
   assert.equal(INK_BRUSH_LANES, manifest.brushes.atlas.lanes);
 });
 
-test('the active seasonal sprite sheet preserves its generated master, prompt, and row mapping', () => {
+test('the retired seasonal sprite sheet preserves its generated master, prompt, and row mapping', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../scripts/cinematic-source/seasonal-swirl-art-v1.json', import.meta.url)));
   assert(existsSync(new URL('../../public/' + SEASONAL_SWIRL_ART, import.meta.url)));
   assert(existsSync(new URL('../../scripts/cinematic-source/' + manifest.source, import.meta.url)));
   assert(manifest.prompt.length > 1000 && manifest.generator === 'Built-in image_gen');
   assert.deepEqual(manifest.atlas.seasons, SEASONAL_SWIRL_SEASONS);
   assert.deepEqual(manifest.atlas.elements, SEASONAL_SWIRL_ELEMENTS);
-  assert(getCriticalPreloadManifest('spring-light', { portrait: true }).some(item => item.filename === SEASONAL_SWIRL_ART && item.decode));
+});
+
+test('seal fireworks are not preloaded in any appearance or orientation', () => {
+  for (const theme of APPEARANCE_IDS) {
+    for (const portrait of [false, true]) {
+      assert(!getCriticalPreloadManifest(theme, { portrait }).some(item => item.filename === SEASONAL_SWIRL_ART));
+    }
+  }
 });

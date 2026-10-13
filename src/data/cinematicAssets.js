@@ -1,5 +1,4 @@
 import { usesPortraitArtwork } from './cinematicViewport.js';
-import { SEASONAL_SWIRL_ART } from './interactionArt.js';
 import { LIVING_PIGMENT_ATLAS } from './livingPigmentArt.js';
 import { APPEARANCE_IDS, getSeason, hasPaintedScene, paintedAsset } from './themeAppearance.js';
 
@@ -140,7 +139,6 @@ export function getCriticalPreloadManifest(theme, { compact = false, portrait = 
   const assets = getCinematicAssets(theme, { portrait });
   const responsiveGatewayFrames = getResponsiveGatewayFrames(assets, compact);
   return uniqueManifest([
-    manifestItem(SEASONAL_SWIRL_ART, true, 'auto'),
     manifestItem(LIVING_PIGMENT_ATLAS, true, 'auto'),
     ...GLOBAL_PRELOAD_ASSETS.map((filename) => manifestItem(filename, false, 'high')),
     ...responsiveGatewayFrames.map((filename, index) => (
