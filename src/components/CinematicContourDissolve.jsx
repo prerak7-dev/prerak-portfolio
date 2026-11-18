@@ -28,8 +28,17 @@ import { retryAssetLoad } from '../utils/assetLoadRetry.js';
 import { isPaintingReady } from '../utils/paintingReadiness.js';
 import { getPaintedBackdropClip, getPaintedSubjects, MAX_PAINTED_SUBJECTS } from '../data/paintedSubjects.js';
 import { PAINTED_SUBJECT_GLSL } from '../utils/paintedSubjectShader.js';
+import { discoveryContext, MAX_DISCOVERIES } from '../utils/scenicDiscoveries.js';
+import { scenicDiscoveryField } from '../state/scenicDiscoveryStore.js';
+import { SEASONS, getSeason } from '../data/themeAppearance.js';
+import { TEXT_MATERIALS } from '../data/textMaterials.js';
 import { createTracerAnimation } from '../utils/tracerAnimation.js';
 import { createPaintedMotionClock, paintedMotionSample } from '../utils/paintedMotionClock.js';
+
+const DISCOVERY_INKS = Object.fromEntries(SEASONS.map(season => [season, {
+  dark: new THREE.Color(TEXT_MATERIALS[`${season}-light`].accent),
+  pale: new THREE.Color(TEXT_MATERIALS[season].accent),
+}]));
 
 const MAX_PIXEL_RATIO = 2;
 const MAX_RENDER_PIXELS = 2560 * 1440;
@@ -363,6 +372,16 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
         uActorIdle: { value: 0 },
         uActorTime: { value: 0 },
         uActorStrength: { value: 0 },
+        uDiscoveryCount: { value: 0 },
+        uDiscoveries: { value: Array.from({ length: MAX_DISCOVERIES }, () => new THREE.Vector4()) },
+        uDiscoveryOrigins: { value: Array.from({ length: MAX_DISCOVERIES }, () => new THREE.Vector4()) },
+        uDiscoveryArt: { value: Array.from({ length: MAX_DISCOVERIES }, () => new THREE.Vector4()) },
+        uOutgoingDiscoveryDark: { value: new THREE.Color() },
+        uOutgoingDiscoveryPale: { value: new THREE.Color() },
+        uIncomingDiscoveryDark: { value: new THREE.Color() },
+        uIncomingDiscoveryPale: { value: new THREE.Color() },
+        uOutgoingDiscoveryContext: { value: -1 },
+        uIncomingDiscoveryContext: { value: -1 },
         uOutgoingActorRegions: { value: actorArrays() },
         uIncomingActorRegions: { value: actorArrays() },
         uOutgoingActorMotion: { value: actorArrays() },
@@ -527,9 +546,13 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       renderer.clear();
     };
 
-    const setActorProfiles = (sceneIndex, image, incoming = false, enabled = true) => {
+    const setActorProfiles = (sceneIndex, image, incoming = false, enabled = true, appearance = themeRef.current) => {
       const side = incoming ? 'Incoming' : 'Outgoing';
       const portrait = image.naturalHeight > image.naturalWidth;
+      material.uniforms[`u${side}DiscoveryContext`].value = enabled ? discoveryContext(sceneIndex, appearance, portrait) : -1;
+      const ink = DISCOVERY_INKS[getSeason(appearance)];
+      material.uniforms[`u${side}DiscoveryDark`].value.copy(ink.dark);
+      material.uniforms[`u${side}DiscoveryPale`].value.copy(ink.pale);
       const key = `${sceneIndex}:${portrait}:${enabled}`;
       if (actorProfileKeys[Number(incoming)] === key) return;
       actorProfileKeys[Number(incoming)] = key;
@@ -629,6 +652,15 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       if (actorsReady) actorVisibleAt ??= actorTime;
       else actorVisibleAt = null;
       material.uniforms.uActorTime.value = actorTime;
+      const discoveries = className.includes('boot-contour-dissolve') ? [] : scenicDiscoveryField.sample(now);
+      material.uniforms.uDiscoveryCount.value = discoveries.length;
+      discoveries.forEach((discovery, index) => {
+        material.uniforms.uDiscoveries.value[index].set(discovery.kind, discovery.index, discovery.age, discovery.strength);
+        material.uniforms.uDiscoveryOrigins.value[index].set(discovery.x, discovery.y, discovery.context, discovery.horizon);
+        material.uniforms.uDiscoveryArt.value[index].fromArray(discovery.art);
+      });
+      canvas.dataset.discoveryCount = String(discoveries.length);
+      canvas.dataset.discoveryStrength = discoveries.reduce((strength, discovery) => Math.max(strength, discovery.strength), 0).toFixed(4);
       material.uniforms.uActorStrength.value = actorsReady ? smootherStep((actorTime - actorVisibleAt) / 1.5) : 0;
       material.uniforms.uActorIdle.value = 0;
       canvas.dataset.actorTime = actorTime.toFixed(4);
@@ -805,8 +837,8 @@ export const CinematicContourDissolve = memo(function CinematicContourDissolve({
       setSealBounds(material.uniforms.uOutgoingSeal, outgoingImage, outgoingIsHome);
       setSealBounds(material.uniforms.uIncomingSeal, incomingImage, incomingIsHome);
       material.uniforms.uSealAngles.value.set(THREE.MathUtils.degToRad(outgoingAngle), THREE.MathUtils.degToRad(incomingAngle));
-      setActorProfiles(outgoingSceneIndex, outgoingImage, false, outgoingTheme !== 'boot');
-      setActorProfiles(incomingSceneIndex, incomingImage, true);
+      setActorProfiles(outgoingSceneIndex, outgoingImage, false, outgoingTheme !== 'boot', outgoingTheme);
+      setActorProfiles(incomingSceneIndex, incomingImage, true, true, incomingTheme);
       // Authored watercolor plates already contain their final lighting. Match
       // the live DOM's unfiltered art instead of reapplying the legacy grade.
       if ((outgoingIsHome || outgoingImage.src.includes('/painted-v1/')) && outgoingTheme !== 'boot') {

@@ -41,6 +41,7 @@ import {
   toggleCachedClass,
 } from '../utils/motionPerformance.js';
 import { CinematicEnvironment } from './CinematicEnvironment.jsx';
+import { ScenicDiscoveries } from './ScenicDiscoveries.jsx';
 import { GateSealEntry } from './GateSealEntry.jsx';
 import { ProfileAvatar } from './primitives.jsx';
 import { SpatialWorld } from './SpatialWorld.jsx';
@@ -1473,6 +1474,7 @@ export function SpatialExperience({
         onThemeChosen={handleThemeChosen}
       />
       <ArchiveProgress activeIndex={activeIndex} />
+      <ScenicDiscoveries theme={theme} chapter={spatialChapters[activeIndex]?.id} ready={experienceVisible} portrait={portrait} />
       {architectureProject && <MemoArchitectureDialog project={architectureProject} onClose={handleArchitectureClose} />}
     </div>
   );

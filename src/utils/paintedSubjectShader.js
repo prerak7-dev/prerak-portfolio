@@ -1,4 +1,6 @@
 import { MAX_PAINTED_SUBJECTS } from '../data/paintedSubjects.js';
+import { MAX_DISCOVERIES } from './scenicDiscoveries.js';
+import { SCENIC_DISCOVERY_GLSL } from './scenicDiscoveryShader.js';
 
 export const PAINTED_BACKDROP_CLIP_GLSL = `
   float paintedBackdropCoverage(vec2 point, vec4 boundary) {
@@ -17,6 +19,11 @@ export const PAINTED_SUBJECT_GLSL = `
   uniform vec2 uIncomingActorEdges[${MAX_PAINTED_SUBJECTS}];
   uniform int uOutgoingActorCount, uIncomingActorCount;
   uniform float uActorTime, uActorStrength, uActorIdle;
+  uniform int uDiscoveryCount;
+  uniform vec4 uDiscoveries[${MAX_DISCOVERIES}], uDiscoveryOrigins[${MAX_DISCOVERIES}];
+  uniform vec4 uDiscoveryArt[${MAX_DISCOVERIES}];
+  uniform vec3 uOutgoingDiscoveryDark, uOutgoingDiscoveryPale, uIncomingDiscoveryDark, uIncomingDiscoveryPale;
+  uniform float uOutgoingDiscoveryContext, uIncomingDiscoveryContext;
   uniform vec4 uOutgoingBackdropClip, uIncomingBackdropClip;
 
   vec4 readPainting(sampler2D painting, vec2 point) {
@@ -31,6 +38,8 @@ export const PAINTED_SUBJECT_GLSL = `
   float insidePainting(vec2 point) {
     return smoothstep(0., .012, min(min(point.x, 1. - point.x), min(point.y, 1. - point.y)));
   }
+
+  ${SCENIC_DISCOVERY_GLSL}
 
   vec4 animatePainting(sampler2D painting, vec2 point, float incoming, out float coverage) {
     vec4 original = readPainting(painting, point);
@@ -57,6 +66,24 @@ export const PAINTED_SUBJECT_GLSL = `
       } else if (motion.x > 3.5 && motion.x < 4.5) weight *= 1. - smoothstep(.5, .98, local.y);
       weight *= insidePainting(point) * uActorStrength;
       if (weight < .00001) continue;
+      float waterInk = 0.;
+      vec2 waterShift = vec2(0.);
+      for (int j = 0; j < ${MAX_DISCOVERIES}; j++) {
+        if (j >= uDiscoveryCount) break;
+        vec4 discovery = uDiscoveries[j], origin = uDiscoveryOrigins[j];
+        if (abs(origin.z - mix(uOutgoingDiscoveryContext, uIncomingDiscoveryContext, incoming)) > .1) continue;
+        if (abs(discovery.y - float(i)) > .1) continue;
+        if (discovery.x > 1.5 && discovery.x < 2.5) {
+          vec2 offset = (point - origin.xy) / (region.zw * vec2(.5, .65));
+          float radius = length(offset);
+          float rough = sin(offset.x * 17. + offset.y * 8.) * .035 + sin(offset.x * 31. - offset.y * 19.) * .016;
+          float front = discovery.z * .42;
+          float band = exp(-pow((radius + rough - front) * 2.3, 2.));
+          float ripple = sin((radius + rough) * 24. - discovery.z * 9.) * band * discovery.w;
+          waterShift += normalize(offset + vec2(.0001)) * region.zw * vec2(.006, .022) * ripple;
+          waterInk += ripple * .055;
+        }
+      }
       float phase = uActorTime * motion.y;
       vec4 paint;
       if (motion.x < .5) {
@@ -113,11 +140,12 @@ export const PAINTED_SUBJECT_GLSL = `
           shift = motion.z * region.zw * (1. - local.y) * .5
             * vec2(sin(phase + local.y * 3.), .2 * cos(phase + local.x * 2.));
         }
-        paint = readPainting(painting, point + shift * weight);
+        paint = readPainting(painting, point + (shift + waterShift) * weight);
       }
+      paint.rgb = clamp(paint.rgb + paint.rgb * waterInk, 0., 1.);
       result = mix(result, paint, weight);
       coverage = max(coverage, weight);
     }
-    return result;
+    return discoverPainting(painting, result, point, incoming, coverage);
   }
 `;
